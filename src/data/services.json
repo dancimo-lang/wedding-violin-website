@@ -1,0 +1,31 @@
+{
+  "services": [
+    {
+      "id": "weddings",
+      "title": "Wedding Performances",
+      "shortDescription": "Make your special day unforgettable with elegant live violin music for ceremonies, cocktail hours, and receptions.",
+      "description": "I can provide all of your sound needs for your special day. Whether you want a simple solo violin, or the whole package: band, sound guy, and DJ… I got you covered.",
+      "icon": "Heart",
+      "href": "/services/weddings",
+      "featured": true
+    },
+    {
+      "id": "lessons",
+      "title": "Private Lessons",
+      "shortDescription": "Personalized violin instruction for all ages and skill levels, available in-person or online.",
+      "description": "Whether you're picking up the violin for the first time or preparing for conservatory auditions, I offer tailored instruction to help you reach your musical goals.",
+      "icon": "GraduationCap",
+      "href": "/services/lessons",
+      "featured": true
+    },
+    {
+      "id": "recording",
+      "title": "Studio Recording",
+      "shortDescription": "Professional violin tracks for your album, film score, or creative project.",
+      "description": "Add the warmth and expressiveness of live violin to your recordings. I offer both in-studio and remote session services with quick turnaround.",
+      "icon": "Mic",
+      "href": "/services/recording",
+      "featured": true
+    }
+  ]
+}

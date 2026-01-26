@@ -1,0 +1,29 @@
+{
+  "name": "Daniel Cimo",
+  "title": "Professional Violinist",
+  "tagline": "Central Coast Wedding Violinist",
+  "description": "Professional violinist serving San Luis Obispo, Paso Robles, and the Central Coast. Specializing in wedding ceremonies, private lessons, and studio recording sessions.",
+  "email": "contact@danielcimo.com",
+  "phone": "(805) 555-0123",
+  "location": {
+    "city": "San Luis Obispo",
+    "region": "Central Coast",
+    "state": "California",
+    "serviceAreas": ["San Luis Obispo", "Paso Robles", "Central Coast", "Pismo Beach", "Morro Bay", "Atascadero", "Arroyo Grande"]
+  },
+  "social": {
+    "instagram": "https://instagram.com/danielcimo",
+    "youtube": "https://youtube.com/@danielcimo",
+    "facebook": "https://facebook.com/danielcimoviolin"
+  },
+  "seo": {
+    "keywords": [
+      "Central Coast Wedding Violinist",
+      "San Luis Obispo Violinist",
+      "Paso Robles Wedding Violinist",
+      "Wedding Violin Music",
+      "Private Violin Lessons SLO",
+      "Studio Violinist California"
+    ]
+  }
+}

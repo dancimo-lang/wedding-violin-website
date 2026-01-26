@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "title": "Studio Recording Services",
+    "subtitle": "Professional Violin for Your Project",
+    "description": "Add the warmth and expressiveness of live violin to your recordings. I offer both in-studio and remote session services with quick turnaround."
+  },
+  "services": [
+    {
+      "title": "In-Studio Sessions",
+      "description": "Record in a professional studio environment with top-quality equipment and acoustics."
+    },
+    {
+      "title": "Remote Sessions",
+      "description": "Send me your tracks and I'll record violin parts from my home studio, delivered digitally."
+    },
+    {
+      "title": "Live Tracking",
+      "description": "Available for on-location recording sessions at your studio or venue."
+    }
+  ],
+  "workflow": {
+    "title": "How It Works",
+    "steps": [
+      {
+        "step": 1,
+        "title": "Send Your Project",
+        "description": "Share your reference tracks, sheet music, or a rough idea of what you're looking for."
+      },
+      {
+        "step": 2,
+        "title": "Review & Quote",
+        "description": "I'll review your project and provide a quote based on complexity and turnaround time."
+      },
+      {
+        "step": 3,
+        "title": "Recording",
+        "description": "I record your parts with professional quality and attention to detail."
+      },
+      {
+        "step": 4,
+        "title": "Delivery",
+        "description": "Receive your files in your preferred format, ready to mix."
+      }
+    ]
+  },
+  "deliverables": {
+    "title": "What You Get",
+    "items": [
+      "High-quality WAV files (24-bit/48kHz or higher)",
+      "Multiple takes for selection",
+      "Dry and processed options available",
+      "Quick turnaround (typically 3-5 business days)",
+      "Revisions included"
+    ]
+  },
+  "formats": ["WAV", "AIFF", "MP3", "FLAC"],
+  "cta": {
+    "title": "Let's Create Something Beautiful",
+    "description": "Tell me about your project and let's bring your vision to life.",
+    "buttonText": "Request a Quote",
+    "href": "/booking?service=recording"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "hero": {
+    "title": "Music & Video",
+    "subtitle": "Hear the Difference",
+    "description": "Experience the elegance and emotion of live violin through these performance samples."
+  },
+  "youtube": {
+    "playlistId": "TODO_ADD_PLAYLIST_ID",
+    "note": "TODO: Replace with actual YouTube playlist ID"
+  },
+  "repertoire": {
+    "title": "Repertoire Highlights",
+    "categories": [
+      {
+        "name": "Wedding Classics",
+        "description": "Timeless pieces perfect for ceremonies and romantic moments.",
+        "examples": ["Canon in D", "Ave Maria", "A Thousand Years", "Here Comes the Sun"]
+      },
+      {
+        "name": "Classical Favorites",
+        "description": "Beloved classical works for any occasion.",
+        "examples": ["Bach Partitas", "Vivaldi Four Seasons", "Meditation from Thaïs"]
+      },
+      {
+        "name": "Contemporary & Pop",
+        "description": "Modern songs arranged for violin.",
+        "examples": ["Perfect (Ed Sheeran)", "All of Me (John Legend)", "Can't Help Falling in Love"]
+      },
+      {
+        "name": "Jazz & Cocktail",
+        "description": "Smooth jazz standards for cocktail hours and receptions.",
+        "examples": ["Fly Me to the Moon", "The Way You Look Tonight", "Autumn Leaves"]
+      }
+    ]
+  },
+  "audioSamples": {
+    "title": "Audio Samples",
+    "note": "TODO: Add audio sample files",
+    "samples": []
+  },
+  "cta": {
+    "title": "Like What You Hear?",
+    "description": "Let's discuss how I can provide the perfect music for your event.",
+    "buttonText": "Book Now",
+    "href": "/booking"
+  }
+}

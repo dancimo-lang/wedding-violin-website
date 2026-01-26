@@ -1,0 +1,91 @@
+{
+  "hero": {
+    "title": "Wedding Violin Services",
+    "subtitle": "Central Coast Wedding Violinist",
+    "description": "I can provide all of your sound needs for your special day. Whether you want a simple solo violin, or the whole package: band, sound guy, and DJ… I got you covered."
+  },
+  "proposal": {
+    "title": "Planning a Proposal?",
+    "description": "Thinking about popping the question? Make it especially romantic by adding solo violin or violin-guitar duo! Hatch a plan, name the place, and we can come out at the perfect moment to surprise your special someone with an unforgettable ambiance. Choose 3 songs from our list or make some custom requests."
+  },
+  "packages": [
+    {
+      "id": "ceremony-solo",
+      "name": "Ceremony (Solo Violin)",
+      "price": "Starting at $XXX",
+      "priceNote": "TODO: Add pricing",
+      "features": [
+        "30 minutes of violin mingling music",
+        "3 songs (from list or custom) for bridal party processional, bridal processional, and recessional"
+      ],
+      "popular": false
+    },
+    {
+      "id": "ceremony-duo",
+      "name": "Full Ceremony (Violin–Guitar Duo)",
+      "price": "Starting at $XXX",
+      "priceNote": "TODO: Add pricing",
+      "features": [
+        "Sound equipment setup (wireless mics + robust speakers)",
+        "30 minutes of violin-guitar mingling music",
+        "3 ceremony songs (list or custom)",
+        "Option to DJ prerecorded music"
+      ],
+      "popular": true
+    },
+    {
+      "id": "ceremony-cocktail",
+      "name": "Ceremony + Cocktail Hour Duo",
+      "price": "Starting at $XXX",
+      "priceNote": "TODO: Add pricing",
+      "features": [
+        "Ceremony + cocktail hour sound setup",
+        "30 minutes ceremony mingling",
+        "3 ceremony songs",
+        "1 hour jazzy cocktail music",
+        "Optional DJ music"
+      ],
+      "popular": false
+    },
+    {
+      "id": "full-wedding-dj",
+      "name": "Full Wedding + DJ",
+      "price": "Starting at $XXX",
+      "priceNote": "TODO: Add pricing",
+      "features": [
+        "Ceremony, cocktail hour, dinner DJ, reception dance party",
+        "Optional MC services",
+        "Full coordination with wedding planner",
+        "Professional speakers and microphones"
+      ],
+      "popular": false
+    }
+  ],
+  "logistics": {
+    "title": "What to Expect",
+    "items": [
+      {
+        "title": "Service Area",
+        "description": "San Luis Obispo + Central Coast (TODO: Add specific travel radius)"
+      },
+      {
+        "title": "Setup & Sound Check",
+        "description": "I arrive early to ensure everything is perfect before your guests arrive."
+      },
+      {
+        "title": "Custom Song Requests",
+        "description": "Have a special song in mind? Custom requests are welcome with advance notice."
+      },
+      {
+        "title": "Outdoor Weddings",
+        "description": "Weather contingency plans available. I'm experienced with outdoor venue setups."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Ready to Make Your Day Unforgettable?",
+    "description": "Let's discuss your vision and create the perfect musical atmosphere for your wedding.",
+    "buttonText": "Request a Quote",
+    "href": "/booking?service=weddings"
+  }
+}

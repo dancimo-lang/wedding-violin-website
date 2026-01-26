@@ -1,0 +1,46 @@
+{
+  "hero": {
+    "title": "About Daniel",
+    "subtitle": "Professional Violinist | Educator | Recording Artist"
+  },
+  "bio": {
+    "paragraphs": [
+      "Daniel Cimo is a professional violinist based in San Luis Obispo, California, serving the Central Coast with elegant live music for weddings, events, and private instruction.",
+      "With a passion for both performance and education, Daniel brings years of experience to every engagement, whether it's creating the perfect atmosphere for your wedding ceremony or helping a student discover the joy of playing violin.",
+      "TODO: Add more biographical details, personal story, and musical journey."
+    ]
+  },
+  "credentials": {
+    "title": "Education & Training",
+    "items": [
+      "TODO: Add degree/institution",
+      "TODO: Add additional training",
+      "TODO: Add notable teachers/mentors",
+      "TODO: Add performance experience"
+    ]
+  },
+  "philosophy": {
+    "performance": {
+      "title": "Performance Philosophy",
+      "description": "Every event is unique, and the music should reflect that. I work closely with clients to curate the perfect repertoire and create an atmosphere that enhances their special moments."
+    },
+    "teaching": {
+      "title": "Teaching Philosophy",
+      "description": "I believe in building a strong technical foundation while nurturing each student's individual musicality. My goal is to help students not just play the violin, but truly express themselves through music."
+    }
+  },
+  "cta": {
+    "lessons": {
+      "title": "Ready to Learn?",
+      "description": "Start your violin journey with personalized instruction.",
+      "buttonText": "Explore Lessons",
+      "href": "/services/lessons"
+    },
+    "booking": {
+      "title": "Book Daniel for Your Event",
+      "description": "Let's create something beautiful together.",
+      "buttonText": "Get in Touch",
+      "href": "/booking"
+    }
+  }
+}

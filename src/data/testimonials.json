@@ -1,0 +1,29 @@
+{
+  "testimonials": [
+    {
+      "id": 1,
+      "quote": "Daniel made our wedding ceremony absolutely magical. His violin playing brought tears to everyone's eyes during the processional.",
+      "author": "Sarah & Michael",
+      "event": "Wedding Ceremony",
+      "location": "Paso Robles",
+      "placeholder": true
+    },
+    {
+      "id": 2,
+      "quote": "The perfect addition to our cocktail hour. Guests couldn't stop complimenting the beautiful music.",
+      "author": "Jennifer & David",
+      "event": "Wedding Reception",
+      "location": "San Luis Obispo",
+      "placeholder": true
+    },
+    {
+      "id": 3,
+      "quote": "My daughter has been taking lessons with Daniel for a year and her progress has been incredible. He's patient, encouraging, and truly passionate about teaching.",
+      "author": "Maria T.",
+      "event": "Private Lessons",
+      "location": "San Luis Obispo",
+      "placeholder": true
+    }
+  ],
+  "note": "TODO: Replace placeholder testimonials with real client reviews"
+}

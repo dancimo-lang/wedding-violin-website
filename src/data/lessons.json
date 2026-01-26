@@ -1,0 +1,73 @@
+{
+  "hero": {
+    "title": "Private Violin Lessons",
+    "subtitle": "Learn from a Professional",
+    "description": "Whether you're picking up the violin for the first time or preparing for conservatory auditions, I offer tailored instruction to help you reach your musical goals."
+  },
+  "features": [
+    {
+      "title": "In-Person Lessons",
+      "description": "One-on-one instruction in San Luis Obispo. Personalized attention in a focused learning environment."
+    },
+    {
+      "title": "Online Lessons",
+      "description": "Learn from anywhere with high-quality video lessons. Flexible scheduling for busy lifestyles."
+    },
+    {
+      "title": "All Skill Levels",
+      "description": "From complete beginners to advanced players preparing for auditions or performances."
+    }
+  ],
+  "philosophy": {
+    "title": "Teaching Philosophy",
+    "description": "I believe in building a strong technical foundation while keeping the joy of music-making at the center of every lesson. My approach combines classical technique with practical musicianship, helping students develop not just as players, but as complete musicians."
+  },
+  "packages": [
+    {
+      "id": "single-lesson",
+      "name": "Single Lesson",
+      "price": "Starting at $XX",
+      "priceNote": "TODO: Add pricing",
+      "duration": "30, 45, or 60 minutes",
+      "features": [
+        "One-on-one instruction",
+        "Personalized feedback",
+        "Practice assignments",
+        "In-person or online"
+      ]
+    },
+    {
+      "id": "monthly-package",
+      "name": "Monthly Package",
+      "price": "Starting at $XXX",
+      "priceNote": "TODO: Add pricing",
+      "duration": "4 lessons per month",
+      "features": [
+        "Discounted rate",
+        "Consistent weekly schedule",
+        "Progress tracking",
+        "Priority scheduling"
+      ],
+      "popular": true
+    },
+    {
+      "id": "intensive",
+      "name": "Intensive Prep",
+      "price": "Starting at $XXX",
+      "priceNote": "TODO: Add pricing",
+      "duration": "Custom schedule",
+      "features": [
+        "Audition preparation",
+        "Competition coaching",
+        "Extended sessions available",
+        "Repertoire development"
+      ]
+    }
+  ],
+  "cta": {
+    "title": "Start Your Musical Journey",
+    "description": "Book a trial lesson and discover the joy of playing violin.",
+    "buttonText": "Schedule a Lesson",
+    "href": "/booking?service=lessons"
+  }
+}

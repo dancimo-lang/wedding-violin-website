@@ -1,0 +1,17 @@
+{
+  "mainNav": [
+    { "label": "Home", "href": "/" },
+    { "label": "About", "href": "/about" },
+    { "label": "Services", "href": "/services", "children": [
+      { "label": "Weddings", "href": "/services/weddings" },
+      { "label": "Lessons", "href": "/services/lessons" },
+      { "label": "Recording", "href": "/services/recording" }
+    ]},
+    { "label": "Music & Video", "href": "/music" },
+    { "label": "Booking", "href": "/booking" }
+  ],
+  "footerNav": [
+    { "label": "Privacy Policy", "href": "/privacy" },
+    { "label": "Terms of Service", "href": "/terms" }
+  ]
+}
