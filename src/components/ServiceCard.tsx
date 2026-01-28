@@ -37,9 +37,9 @@ export default function ServiceCard({
         <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center mb-6 group-hover:from-blue-400 group-hover:to-blue-600 transition-all shadow-[0_0_20px_rgba(0,174,239,0.5)] group-hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]">
           <Icon className="w-8 h-8 text-white" />
         </div>
-        <h3 className="text-xl font-semibold text-blue-50 mb-3 drop-shadow-[0_0_10px_rgba(0,174,239,0.3)]">{title}</h3>
-        <p className="text-blue-200 mb-4">{description}</p>
-        <span className="text-blue-300 font-medium group-hover:underline group-hover:text-blue-200 transition-colors drop-shadow-[0_0_8px_rgba(0,174,239,0.4)]">
+        <h3 className="text-xl font-semibold text-white mb-3 drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">{title}</h3>
+        <p className="text-white/90 mb-4 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">{description}</p>
+        <span className="text-white/80 font-medium group-hover:underline group-hover:text-white transition-colors drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
           Learn More →
         </span>
       </div>

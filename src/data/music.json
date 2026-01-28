@@ -19,7 +19,7 @@
       {
         "name": "Classical Favorites",
         "description": "Beloved classical works for any occasion.",
-        "examples": ["Bach Partitas", "Vivaldi Four Seasons", "Meditation from Thaïs"]
+        "examples": ["Bach Partitas", "Mozart Sonatas", "Meditation from Thaïs"]
       },
       {
         "name": "Contemporary & Pop",
@@ -30,6 +30,11 @@
         "name": "Jazz & Cocktail",
         "description": "Smooth jazz standards for cocktail hours and receptions.",
         "examples": ["Fly Me to the Moon", "The Way You Look Tonight", "Autumn Leaves"]
+      },
+      {
+        "name": "Fiddle and Folk",
+        "description": "Traditional and contemporary folk tunes with fiddle stylings.",
+        "examples": ["Irish Jigs", "Country Classics", "American Folk Songs", "Bluegrass Fiddle"]
       }
     ]
   },
@@ -37,6 +42,10 @@
     "title": "Audio Samples",
     "note": "TODO: Add audio sample files",
     "samples": []
+  },
+  "soundcloud": {
+    "playlistUrl": "https://soundcloud.com/daniel-francesco-cimo/sets/wedding-violin-sampler",
+    "note": "Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies"
   },
   "cta": {
     "title": "Like What You Hear?",

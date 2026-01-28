@@ -102,7 +102,7 @@ function BookingForm() {
           required
           value={formData.name}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
           placeholder="Your full name"
         />
       </div>
@@ -119,7 +119,7 @@ function BookingForm() {
           required
           value={formData.email}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
           placeholder="your@email.com"
         />
       </div>
@@ -135,7 +135,7 @@ function BookingForm() {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
           placeholder="(555) 123-4567"
         />
       </div>
@@ -151,7 +151,7 @@ function BookingForm() {
           required
           value={formData.service}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors bg-white"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors bg-white text-black"
         >
           <option value="">Select a service...</option>
           {serviceOptions.map((option) => (
@@ -174,7 +174,7 @@ function BookingForm() {
             name="package"
             value={formData.package}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black"
             readOnly
           />
         </div>
@@ -191,7 +191,7 @@ function BookingForm() {
           name="eventDate"
           value={formData.eventDate}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
         />
       </div>
 
@@ -207,7 +207,7 @@ function BookingForm() {
           rows={5}
           value={formData.message}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none text-black"
           placeholder="Tell me about your event, project, or lesson goals..."
         />
       </div>
@@ -263,12 +263,17 @@ export default function BookingPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-amber-700 to-amber-900 py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+      <section className="relative py-20">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: 'url(/images/booking-hero.jpg)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/50 to-amber-900/70" />
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
             Book Daniel
           </h1>
-          <p className="text-xl text-amber-100 max-w-2xl mx-auto">
+          <p className="text-xl text-amber-100 max-w-2xl mx-auto drop-shadow-lg">
             Ready to make your event unforgettable? Fill out the form below and I&apos;ll get back to you within 24-48 hours.
           </p>
         </div>

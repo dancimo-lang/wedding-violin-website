@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Heart, Clock, Music, CloudSun, MapPin } from 'lucide-react';
 import Hero from '@/components/Hero';
 import PackageCard from '@/components/PackageCard';
+import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
@@ -56,8 +57,9 @@ export default function WeddingsPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-rose-100 rounded-full mb-6">
               <Heart className="w-8 h-8 text-rose-500" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-black mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
               {weddings.proposal.title}
+              <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-amber-500 rounded-full"></span>
             </h2>
             <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
               {weddings.proposal.description}
@@ -76,10 +78,10 @@ export default function WeddingsPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
               Wedding Packages
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
               Choose the perfect package for your special day. All packages include custom song selection and professional service.
             </p>
           </div>
@@ -102,6 +104,21 @@ export default function WeddingsPage() {
           <p className="text-center text-sm text-gray-400 mt-8">
             {weddings.packages[0].priceNote}
           </p>
+        </div>
+      </section>
+
+      {/* Audio Samples Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+              Wedding Repertoire Samples
+            </h2>
+            <SoundCloudPlaylist playlistUrl="https://soundcloud.com/daniel-francesco-cimo/sets/wedding-violin-sampler" />
+            <p className="text-center text-sm text-gray-600 mt-4">
+              Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies
+            </p>
+          </div>
         </div>
       </section>
 

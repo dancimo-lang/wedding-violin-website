@@ -28,10 +28,10 @@ export default function Home() {
       <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-blue-50 mb-4 drop-shadow-[0_0_25px_rgba(0,174,239,0.5)]">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
               Services
             </h2>
-            <p className="text-lg text-blue-200 max-w-2xl mx-auto">
+            <p className="text-lg text-white/90 max-w-2xl mx-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
               From wedding ceremonies to private instruction, I bring passion and professionalism to every performance.
             </p>
           </div>
@@ -55,7 +55,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-blue-50 mb-6 drop-shadow-[0_0_25px_rgba(0,174,239,0.5)]">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
                 Why Choose Daniel Cimo?
               </h2>
               <div className="space-y-6">
@@ -94,13 +94,16 @@ export default function Home() {
                   src="/images/home-image.jpg"
                   alt="Daniel Cimo - Professional Violinist"
                   fill
-                  className="object-cover"
+                  className="object-cover object-center"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
                   priority
+                  quality={95}
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-blue-500 to-blue-700 text-white p-6 rounded-2xl shadow-[0_0_30px_rgba(0,174,239,0.7)] ring-2 ring-blue-400/50">
-                <p className="text-3xl font-bold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">10+</p>
+                <p className="text-3xl font-bold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">20+</p>
                 <p className="text-blue-100">Years Experience</p>
               </div>
             </div>
@@ -112,10 +115,10 @@ export default function Home() {
       <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-blue-50 mb-4 drop-shadow-[0_0_25px_rgba(0,174,239,0.5)]">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
               What Clients Say
             </h2>
-            <p className="text-lg text-blue-200">
+            <p className="text-lg text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
               Trusted by couples and students across the Central Coast
             </p>
           </div>

@@ -49,7 +49,7 @@ export default function RecordingPage() {
                   <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Icon className="w-8 h-8 text-amber-700" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  <h3 className="text-xl font-semibold text-black mb-3 drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
                     {service.title}
                   </h3>
                   <p className="text-gray-600">{service.description}</p>
@@ -89,8 +89,9 @@ export default function RecordingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
                   {recording.deliverables.title}
+                  <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
                 </h2>
                 <ul className="space-y-4">
                   {recording.deliverables.items.map((item, index) => (

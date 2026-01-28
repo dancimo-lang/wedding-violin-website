@@ -12,8 +12,7 @@
     {
       "id": "ceremony-solo",
       "name": "Ceremony (Solo Violin)",
-      "price": "Starting at $XXX",
-      "priceNote": "TODO: Add pricing",
+      "price": "Starting at $450",
       "features": [
         "30 minutes of violin mingling music",
         "3 songs (from list or custom) for bridal party processional, bridal processional, and recessional"
@@ -23,8 +22,7 @@
     {
       "id": "ceremony-duo",
       "name": "Full Ceremony (Violin–Guitar Duo)",
-      "price": "Starting at $XXX",
-      "priceNote": "TODO: Add pricing",
+      "price": "Starting at $800",
       "features": [
         "Sound equipment setup (wireless mics + robust speakers)",
         "30 minutes of violin-guitar mingling music",
@@ -36,8 +34,7 @@
     {
       "id": "ceremony-cocktail",
       "name": "Ceremony + Cocktail Hour Duo",
-      "price": "Starting at $XXX",
-      "priceNote": "TODO: Add pricing",
+      "price": "Starting at $1200",
       "features": [
         "Ceremony + cocktail hour sound setup",
         "30 minutes ceremony mingling",
@@ -50,8 +47,7 @@
     {
       "id": "full-wedding-dj",
       "name": "Full Wedding + DJ",
-      "price": "Starting at $XXX",
-      "priceNote": "TODO: Add pricing",
+      "price": "Starting at $2200",
       "features": [
         "Ceremony, cocktail hour, dinner DJ, reception dance party",
         "Optional MC services",
@@ -66,7 +62,7 @@
     "items": [
       {
         "title": "Service Area",
-        "description": "San Luis Obispo + Central Coast (TODO: Add specific travel radius)"
+        "description": "Proudly serving San Luis Obispo County and the Central Coast. I'm delighted to travel to destination weddings - additional travel fees may apply."
       },
       {
         "title": "Setup & Sound Check",

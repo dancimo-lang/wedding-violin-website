@@ -34,6 +34,7 @@ export default function LessonsPage() {
         ctaHref="/booking?service=lessons"
         posterSrc="/images/lessons-hero.jpg"
         size="large"
+        overlay={false}
       />
 
       {/* Features Section */}
@@ -50,7 +51,7 @@ export default function LessonsPage() {
                   <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Icon className="w-8 h-8 text-amber-700" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  <h3 className="text-xl font-semibold text-black mb-3 drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
                     {feature.title}
                   </h3>
                   <p className="text-gray-600">{feature.description}</p>
@@ -65,8 +66,9 @@ export default function LessonsPage() {
       <section className="py-20 bg-amber-50">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl font-bold text-black mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
               {lessons.philosophy.title}
+              <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
             <p className="text-lg text-gray-700 leading-relaxed">
               {lessons.philosophy.description}
@@ -79,7 +81,7 @@ export default function LessonsPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
               Lesson Packages
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">

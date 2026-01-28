@@ -2,7 +2,7 @@
   "hero": {
     "title": "Private Violin Lessons",
     "subtitle": "Learn from a Professional",
-    "description": "Whether you're picking up the violin for the first time or preparing for conservatory auditions, I offer tailored instruction to help you reach your musical goals."
+    "description": "Violin and fiddle lessons that make technique, theory, and improvisation accessible—tailored to your musical style."
   },
   "features": [
     {
@@ -20,14 +20,14 @@
   ],
   "philosophy": {
     "title": "Teaching Philosophy",
-    "description": "I believe in building a strong technical foundation while keeping the joy of music-making at the center of every lesson. My approach combines classical technique with practical musicianship, helping students develop not just as players, but as complete musicians."
+    "description": "I have been teaching violin and fiddle for over 15 years, working with students of all ages and experience levels. My teaching philosophy centers on making music theory, technique, and improvisation approachable and enjoyable. I help students learn to play within the style they love—whether that's classical, jazz, fiddle, folk, or contemporary music—while building strong fundamentals and musical confidence.\n\nLessons often include custom practice recordings, play-along tracks, and stylistic examples so students can learn by listening and doing. My goal is to give students the tools to understand music, trust their ears, and feel free to express themselves on the instrument."
   },
   "packages": [
     {
       "id": "single-lesson",
       "name": "Single Lesson",
-      "price": "Starting at $XX",
-      "priceNote": "TODO: Add pricing",
+      "price": "$65",
+      "priceNote": "Per 60-minute lesson",
       "duration": "30, 45, or 60 minutes",
       "features": [
         "One-on-one instruction",
@@ -39,28 +39,29 @@
     {
       "id": "monthly-package",
       "name": "Monthly Package",
-      "price": "Starting at $XXX",
-      "priceNote": "TODO: Add pricing",
+      "price": "$60",
+      "priceNote": "Per lesson (4 lessons/month)",
       "duration": "4 lessons per month",
       "features": [
         "Discounted rate",
         "Consistent weekly schedule",
         "Progress tracking",
-        "Priority scheduling"
+        "Priority scheduling",
+        "Custom practice tracks"
       ],
       "popular": true
     },
     {
-      "id": "intensive",
-      "name": "Intensive Prep",
-      "price": "Starting at $XXX",
-      "priceNote": "TODO: Add pricing",
-      "duration": "Custom schedule",
+      "id": "group-lesson",
+      "name": "Group Lesson",
+      "price": "$35",
+      "priceNote": "Per student",
+      "duration": "60 minutes",
       "features": [
-        "Audition preparation",
-        "Competition coaching",
-        "Extended sessions available",
-        "Repertoire development"
+        "Small group setting (2-4 students)",
+        "Shared learning experience",
+        "Individual attention within group",
+        "Cost-effective option"
       ]
     }
   ],

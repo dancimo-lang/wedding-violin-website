@@ -50,31 +50,31 @@ export default function Hero({
       )}
 
       {/* Poster Fallback (when no video) */}
-      {!videoSrc && posterSrc && (
+      {!videoSrc && (
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${posterSrc})` }}
+          style={{ backgroundImage: `url(${posterSrc || '/images/hero-poster.jpg'})` }}
         />
       )}
 
       {/* Gradient Overlay */}
       {overlay && (
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-blue-900/10 to-blue-950/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
       )}
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 text-center">
+      <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? '-mt-[25vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
         <div className="max-w-4xl mx-auto">
           {subtitle && (
-            <p className="text-blue-300 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_0_15px_rgba(0,174,239,0.6)]">
+            <p className="text-white/95 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/20 px-4 py-2 rounded-full inline-block">
               {subtitle}
             </p>
           )}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-[0_0_30px_rgba(0,174,239,0.5)]">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             {title}
           </h1>
           {description && (
-            <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/10 px-6 py-3 rounded-2xl">
               {description}
             </p>
           )}
