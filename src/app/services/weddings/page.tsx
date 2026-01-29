@@ -100,10 +100,6 @@ export default function WeddingsPage() {
               />
             ))}
           </div>
-
-          <p className="text-center text-sm text-gray-400 mt-8">
-            {weddings.packages[0].priceNote}
-          </p>
         </div>
       </section>
 
