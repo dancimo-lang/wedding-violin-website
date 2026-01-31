@@ -10,6 +10,7 @@ interface HeroProps {
   secondaryCtaHref?: string;
   videoSrc?: string;
   posterSrc?: string;
+  backgroundPosition?: string;
   overlay?: boolean;
   size?: 'full' | 'large' | 'medium';
 }
@@ -24,6 +25,7 @@ export default function Hero({
   secondaryCtaHref,
   videoSrc,
   posterSrc,
+  backgroundPosition = 'center',
   overlay = true,
   size = 'large',
 }: HeroProps) {
@@ -52,8 +54,11 @@ export default function Hero({
       {/* Poster Fallback (when no video) */}
       {!videoSrc && (
         <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${posterSrc || '/images/hero-poster.jpg'})` }}
+          className="absolute inset-0 bg-cover"
+          style={{ 
+            backgroundImage: `url(${posterSrc || '/images/hero-poster.jpg'})`,
+            backgroundPosition: backgroundPosition
+          }}
         />
       )}
 
@@ -63,10 +68,10 @@ export default function Hero({
       )}
 
       {/* Content */}
-      <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? '-mt-[25vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
+      <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
         <div className="max-w-4xl mx-auto">
           {subtitle && (
-            <p className="text-white/95 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/20 px-4 py-2 rounded-full inline-block">
+            <p className="text-black font-medium tracking-wide uppercase mb-4 text-sm md:text-base">
               {subtitle}
             </p>
           )}

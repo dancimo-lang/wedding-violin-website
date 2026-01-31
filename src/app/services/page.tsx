@@ -16,9 +16,9 @@ export default function ServicesPage() {
       {/* Hero */}
       <Hero
         title="Services"
-        subtitle="What I Offer"
         description="From elegant wedding performances to personalized instruction and professional recording, I bring passion and expertise to every project."
         posterSrc="/images/serveces-hero.jpg"
+        backgroundPosition="center top 20%"
         size="medium"
       />
 
