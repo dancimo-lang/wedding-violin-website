@@ -30,13 +30,14 @@ export default function Header() {
               <div key={item.href} className="relative group">
                 {item.children ? (
                   <>
-                    <button
+                    <Link
+                      href={item.href}
                       className="text-gray-700 hover:text-gray-900 transition-colors font-medium"
                       onMouseEnter={() => setServicesOpen(true)}
                       onMouseLeave={() => setServicesOpen(false)}
                     >
                       {item.label}
-                    </button>
+                    </Link>
                     <div
                       className={`absolute top-full left-0 pt-2 ${servicesOpen ? 'block' : 'hidden'}`}
                       onMouseEnter={() => setServicesOpen(true)}

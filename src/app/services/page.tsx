@@ -18,7 +18,7 @@ export default function ServicesPage() {
         title="Services"
         subtitle="What I Offer"
         description="From elegant wedding performances to personalized instruction and professional recording, I bring passion and expertise to every project."
-        posterSrc="/images/services-hero.jpg"
+        posterSrc="/images/serveces-hero.jpg"
         size="medium"
       />
 
