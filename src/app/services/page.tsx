@@ -5,9 +5,9 @@ import CTASection from '@/components/CTASection';
 import services from '@/data/services.json';
 
 export const metadata: Metadata = {
-  title: 'Services',
-  description: 'Professional violin services including wedding performances, private lessons, and studio recording. Serving San Luis Obispo, Paso Robles, and the Central Coast.',
-  keywords: ['Wedding Violinist Services', 'Violin Lessons SLO', 'Studio Violin Recording'],
+  title: 'San Luis Obispo Wedding Violinist | Central Coast Wedding Violin Services',
+  description: 'Professional San Luis Obispo wedding violinist providing elegant live violin music for ceremonies, cocktail hours, and receptions. Serving the entire Central Coast including Paso Robles, Pismo Beach, and Morro Bay.',
+  keywords: ['San Luis Obispo wedding violinist', 'Central Coast wedding violinist', 'wedding violin music SLO', 'Paso Robles wedding violinist', 'ceremony violinist California'],
 };
 
 export default function ServicesPage() {

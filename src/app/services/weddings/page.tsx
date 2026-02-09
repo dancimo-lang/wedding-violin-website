@@ -9,15 +9,17 @@ import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
 
 export const metadata: Metadata = {
-  title: 'Wedding Violin Services',
-  description: 'Professional wedding violinist for ceremonies, cocktail hours, and receptions. Serving San Luis Obispo, Paso Robles, and the Central Coast. Solo violin and violin-guitar duo packages available.',
+  title: 'San Luis Obispo Wedding Violinist | Central Coast Wedding Ceremony Music',
+  description: 'Professional San Luis Obispo wedding violinist specializing in ceremony music, cocktail hour entertainment, and receptions. Serving all Central Coast venues including Paso Robles, Pismo Beach, and Morro Bay.',
   keywords: [
-    'Central Coast Wedding Violinist',
-    'San Luis Obispo Wedding Violinist',
-    'Paso Robles Wedding Violinist',
-    'Wedding Ceremony Violin',
-    'Cocktail Hour Violin Music',
-    'Wedding DJ Services SLO',
+    'San Luis Obispo wedding violinist',
+    'Central Coast wedding violinist',
+    'wedding ceremony violinist SLO',
+    'Paso Robles wedding violin music',
+    'Pismo Beach wedding violinist',
+    'outdoor wedding violin music',
+    'cocktail hour violin entertainment',
+    'wedding reception violinist California',
   ],
 };
 

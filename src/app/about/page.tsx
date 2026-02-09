@@ -85,6 +85,22 @@ export default function AboutPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Booking CTA */}
+            <div className="bg-amber-50 p-8 rounded-2xl text-center">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                {about.cta.booking.title}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {about.cta.booking.description}
+              </p>
+              <Link
+                href={about.cta.booking.href}
+                className="inline-block bg-amber-700 hover:bg-amber-800 text-white px-6 py-3 rounded-full font-medium transition-colors"
+              >
+                {about.cta.booking.buttonText}
+              </Link>
+            </div>
+
             {/* Lessons CTA */}
             <div className="bg-amber-50 p-8 rounded-2xl text-center">
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
@@ -98,22 +114,6 @@ export default function AboutPage() {
                 className="inline-block bg-amber-700 hover:bg-amber-800 text-white px-6 py-3 rounded-full font-medium transition-colors"
               >
                 {about.cta.lessons.buttonText}
-              </Link>
-            </div>
-
-            {/* Booking CTA */}
-            <div className="bg-gray-900 p-8 rounded-2xl text-center">
-              <h3 className="text-2xl font-bold text-white mb-3">
-                {about.cta.booking.title}
-              </h3>
-              <p className="text-gray-300 mb-6">
-                {about.cta.booking.description}
-              </p>
-              <Link
-                href={about.cta.booking.href}
-                className="inline-block bg-white hover:bg-gray-100 text-gray-900 px-6 py-3 rounded-full font-medium transition-colors"
-              >
-                {about.cta.booking.buttonText}
               </Link>
             </div>
           </div>

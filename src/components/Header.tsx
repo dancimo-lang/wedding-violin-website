@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X, Instagram, Youtube, Facebook } from 'lucide-react';
 import navigation from '@/data/navigation.json';
 import site from '@/data/site.json';
@@ -9,6 +10,14 @@ import site from '@/data/site.json';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname === href || pathname.startsWith(href + '/');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm shadow-blue-500/20">
@@ -32,7 +41,11 @@ export default function Header() {
                   <>
                     <Link
                       href={item.href}
-                      className="text-gray-700 hover:text-gray-900 transition-colors font-medium"
+                      className={`transition-colors font-medium ${
+                        isActive(item.href) 
+                          ? 'text-blue-600' 
+                          : 'text-gray-700 hover:text-gray-900'
+                      }`}
                       onMouseEnter={() => setServicesOpen(true)}
                       onMouseLeave={() => setServicesOpen(false)}
                     >
@@ -48,7 +61,11 @@ export default function Header() {
                           <Link
                             key={child.href}
                             href={child.href}
-                            className="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors rounded-lg mx-1"
+                            className={`block px-4 py-2 transition-colors rounded-lg mx-1 ${
+                              isActive(child.href)
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                            }`}
                           >
                             {child.label}
                           </Link>
@@ -59,7 +76,11 @@ export default function Header() {
                 ) : (
                   <Link
                     href={item.href}
-                    className="text-gray-700 hover:text-gray-900 transition-colors font-medium"
+                    className={`transition-colors font-medium ${
+                      isActive(item.href) 
+                        ? 'text-blue-600' 
+                        : 'text-gray-700 hover:text-gray-900'
+                    }`}
                   >
                     {item.label}
                   </Link>
@@ -137,7 +158,11 @@ export default function Header() {
                   <Link
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                    className={`block py-2 font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-blue-600'
+                        : 'text-gray-700 hover:text-gray-900'
+                    }`}
                   >
                     {item.label}
                   </Link>
@@ -148,7 +173,11 @@ export default function Header() {
                           key={child.href}
                           href={child.href}
                           onClick={() => setMobileMenuOpen(false)}
-                          className="block py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                          className={`block py-2 transition-colors ${
+                            isActive(child.href)
+                              ? 'text-blue-600'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
                         >
                           {child.label}
                         </Link>

@@ -71,7 +71,7 @@ export default function Hero({
       <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
         <div className="max-w-4xl mx-auto">
           {subtitle && (
-            <p className="text-black font-medium tracking-wide uppercase mb-4 text-sm md:text-base">
+            <p className="text-white/90 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               {subtitle}
             </p>
           )}

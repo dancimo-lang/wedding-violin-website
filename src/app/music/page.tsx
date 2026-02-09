@@ -85,7 +85,7 @@ export default function MusicPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-black mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
+            <h2 className="text-3xl font-bold text-white mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
               {music.audioSamples.title}
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
