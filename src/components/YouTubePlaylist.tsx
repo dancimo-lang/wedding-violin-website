@@ -1,25 +1,6 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import type { ComponentType } from 'react';
-
-interface PlaylistProps {
-  apiKey: string;
-  playlistId: string;
-  uniqueName: string;
-}
-
-const ReactYouTubePlaylist = dynamic<PlaylistProps>(
-  () => import('@codesweetly/react-youtube-playlist').then((mod) => mod.default as unknown as ComponentType<PlaylistProps>),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="aspect-video bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
-        <span className="text-gray-400">Loading videos...</span>
-      </div>
-    ),
-  }
-);
+import { Suspense } from 'react';
 
 interface YouTubePlaylistProps {
   playlistId: string;
@@ -41,11 +22,22 @@ export default function YouTubePlaylist({ playlistId }: YouTubePlaylistProps) {
 
   return (
     <div className="rounded-lg overflow-hidden shadow-lg">
-      <ReactYouTubePlaylist
-        apiKey={process.env.NEXT_PUBLIC_YOUTUBE_API_KEY || ''}
-        playlistId={playlistId}
-        uniqueName="daniel-cimo-playlist"
-      />
+      <Suspense fallback={
+        <div className="aspect-video bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
+          <span className="text-gray-400">Loading videos...</span>
+        </div>
+      }>
+        <div className="aspect-video">
+          <iframe
+            src={`https://www.youtube.com/embed/videoseries?list=${playlistId}`}
+            title="YouTube video playlist player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="w-full h-full"
+          />
+        </div>
+      </Suspense>
     </div>
   );
 }

@@ -140,7 +140,9 @@ export function JsonLd({ data }: JsonLdProps) {
         <script
           key={index}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          dangerouslySetInnerHTML={{ 
+            __html: JSON.stringify(schema, Object.keys(schema).sort()) 
+          }}
         />
       ))}
     </>

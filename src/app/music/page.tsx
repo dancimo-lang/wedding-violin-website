@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import Hero from '@/components/Hero';
 import YouTubePlaylist from '@/components/YouTubePlaylist';
-import SingleVideo from '@/components/SingleVideo';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
 import music from '@/data/music.json';
@@ -29,14 +28,12 @@ export default function MusicPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
-              Featured Performance
+ Featured Performances
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
-            <SingleVideo 
-              videoId="V-PTvpsTY1s" 
-            />
+            <YouTubePlaylist playlistId={music.youtube.playlistId} />
             <p className="text-center text-sm text-gray-400 mt-4">
-              Experience the beauty and emotion of live violin performance
+              Experience the beauty and emotion of live violin performances
             </p>
           </div>
         </div>
