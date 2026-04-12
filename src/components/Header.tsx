@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Instagram, Youtube, Facebook } from 'lucide-react';
+import { Menu, X, Instagram, Youtube, Facebook, Map } from 'lucide-react';
 import navigation from '@/data/navigation.json';
 import site from '@/data/site.json';
 
@@ -120,6 +120,15 @@ export default function Header() {
               >
                 <Facebook size={20} />
               </a>
+              <a
+                href={site.social.google}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-gray-900 transition-all"
+                aria-label="Google Business Profile"
+              >
+                <Map size={20} />
+              </a>
             </div>
 
             {/* Book Now Button */}
@@ -216,6 +225,15 @@ export default function Header() {
                 aria-label="Facebook"
               >
                 <Facebook size={24} />
+              </a>
+              <a
+                href={site.social.google}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-gray-900 transition-all"
+                aria-label="Google Business Profile"
+              >
+                <Map size={24} />
               </a>
             </div>
           </div>

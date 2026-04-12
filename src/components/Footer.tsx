@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Instagram, Youtube, Facebook, Mail, MapPin } from 'lucide-react';
+import { Instagram, Youtube, Facebook, Mail, MapPin, Map } from 'lucide-react';
 import site from '@/data/site.json';
 import navigation from '@/data/navigation.json';
 
@@ -101,6 +101,15 @@ export default function Footer() {
                   aria-label="Facebook"
                 >
                   <Facebook size={24} />
+                </a>
+                <a
+                  href={site.social.google}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_15px_rgba(0,174,239,0.7)]"
+                  aria-label="Google Business Profile"
+                >
+                  <Map size={24} />
                 </a>
               </div>
 
