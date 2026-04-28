@@ -1,4 +1,5 @@
-import { Metadata } from 'next';
+'use client';
+
 import Link from 'next/link';
 import { Heart, Clock, Music, CloudSun, MapPin } from 'lucide-react';
 import Hero from '@/components/Hero';
@@ -8,21 +9,6 @@ import CTASection from '@/components/CTASection';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
 
-export const metadata: Metadata = {
-  title: 'San Luis Obispo Wedding Violinist | Central Coast Wedding Ceremony Music',
-  description: 'Professional San Luis Obispo wedding violinist specializing in ceremony music, cocktail hour entertainment, and receptions. Serving all Central Coast venues including Paso Robles, Pismo Beach, and Morro Bay.',
-  keywords: [
-    'San Luis Obispo wedding violinist',
-    'Central Coast wedding violinist',
-    'wedding ceremony violinist SLO',
-    'Paso Robles wedding violin music',
-    'Pismo Beach wedding violinist',
-    'outdoor wedding violin music',
-    'cocktail hour violin entertainment',
-    'wedding reception violinist California',
-  ],
-};
-
 const iconMap = {
   'Service Area': MapPin,
   'Setup & Sound Check': Clock,
@@ -31,6 +17,10 @@ const iconMap = {
 };
 
 export default function WeddingsPage() {
+  const scrollToSampler = () => {
+    document.getElementById('wedding-sampler')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <>
       <JsonLd
@@ -48,6 +38,8 @@ export default function WeddingsPage() {
         description={weddings.hero.description}
         ctaText="Request a Quote"
         ctaHref="/booking?service=weddings"
+        tertiaryCtaText="Listen"
+        tertiaryCtaOnClick={scrollToSampler}
         posterSrc="/images/weddings-hero.jpg"
         size="large"
       />
@@ -106,12 +98,15 @@ export default function WeddingsPage() {
       </section>
 
       {/* Audio Samples Section */}
-      <section className="py-20 bg-gray-50">
+      <section id="wedding-sampler" className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
               Wedding Repertoire Samples
             </h2>
+            <p className="text-lg text-gray-700 text-center mb-8 max-w-2xl mx-auto">
+              Violin and Guitar versions of commonly requested Ceremony songs
+            </p>
             <SoundCloudPlaylist playlistUrl="https://soundcloud.com/daniel-francesco-cimo/sets/wedding-violin-sampler" />
             <p className="text-center text-sm text-gray-600 mt-4">
               Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies

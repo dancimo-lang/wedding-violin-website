@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Music } from 'lucide-react';
 
 interface HeroProps {
   title: string;
@@ -8,6 +9,8 @@ interface HeroProps {
   ctaHref?: string;
   secondaryCtaText?: string;
   secondaryCtaHref?: string;
+  tertiaryCtaText?: string;
+  tertiaryCtaOnClick?: () => void;
   videoSrc?: string;
   posterSrc?: string;
   backgroundPosition?: string;
@@ -23,6 +26,8 @@ export default function Hero({
   ctaHref = '/booking',
   secondaryCtaText,
   secondaryCtaHref,
+  tertiaryCtaText,
+  tertiaryCtaOnClick,
   videoSrc,
   posterSrc,
   backgroundPosition = 'center',
@@ -83,7 +88,7 @@ export default function Hero({
               {description}
             </p>
           )}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4">
             {ctaText && (
               <Link
                 href={ctaHref}
@@ -99,6 +104,15 @@ export default function Hero({
               >
                 {secondaryCtaText}
               </Link>
+            )}
+            {tertiaryCtaText && tertiaryCtaOnClick && (
+              <button
+                onClick={tertiaryCtaOnClick}
+                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]"
+              >
+                <Music className="w-5 h-5" />
+                {tertiaryCtaText}
+              </button>
             )}
           </div>
         </div>
