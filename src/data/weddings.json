@@ -22,7 +22,7 @@
     {
       "id": "ceremony-duo",
       "name": "Full Ceremony (Violin–Guitar Duo)",
-      "price": "Starting at $800",
+      "price": "Starting at $1000",
       "features": [
         "Sound equipment setup (wireless mics + robust speakers)",
         "30 minutes of violin-guitar mingling music",
@@ -34,7 +34,7 @@
     {
       "id": "ceremony-cocktail",
       "name": "Ceremony + Cocktail Hour Duo",
-      "price": "Starting at $1200",
+      "price": "Starting at $1500",
       "features": [
         "Ceremony + cocktail hour sound setup",
         "30 minutes ceremony mingling",
@@ -47,7 +47,7 @@
     {
       "id": "full-wedding-dj",
       "name": "Full Wedding + DJ",
-      "price": "Starting at $2200",
+      "price": "Starting at $3000",
       "features": [
         "Ceremony, cocktail hour, dinner DJ, reception dance party",
         "Optional MC services",
