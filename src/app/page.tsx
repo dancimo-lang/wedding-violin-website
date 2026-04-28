@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import Hero from '@/components/Hero';
 import ServiceCard from '@/components/ServiceCard';
@@ -15,12 +17,15 @@ export default function Home() {
         title={`${site.tagline} for Your Special Day`}
         subtitle="San Luis Obispo • Paso Robles • Central Coast"
         description="Elegant live violin music for weddings, private lessons for all ages, and professional studio recording services."
-        ctaText="Book Now"
-        ctaHref="/booking"
-        secondaryCtaText="View Services"
-        secondaryCtaHref="/services"
-        videoSrc="/videos/hero-video.mp4"
-        posterSrc="/images/hero-poster.jpg"
+        ctaText="Listen"
+        ctaHref="/services"
+        secondaryCtaText="Book Now"
+        secondaryCtaHref="/booking"
+        tertiaryCtaText="Watch Video"
+        tertiaryCtaOnClick={() => window.open('/videos/hero-video.mp4', '_blank')}
+        splitLayout={true}
+        leftSideImage="/images/violinwalking.jpg"
+        rightSideImage="/images/violinwalking.jpg"
         size="full"
       />
 
@@ -90,16 +95,11 @@ export default function Home() {
             </div>
             <div className="relative">
               <div className="aspect-[4/5] bg-gradient-to-br from-blue-900/40 to-blue-800/30 rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(0,174,239,0.3)] ring-2 ring-blue-500/30">
-                <Image
+                <img
                   src="/images/home-image.jpg"
                   alt="Daniel Cimo - Professional Violinist"
-                  fill
-                  className="object-cover object-center"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                  priority
-                  quality={95}
-                  placeholder="blur"
-                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                  className="w-full h-full object-cover object-center"
+                  loading="eager"
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-blue-500 to-blue-700 text-white p-6 rounded-2xl shadow-[0_0_30px_rgba(0,174,239,0.7)] ring-2 ring-blue-400/50">
