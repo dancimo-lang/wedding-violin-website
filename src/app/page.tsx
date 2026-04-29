@@ -24,7 +24,7 @@ export default function Home() {
         tertiaryCtaText="Watch Video"
         tertiaryCtaOnClick={() => window.open('/videos/hero-video.mp4', '_blank')}
         splitLayout={true}
-        leftSideImage="/images/violinwalking.jpg"
+        leftSideImage={undefined}
         rightSideImage="/images/violinwalking.jpg"
         size="full"
       />
