@@ -15,12 +15,31 @@ export default function ServicesPage() {
     <>
       {/* Hero */}
       <Hero
-        title="Services"
-        description="From elegant wedding performances to personalized instruction and professional recording, I bring passion and expertise to every project."
-        posterSrc="/images/serveces-hero.jpg"
+        title=""
+        posterSrc="/images/serveces-heroedited.jpg"
         backgroundPosition="center top 20%"
         size="medium"
       />
+
+      {/* Title Section */}
+      <section className="py-12 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
+              Services
+            </h1>
+            <p className="text-xl text-white/90 max-w-3xl mx-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+              From elegant wedding performances to personalized instruction and professional recording, I bring passion and expertise to every project.
+            </p>
+          </div>
+        </div>
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-blue-300/50 rounded-full flex items-start justify-center p-2 shadow-[0_0_15px_rgba(0,174,239,0.4)]">
+            <div className="w-1 h-2 bg-blue-300/70 rounded-full" />
+          </div>
+        </div>
+      </section>
 
       {/* Services Grid */}
       <section className="py-20">

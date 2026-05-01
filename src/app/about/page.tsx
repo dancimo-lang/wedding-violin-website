@@ -17,8 +17,10 @@ export default function AboutPage() {
       <Hero
         title={about.hero.title}
         subtitle={about.hero.subtitle}
-        posterSrc="/images/about-hero.jpg"
-        size="medium"
+        splitLayout={true}
+        leftSideImage={undefined}
+        rightSideImage="/images/0N1A8246.jpg"
+        size="full"
       />
 
       {/* Biography Section */}
@@ -42,9 +44,9 @@ export default function AboutPage() {
                 Biography
                 <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
               </h2>
-              <div className="prose prose-lg text-gray-600 space-y-4">
+              <div className="prose prose-lg space-y-4">
                 {about.bio.paragraphs.map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
+                  <p key={index} className="text-white" style={{ color: 'white' }}>{paragraph}</p>
                 ))}
               </div>
             </div>

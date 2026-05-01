@@ -18,11 +18,11 @@ export default function Home() {
         subtitle="San Luis Obispo • Paso Robles • Central Coast"
         description="Elegant live violin music for weddings, private lessons for all ages, and professional studio recording services."
         ctaText="Listen"
-        ctaHref="/services"
+        ctaHref="/services/weddings#wedding-sampler"
         secondaryCtaText="Book Now"
         secondaryCtaHref="/booking"
         tertiaryCtaText="Watch Video"
-        tertiaryCtaOnClick={() => window.open('/videos/hero-video.mp4', '_blank')}
+        tertiaryCtaOnClick={() => window.location.href = '/music#video-player'}
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/violinwalking.jpg"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Instagram, Youtube, Facebook, Map } from 'lucide-react';
@@ -11,6 +11,28 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const pathname = usePathname();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleServicesMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setServicesOpen(true);
+  };
+
+  const handleServicesMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setServicesOpen(false);
+    }, 150); // 150ms delay before closing
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -46,15 +68,15 @@ export default function Header() {
                           ? 'text-blue-600' 
                           : 'text-gray-700 hover:text-gray-900'
                       }`}
-                      onMouseEnter={() => setServicesOpen(true)}
-                      onMouseLeave={() => setServicesOpen(false)}
+                      onMouseEnter={handleServicesMouseEnter}
+                      onMouseLeave={handleServicesMouseLeave}
                     >
                       {item.label}
                     </Link>
                     <div
                       className={`absolute top-full left-0 pt-2 ${servicesOpen ? 'block' : 'hidden'}`}
-                      onMouseEnter={() => setServicesOpen(true)}
-                      onMouseLeave={() => setServicesOpen(false)}
+                      onMouseEnter={handleServicesMouseEnter}
+                      onMouseLeave={handleServicesMouseLeave}
                     >
                       <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200 py-2 min-w-[180px]">
                         {item.children.map((child) => (

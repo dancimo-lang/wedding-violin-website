@@ -31,8 +31,10 @@ export default function RecordingPage() {
         description={recording.hero.description}
         ctaText="Request a Quote"
         ctaHref="/booking?service=recording"
-        posterSrc="/images/recording-hero.jpg"
-        size="large"
+        splitLayout={true}
+        leftSideImage={undefined}
+        rightSideImage="/images/newrecording-hero.jpg"
+        size="full"
       />
 
       {/* Services Section */}

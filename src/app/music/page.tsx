@@ -1,17 +1,19 @@
-import { Metadata } from 'next';
+'use client';
+
 import Hero from '@/components/Hero';
 import YouTubePlaylist from '@/components/YouTubePlaylist';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
 import music from '@/data/music.json';
 
-export const metadata: Metadata = {
-  title: 'Music & Video',
-  description: 'Listen to Daniel Cimo perform. Watch videos and explore repertoire for weddings, events, and more.',
-  keywords: ['Violin Music Samples', 'Wedding Violin Videos', 'Central Coast Violinist Performances'],
-};
-
 export default function MusicPage() {
+  const scrollToVideo = () => {
+    document.getElementById('video-player')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToAudio = () => {
+    document.getElementById('audio-player')?.scrollIntoView({ behavior: 'smooth' });
+  };
   return (
     <>
       {/* Hero */}
@@ -19,12 +21,18 @@ export default function MusicPage() {
         title={music.hero.title}
         subtitle={music.hero.subtitle}
         description={music.hero.description}
-        posterSrc="/images/music-hero.jpg"
-        size="medium"
+        ctaText="Watch"
+        ctaOnClick={scrollToVideo}
+        secondaryCtaText="Listen"
+        secondaryCtaOnClick={scrollToAudio}
+        splitLayout={true}
+        leftSideImage={undefined}
+        rightSideImage="/images/music-hero.jpg"
+        size="full"
       />
 
       {/* YouTube Video Section */}
-      <section className="py-20">
+      <section id="video-player" className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
@@ -79,7 +87,7 @@ export default function MusicPage() {
       </section>
 
       {/* Audio Samples Section */}
-      <section className="py-20">
+      <section id="audio-player" className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-white mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">

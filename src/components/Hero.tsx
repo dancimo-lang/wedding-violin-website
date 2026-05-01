@@ -7,8 +7,10 @@ interface HeroProps {
   description?: string;
   ctaText?: string;
   ctaHref?: string;
+  ctaOnClick?: () => void;
   secondaryCtaText?: string;
   secondaryCtaHref?: string;
+  secondaryCtaOnClick?: () => void;
   tertiaryCtaText?: string;
   tertiaryCtaOnClick?: () => void;
   videoSrc?: string;
@@ -27,8 +29,10 @@ export default function Hero({
   description,
   ctaText,
   ctaHref = '/booking',
+  ctaOnClick,
   secondaryCtaText,
   secondaryCtaHref,
+  secondaryCtaOnClick,
   tertiaryCtaText,
   tertiaryCtaOnClick,
   videoSrc,
@@ -99,20 +103,38 @@ export default function Hero({
               )}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 {ctaText && (
-                  <Link
-                    href={ctaHref}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]"
-                  >
-                    {ctaText}
-                  </Link>
+                  ctaOnClick ? (
+                    <button
+                      onClick={ctaOnClick}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]"
+                    >
+                      {ctaText}
+                    </button>
+                  ) : (
+                    <Link
+                      href={ctaHref}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]"
+                    >
+                      {ctaText}
+                    </Link>
+                  )
                 )}
-                {secondaryCtaText && secondaryCtaHref && (
-                  <Link
-                    href={secondaryCtaHref}
-                    className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
-                  >
-                    {secondaryCtaText}
-                  </Link>
+                {secondaryCtaText && (
+                  secondaryCtaOnClick ? (
+                    <button
+                      onClick={secondaryCtaOnClick}
+                      className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                    >
+                      {secondaryCtaText}
+                    </button>
+                  ) : secondaryCtaHref && (
+                    <Link
+                      href={secondaryCtaHref}
+                      className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                    >
+                      {secondaryCtaText}
+                    </Link>
+                  )
                 )}
                 {tertiaryCtaText && tertiaryCtaOnClick && (
                   <button
