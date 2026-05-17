@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Music } from 'lucide-react';
 
 interface HeroProps {
@@ -68,13 +69,16 @@ export default function Hero({
 
       {/* Poster Fallback (when no video) */}
       {!videoSrc && !splitLayout && (
-        <div
-          className="absolute inset-0 bg-cover"
-          style={{ 
-            backgroundImage: `url(${posterSrc || '/images/hero-poster.jpg'})`,
-            backgroundPosition: backgroundPosition
-          }}
-        />
+        <div className="absolute inset-0">
+          <Image
+            src={posterSrc || '/images/hero-poster.jpg'}
+            alt="Hero Background"
+            fill
+            className="object-cover"
+            style={{ objectPosition: backgroundPosition }}
+            priority
+          />
+        </div>
       )}
 
       {/* Gradient Overlay */}
@@ -151,10 +155,13 @@ export default function Hero({
             {/* Right Side */}
             <div className="relative h-full">
               {rightSideImage && (
-                <img
+                <Image
                   src={rightSideImage}
                   alt="Daniel Cimo Portrait"
+                  width={800}
+                  height={1200}
                   className="w-full h-full object-cover"
+                  priority
                 />
               )}
             </div>

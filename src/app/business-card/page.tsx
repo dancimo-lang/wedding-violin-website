@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import QRCode from 'qrcode';
 
 export default function BusinessCardPage() {
@@ -51,9 +52,11 @@ export default function BusinessCardPage() {
             <div className="relative bg-white" style={{ width: '350px', height: '200px', margin: '0 auto' }}>
               {/* Logo Background */}
               <div className="absolute inset-0 opacity-10 flex items-center justify-center">
-                <img
+                <Image
                   src="/images/logo.svg"
                   alt="Daniel Cimo Logo"
+                  width={192}
+                  height={192}
                   className="w-48 h-48 object-contain"
                 />
               </div>
@@ -62,9 +65,11 @@ export default function BusinessCardPage() {
               <div className="relative z-10 p-6 h-full flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-3 mb-3">
-                    <img
+                    <Image
                       src="/images/logo.svg"
                       alt="Daniel Cimo Logo"
+                      width={48}
+                      height={48}
                       className="w-12 h-12 object-contain"
                     />
                     <div>
@@ -117,9 +122,11 @@ export default function BusinessCardPage() {
             <div className="relative bg-gradient-to-br from-amber-600 to-amber-700" style={{ width: '350px', height: '200px', margin: '0 auto' }}>
               {/* Logo Background */}
               <div className="absolute inset-0 opacity-5 flex items-center justify-center">
-                <img
+                <Image
                   src="/images/logo.svg"
                   alt="Daniel Cimo Logo"
+                  width={192}
+                  height={192}
                   className="w-48 h-48 object-contain"
                 />
               </div>

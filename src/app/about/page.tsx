@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import about from '@/data/about.json';
@@ -30,9 +31,11 @@ export default function AboutPage() {
             {/* Photo */}
             <div className="relative">
               <div className="aspect-[3/4] bg-gray-200 rounded-2xl overflow-hidden">
-                <img
+                <Image
                   src="/images/daniel-cimo-professional.jpg"
                   alt="Daniel Cimo - Professional Violinist"
+                  width={600}
+                  height={800}
                   className="w-full h-full object-cover"
                 />
               </div>

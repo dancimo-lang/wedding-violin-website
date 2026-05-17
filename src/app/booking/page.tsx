@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { CheckCircle, Loader2 } from 'lucide-react';
 
 const serviceOptions = [
@@ -264,10 +265,15 @@ export default function BookingPage() {
     <>
       {/* Hero */}
       <section className="relative py-20">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: 'url(/images/booking-hero.jpg)' }}
-        />
+        <div className="absolute inset-0">
+          <Image
+            src="/images/booking-hero.jpg"
+            alt="Booking Hero"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-amber-900/50 to-amber-900/70" />
         <div className="relative z-10 container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
