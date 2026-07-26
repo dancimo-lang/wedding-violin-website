@@ -193,13 +193,22 @@ export default function Hero({
                   {ctaText}
                 </Link>
               )}
-              {secondaryCtaText && secondaryCtaHref && (
-                <Link
-                  href={secondaryCtaHref}
-                  className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
-                >
-                  {secondaryCtaText}
-                </Link>
+              {secondaryCtaText && (
+                secondaryCtaOnClick ? (
+                  <button
+                    onClick={secondaryCtaOnClick}
+                    className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                  >
+                    {secondaryCtaText}
+                  </button>
+                ) : secondaryCtaHref && (
+                  <Link
+                    href={secondaryCtaHref}
+                    className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                  >
+                    {secondaryCtaText}
+                  </Link>
+                )
               )}
               {tertiaryCtaText && tertiaryCtaOnClick && (
                 <button
