@@ -21,6 +21,10 @@ export default function WeddingsPage() {
     document.getElementById('wedding-sampler')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToPackages = () => {
+    document.getElementById('wedding-packages')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <>
       <JsonLd
@@ -38,6 +42,8 @@ export default function WeddingsPage() {
         description={weddings.hero.description}
         ctaText="Request a Quote"
         ctaHref="/booking?service=weddings"
+        secondaryCtaText="Pricing"
+        secondaryCtaOnClick={scrollToPackages}
         tertiaryCtaText="Listen"
         tertiaryCtaOnClick={scrollToSampler}
         posterSrc="/images/weddings-hero.jpg"
@@ -69,7 +75,7 @@ export default function WeddingsPage() {
       </section>
 
       {/* Packages Section */}
-      <section className="py-20">
+      <section id="wedding-packages" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
