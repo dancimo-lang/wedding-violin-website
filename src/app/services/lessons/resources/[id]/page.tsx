@@ -167,13 +167,14 @@ export default function TunePage() {
               <ArrowLeft className="w-5 h-5" />
               Back to Tune Library
             </Link>
-            <button
-              onClick={() => window.print()}
+            <a
+              href={tune.sheetMusicPath}
+              download
               className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors"
             >
               <Download className="w-5 h-5" />
-              Print Page
-            </button>
+              Download PDF
+            </a>
           </div>
         </div>
       </section>
