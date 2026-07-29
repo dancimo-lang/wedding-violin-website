@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { Monitor, MapPin, Users } from 'lucide-react';
@@ -31,6 +32,8 @@ export default function LessonsPage() {
         description={lessons.hero.description}
         ctaText="Schedule a Lesson"
         ctaHref="/booking?service=lessons"
+        secondaryCtaText="Student Resources"
+        secondaryCtaHref="/services/lessons/resources"
         posterSrc="/images/lessons-hero.jpg"
         size="large"
         overlay={false}
