@@ -101,18 +101,13 @@ export default function TunePage({ params }: TunePageProps) {
               </div>
               
               {/* Sheet Music Display */}
-              <div className="p-8 bg-gray-50 min-h-[600px] flex items-center justify-center">
-                <div className="text-center">
-                  <FileText className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg mb-2">Sheet Music Display</p>
-                  <p className="text-gray-400 text-sm">
-                    Add your sheet music PDF at: {tune.sheetMusicPath}
-                  </p>
-                  <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                    <p className="text-amber-800 text-sm">
-                      <strong>Tip:</strong> Place your PDF file in the public/sheet-music/ directory
-                    </p>
-                  </div>
+              <div className="p-8 bg-gray-50 min-h-[600px]">
+                <div className="w-full h-[800px]">
+                  <iframe
+                    src={tune.sheetMusicPath}
+                    className="w-full h-full border-0"
+                    title={`${tune.title} Sheet Music`}
+                  />
                 </div>
               </div>
             </div>
