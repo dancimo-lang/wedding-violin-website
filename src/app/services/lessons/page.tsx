@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import Hero from '@/components/Hero';
-import PackageCard from '@/components/PackageCard';
 import CTASection from '@/components/CTASection';
 import { Monitor, MapPin, Users } from 'lucide-react';
 import lessons from '@/data/lessons.json';
@@ -74,40 +73,6 @@ export default function LessonsPage() {
               {lessons.philosophy.description}
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Packages Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-              Lesson Packages
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Flexible options to fit your schedule and goals.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {lessons.packages.map((pkg) => (
-              <PackageCard
-                key={pkg.id}
-                id={pkg.id}
-                name={pkg.name}
-                price={pkg.price}
-                features={pkg.features}
-                popular={pkg.popular}
-                duration={pkg.duration}
-                ctaText="Book Lesson"
-                ctaHref="/booking?service=lessons"
-              />
-            ))}
-          </div>
-
-          <p className="text-center text-sm text-gray-400 mt-8">
-            {lessons.packages[0].priceNote}
-          </p>
         </div>
       </section>
 
