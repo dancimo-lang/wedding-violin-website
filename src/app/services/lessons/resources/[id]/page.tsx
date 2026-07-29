@@ -1,43 +1,28 @@
-import { Metadata } from 'next';
+'use client';
+
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { ArrowLeft, Download, Youtube, Music, FileText } from 'lucide-react';
 import tunes from '@/data/tunes.json';
 
-interface TunePageProps {
-  params: {
-    id: string;
-  };
-}
-
-export async function generateMetadata({ params }: TunePageProps): Promise<Metadata> {
-  const tune = tunes.tunes.find(t => t.id === params.id);
-  
-  if (!tune) {
-    return {
-      title: 'Tune Not Found',
-    };
-  }
-
-  return {
-    title: `${tune.title} - Violin Sheet Music`,
-    description: `${tune.description} Learn to play ${tune.title} by ${tune.composer}. Sheet music and video tutorial available.`,
-  };
-}
-
-export async function generateStaticParams() {
-  return tunes.tunes.map((tune) => ({
-    id: tune.id,
-  }));
-}
-
-export default function TunePage({ params }: TunePageProps) {
-  const tune = tunes.tunes.find(t => t.id === params.id);
+export default function TunePage() {
+  const params = useParams();
+  const id = params.id as string;
+  const tune = tunes.tunes.find(t => t.id === id);
 
   if (!tune) {
-    notFound();
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Tune Not Found</h1>
+          <Link href="/services/lessons/resources" className="text-amber-600 hover:text-amber-700">
+            Back to Tune Library
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
