@@ -1,0 +1,64 @@
+{
+  "tunes": [
+    {
+      "id": "ashokan-farewell",
+      "title": "Ashokan Farewell",
+      "type": "Waltz",
+      "key": "D Major",
+      "composer": "Jay Ungar",
+      "difficulty": "Intermediate",
+      "description": "A beautiful and melancholic waltz composed by Jay Ungar, famously used in the Civil War documentary by Ken Burns.",
+      "youtubeId": "",
+      "sheetMusicPath": "/sheet-music/ashokan-farewell.pdf",
+      "tags": ["waltz", "american", "emotional", "intermediate"]
+    },
+    {
+      "id": "o-carolyns-waltz",
+      "title": "O'Carolyn's Waltz",
+      "type": "Waltz",
+      "key": "G Major",
+      "composer": "Traditional",
+      "difficulty": "Beginner",
+      "description": "A gentle and flowing waltz perfect for beginners learning 3/4 time signature.",
+      "youtubeId": "",
+      "sheetMusicPath": "/sheet-music/o-carolyns-waltz.pdf",
+      "tags": ["waltz", "traditional", "beginner"]
+    },
+    {
+      "id": "star-of-the-county-down",
+      "title": "Star of the County Down",
+      "type": "Air",
+      "key": "D Major",
+      "composer": "Traditional Irish",
+      "difficulty": "Beginner",
+      "description": "A classic Irish air that tells the story of meeting a beautiful girl by the road.",
+      "youtubeId": "",
+      "sheetMusicPath": "/sheet-music/star-of-the-county-down.pdf",
+      "tags": ["irish", "air", "traditional", "beginner"]
+    },
+    {
+      "id": "dueling-banjos",
+      "title": "Dueling Banjos",
+      "type": "Bluegrass",
+      "key": "G Major",
+      "composer": "Arthur Smith",
+      "difficulty": "Advanced",
+      "description": "A fast-paced bluegrass classic that challenges your technique and timing.",
+      "youtubeId": "",
+      "sheetMusicPath": "/sheet-music/dueling-banjos.pdf",
+      "tags": ["bluegrass", "american", "advanced", "fast"]
+    },
+    {
+      "id": "morning-has-broken",
+      "title": "Morning Has Broken",
+      "type": "Hymn",
+      "key": "C Major",
+      "composer": "Traditional",
+      "difficulty": "Beginner",
+      "description": "A peaceful hymn perfect for practicing smooth bowing and phrasing.",
+      "youtubeId": "",
+      "sheetMusicPath": "/sheet-music/morning-has-broken.pdf",
+      "tags": ["hymn", "traditional", "beginner", "peaceful"]
+    }
+  ]
+}
