@@ -87,13 +87,23 @@ export default function TunePage() {
               
               {/* Sheet Music Display */}
               <div className="p-8 bg-gray-50 min-h-[600px]">
-                <div className="w-full h-[800px]">
-                  <iframe
-                    src={tune.sheetMusicPath}
-                    className="w-full h-full border-0"
-                    title={`${tune.title} Sheet Music`}
-                  />
-                </div>
+                {tune.sheetMusicPath.endsWith('.pdf') ? (
+                  <div className="w-full h-[800px]">
+                    <iframe
+                      src={tune.sheetMusicPath}
+                      className="w-full h-full border-0"
+                      title={`${tune.title} Sheet Music`}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full flex justify-center">
+                    <img
+                      src={tune.sheetMusicPath}
+                      alt={`${tune.title} Sheet Music`}
+                      className="max-w-full h-auto"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

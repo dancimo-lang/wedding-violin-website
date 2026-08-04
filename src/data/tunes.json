@@ -13,6 +13,18 @@
       "tags": ["waltz", "american", "emotional", "intermediate"]
     },
     {
+      "id": "cook-in-the-kitchen",
+      "title": "Cook in the Kitchen",
+      "type": "Jig",
+      "key": "G Major",
+      "composer": "Traditional",
+      "difficulty": "Intermediate",
+      "description": "Fun 3 part jig with a tricky 2nd finger.",
+      "youtubeId": "",
+      "sheetMusicPath": "/docs/cook in the kitchen.PNG",
+      "tags": ["irish", "jig", "traditional", "fiddle"]
+    },
+    {
       "id": "o-carolyns-waltz",
       "title": "O'Carolyn's Waltz",
       "type": "Waltz",
