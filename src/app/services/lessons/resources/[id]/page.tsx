@@ -76,13 +76,16 @@ export default function TunePage() {
                   <FileText className="w-6 h-6 text-amber-600" />
                   <h2 className="text-2xl font-bold text-gray-900">Sheet Music</h2>
                 </div>
-                <button
-                  onClick={() => window.open(tune.sheetMusicPath, '_blank')}
+                <a
+                  href={tune.sheetMusicPath}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   <Download className="w-5 h-5" />
-                  Download PDF
-                </button>
+                  {tune.sheetMusicPath.endsWith('.pdf') ? 'Download PDF' : 'Download Image'}
+                </a>
               </div>
               
               {/* Sheet Music Display */}
