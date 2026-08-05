@@ -25,6 +25,18 @@
       "tags": ["irish", "jig", "traditional", "fiddle"]
     },
     {
+      "id": "g-major-scale",
+      "title": "G Major Scale",
+      "type": "Scale",
+      "key": "G Major",
+      "composer": "Unknown",
+      "difficulty": "Intermediate",
+      "description": "G major scale in 3 octaves with different subdivisions and bowings.",
+      "youtubeId": "",
+      "sheetMusicPath": "/docs/gmajor-scale.pdf",
+      "tags": ["scale", "exercise", "technique"]
+    },
+    {
       "id": "o-carolyns-waltz",
       "title": "O'Carolyn's Waltz",
       "type": "Waltz",
