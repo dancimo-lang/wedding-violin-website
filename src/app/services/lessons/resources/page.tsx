@@ -45,6 +45,17 @@ export default function ResourcesPage() {
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
+            {/* Admin Link */}
+            <div className="mb-6 flex justify-end">
+              <Link
+                href="/admin/add-tune"
+                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+              >
+                <BookOpen className="w-4 h-4" />
+                Add New Tune
+              </Link>
+            </div>
+
             {/* Search Bar */}
             <div className="relative mb-6">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
