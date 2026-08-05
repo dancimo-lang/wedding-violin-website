@@ -48,6 +48,9 @@ export default function AddTunePage() {
     setMessage({ type: '', text: '' });
 
     try {
+      console.log('Submitting form with data:', formData);
+      console.log('PDF file:', pdfFile);
+
       const formDataToSend = new FormData();
       formDataToSend.append('title', formData.title);
       formDataToSend.append('type', formData.type);
@@ -62,10 +65,15 @@ export default function AddTunePage() {
         formDataToSend.append('pdf', pdfFile);
       }
 
+      console.log('Sending request to /api/admin/tunes');
       const response = await fetch('/api/admin/tunes', {
         method: 'POST',
         body: formDataToSend,
       });
+
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
 
       if (response.ok) {
         setMessage({ type: 'success', text: 'Tune added successfully!' });
@@ -81,12 +89,12 @@ export default function AddTunePage() {
         });
         setPdfFile(null);
       } else {
-        const error = await response.json();
-        console.error('Error response:', error);
-        setMessage({ type: 'error', text: error.message || error.error || 'Failed to add tune' });
+        console.error('Error response:', responseData);
+        setMessage({ type: 'error', text: responseData.message || responseData.error || 'Failed to add tune' });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'An error occurred' });
+      console.error('Error submitting form:', error);
+      setMessage({ type: 'error', text: `An error occurred: ${error instanceof Error ? error.message : String(error)}` });
     } finally {
       setIsSubmitting(false);
     }
