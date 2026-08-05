@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     if (!title || !type || !key || !composer || !difficulty || !description || !pdf) {
       return NextResponse.json(
-        { message: 'Missing required fields' },
+        { message: 'Missing required fields', missing: { title, type, key, composer, difficulty, description, pdf: !!pdf } },
         { status: 400 }
       );
     }
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error adding tune:', error);
     return NextResponse.json(
-      { message: 'Failed to add tune' },
+      { message: 'Failed to add tune', error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

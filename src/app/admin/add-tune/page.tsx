@@ -82,7 +82,8 @@ export default function AddTunePage() {
         setPdfFile(null);
       } else {
         const error = await response.json();
-        setMessage({ type: 'error', text: error.message || 'Failed to add tune' });
+        console.error('Error response:', error);
+        setMessage({ type: 'error', text: error.message || error.error || 'Failed to add tune' });
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'An error occurred' });
