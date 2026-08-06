@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     console.log('Uploading PDF to Vercel Blob Storage');
     
     const blob = await put(pdfFileName, pdf, {
-      access: 'public',
+      access: 'private',
       allowOverwrite: true,
     });
     
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       difficulty,
       description,
       youtubeId: youtubeId || '',
-      sheetMusicPath: blob.url,
+      sheetMusicPath: blob.downloadUrl,
       tags: tagsArray,
     };
 
@@ -72,7 +72,11 @@ export async function POST(request: NextRequest) {
     try {
       const { blobs } = await list({ prefix: 'tunes.json' });
       if (blobs.length > 0) {
-        const response = await fetch(blobs[0].url);
+        const response = await fetch(blobs[0].downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+        }
+      });
         const tunesJsonContent = await response.text();
         tunesData = JSON.parse(tunesJsonContent);
       }
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Write to Vercel Blob
     console.log('Writing updated tunes.json to Vercel Blob');
     await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
-      access: 'public',
+      access: 'private',
       allowOverwrite: true,
     });
     console.log('tunes.json updated successfully');
