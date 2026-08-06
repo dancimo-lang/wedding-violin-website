@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       difficulty,
       description,
       youtubeId: youtubeId || '',
-      sheetMusicPath: blob.downloadUrl,
+      sheetMusicPath: `/api/pdf/${id}`,
       tags: tagsArray,
     };
 
