@@ -91,9 +91,19 @@ export async function POST(request: NextRequest) {
       tunes: [...tunesData.tunes, newTune]
     };
 
+    // Update existing tunes to use new PDF API route
+    const updatedTunesWithApi = {
+      tunes: updatedTunes.tunes.map(tune => ({
+        ...tune,
+        sheetMusicPath: tune.sheetMusicPath.includes('vercel-blob') 
+          ? `/api/pdf/${tune.id}` 
+          : tune.sheetMusicPath
+      }))
+    };
+
     // Write to Vercel Blob
     console.log('Writing updated tunes.json to Vercel Blob');
-    await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
+    await put('tunes.json', JSON.stringify(updatedTunesWithApi, null, 2), {
       access: 'private',
       allowOverwrite: true,
     });
