@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     console.log('Uploading PDF to Vercel Blob Storage');
     
     const blob = await put(pdfFileName, pdf, {
-      access: 'public',
+      access: 'private',
     });
     
     console.log('PDF uploaded successfully:', blob.url);
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       difficulty,
       description,
       youtubeId: youtubeId || '',
-      sheetMusicPath: blob.url,
+      sheetMusicPath: blob.downloadUrl,
       tags: tagsArray,
     };
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     // Write to Vercel Blob
     console.log('Writing updated tunes.json to Vercel Blob');
     await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
-      access: 'public',
+      access: 'private',
     });
     console.log('tunes.json updated successfully');
 

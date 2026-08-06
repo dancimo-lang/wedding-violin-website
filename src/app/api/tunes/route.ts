@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ tunes: [] });
     }
 
-    const response = await fetch(blobs[0].url);
+    const response = await fetch(blobs[0].downloadUrl);
     const tunesJsonContent = await response.text();
     const tunesData = JSON.parse(tunesJsonContent);
     
