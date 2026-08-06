@@ -6,13 +6,20 @@ export async function GET() {
     console.log('Fetching tunes from Vercel Blob');
     
     const { blobs } = await list({ prefix: 'tunes.json' });
+    console.log('Found blobs:', blobs.length);
     
     if (blobs.length === 0) {
       console.log('No tunes.json found in Vercel Blob');
       return NextResponse.json({ tunes: [] });
     }
 
+    console.log('Fetching from:', blobs[0].downloadUrl);
     const response = await fetch(blobs[0].downloadUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tunes.json: ${response.status} ${response.statusText}`);
+    }
+    
     const tunesJsonContent = await response.text();
     const tunesData = JSON.parse(tunesJsonContent);
     
