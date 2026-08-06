@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put, list } from '@vercel/blob';
+import { put } from '@vercel/blob';
+import { readFileSync, writeFileSync } from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       access: 'private',
     });
     
-    console.log('PDF uploaded successfully:', blob.url);
+    console.log('PDF uploaded successfully:', blob.downloadUrl);
 
     // Parse tags
     const tagsArray = tags
@@ -64,34 +66,18 @@ export async function POST(request: NextRequest) {
       tags: tagsArray,
     };
 
-    // Read current tunes from Vercel Blob
-    console.log('Reading tunes.json from Vercel Blob');
-    let tunesData = { tunes: [] };
+    // Update local tunes.json
+    console.log('Updating local tunes.json');
+    const tunesJsonPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
+    const tunesJsonContent = readFileSync(tunesJsonPath, 'utf-8');
+    const tunesData = JSON.parse(tunesJsonContent);
     
-    try {
-      const { blobs } = await list({ prefix: 'tunes.json' });
-      if (blobs.length > 0) {
-        const response = await fetch(blobs[0].url);
-        const tunesJsonContent = await response.text();
-        tunesData = JSON.parse(tunesJsonContent);
-      }
-    } catch (error) {
-      console.log('No existing tunes.json found, creating new one');
-    }
-
-    console.log('Current tunes count:', tunesData.tunes.length);
-
-    // Add to tunes
     const updatedTunes = {
       tunes: [...tunesData.tunes, newTune]
     };
 
-    // Write to Vercel Blob
-    console.log('Writing updated tunes.json to Vercel Blob');
-    await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
-      access: 'private',
-    });
-    console.log('tunes.json updated successfully');
+    writeFileSync(tunesJsonPath, JSON.stringify(updatedTunes, null, 2));
+    console.log('Local tunes.json updated successfully');
 
     return NextResponse.json(
       { message: 'Tune added successfully', tune: newTune },
