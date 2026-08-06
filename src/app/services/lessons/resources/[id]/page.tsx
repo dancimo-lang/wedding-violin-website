@@ -2,15 +2,56 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { ArrowLeft, Download, Youtube, Music, FileText } from 'lucide-react';
-import tunes from '@/data/tunes.json';
+
+interface Tune {
+  id: string;
+  title: string;
+  type: string;
+  key: string;
+  composer: string;
+  difficulty: string;
+  description: string;
+  youtubeId: string;
+  sheetMusicPath: string;
+  tags: string[];
+}
 
 export default function TunePage() {
   const params = useParams();
   const id = params.id as string;
-  const tune = tunes.tunes.find(t => t.id === id);
+  const [tune, setTune] = useState<Tune | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTune() {
+      try {
+        const response = await fetch('/api/tunes');
+        const data = await response.json();
+        const foundTune = data.tunes?.find((t: Tune) => t.id === id);
+        setTune(foundTune || null);
+      } catch (error) {
+        console.error('Error fetching tune:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTune();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading tune...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!tune) {
     return (

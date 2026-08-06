@@ -1,20 +1,49 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { Search, Music, FileText, Youtube, BookOpen } from 'lucide-react';
-import tunes from '@/data/tunes.json';
+
+interface Tune {
+  id: string;
+  title: string;
+  type: string;
+  key: string;
+  composer: string;
+  difficulty: string;
+  description: string;
+  youtubeId: string;
+  sheetMusicPath: string;
+  tags: string[];
+}
 
 export default function ResourcesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
+  const [tunes, setTunes] = useState<Tune[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTunes() {
+      try {
+        const response = await fetch('/api/tunes');
+        const data = await response.json();
+        setTunes(data.tunes || []);
+      } catch (error) {
+        console.error('Error fetching tunes:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTunes();
+  }, []);
 
   const filteredTunes = useMemo(() => {
-    return tunes.tunes.filter(tune => {
+    return tunes.filter(tune => {
       const matchesSearch = tune.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            tune.composer.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            tune.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -22,10 +51,21 @@ export default function ResourcesPage() {
       const matchesDifficulty = selectedDifficulty === 'All' || tune.difficulty === selectedDifficulty;
       return matchesSearch && matchesType && matchesDifficulty;
     });
-  }, [searchQuery, selectedType, selectedDifficulty]);
+  }, [searchQuery, selectedType, selectedDifficulty, tunes]);
 
-  const types = ['All', ...Array.from(new Set(tunes.tunes.map(t => t.type)))];
-  const difficulties = ['All', ...Array.from(new Set(tunes.tunes.map(t => t.difficulty)))];
+  const types = ['All', ...Array.from(new Set(tunes.map(t => t.type)))];
+  const difficulties = ['All', ...Array.from(new Set(tunes.map(t => t.difficulty)))];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading tunes...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
