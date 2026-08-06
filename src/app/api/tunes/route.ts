@@ -13,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ tunes: [] });
     }
 
-    console.log('Fetching from:', blobs[0].downloadUrl);
-    const response = await fetch(blobs[0].downloadUrl);
+    console.log('Fetching from:', blobs[0].url);
+    const response = await fetch(blobs[0].url);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch tunes.json: ${response.status} ${response.statusText}`);
