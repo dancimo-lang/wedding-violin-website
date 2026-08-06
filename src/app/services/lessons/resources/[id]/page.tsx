@@ -177,10 +177,10 @@ export default function TunePage() {
                   <iframe
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${tune.youtubeId}`}
+                    src={`https://www.youtube.com/embed/${tune.youtubeId}?rel=0`}
                     title={`${tune.title} - Video Tutorial`}
                     frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     className="w-full h-full"
                   />
