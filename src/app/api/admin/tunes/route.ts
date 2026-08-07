@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put, list } from '@vercel/blob';
 import fs from 'fs';
 import path from 'path';
 
@@ -36,31 +35,15 @@ export async function POST(request: NextRequest) {
 
     console.log('Generated ID:', id);
 
-    // Read current tunes - try Blob first, fallback to local
+    // Read current tunes from local file
     let tunesData = { tunes: [] };
-    
     try {
-      const { blobs } = await list({ prefix: 'tunes.json' });
-      if (blobs.length > 0) {
-        const response = await fetch(blobs[0].downloadUrl, {
-        headers: {
-          'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
-        }
-      });
-        const tunesJsonContent = await response.text();
-        tunesData = JSON.parse(tunesJsonContent);
-        console.log('Loaded tunes from Blob storage');
-      }
-    } catch (error) {
-      console.log('Blob storage failed, reading from local file');
-      // Fallback to local file if Blob is empty
-      try {
-        const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
-        const localTunes = JSON.parse(fs.readFileSync(localTunesPath, 'utf8'));
-        tunesData = localTunes;
-      } catch (localError) {
-        console.log('No local tunes.json found either, starting fresh');
-      }
+      const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
+      const localTunes = JSON.parse(fs.readFileSync(localTunesPath, 'utf8'));
+      tunesData = localTunes;
+      console.log('Loaded tunes from local file');
+    } catch (localError) {
+      console.log('No local tunes.json found, starting fresh');
     }
 
     console.log('Current tunes count:', tunesData.tunes.length);
@@ -74,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save PDF to local storage only (to avoid function size issues)
+    // Save PDF to local storage
     const docsDir = path.join(process.cwd(), 'public', 'docs');
     if (!fs.existsSync(docsDir)) {
       fs.mkdirSync(docsDir, { recursive: true });
@@ -112,22 +95,10 @@ export async function POST(request: NextRequest) {
       tunes: [...tunesData.tunes, newTune]
     };
 
-    // Write tunes.json - try Blob first, fallback to local
-    try {
-      console.log('Writing updated tunes.json to Vercel Blob');
-      await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
-        access: 'private',
-        allowOverwrite: true,
-      });
-      console.log('tunes.json updated successfully in Blob');
-    } catch (blobError) {
-      console.log('Blob storage failed for tunes.json, saving locally:', blobError instanceof Error ? blobError.message : String(blobError));
-      
-      // Fallback to local file
-      const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
-      fs.writeFileSync(localTunesPath, JSON.stringify(updatedTunes, null, 2));
-      console.log('tunes.json saved locally');
-    }
+    // Write tunes.json to local file
+    const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
+    fs.writeFileSync(localTunesPath, JSON.stringify(updatedTunes, null, 2));
+    console.log('tunes.json saved locally');
 
     return NextResponse.json(
       { message: 'Tune added successfully', tune: newTune },
