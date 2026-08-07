@@ -76,7 +76,7 @@ export default function TunePage() {
         ctaText="Back to Library"
         ctaHref="/services/lessons/resources"
         posterSrc="/images/lessons-hero.jpg"
-        size="large"
+        size="medium"
         overlay={false}
       />
 
@@ -107,10 +107,11 @@ export default function TunePage() {
         </div>
       </section>
 
-      {/* Sheet Music Section */}
+      {/* Sheet Music and Video Section */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Sheet Music */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -128,8 +129,6 @@ export default function TunePage() {
                   {tune.sheetMusicPath.endsWith('.pdf') ? 'Download PDF' : 'Download Image'}
                 </a>
               </div>
-              
-              {/* Sheet Music Display */}
               <div className="p-8 bg-gray-50 min-h-[600px]">
                 {tune.sheetMusicPath.endsWith('.pdf') ? (
                   <div className="w-full h-[800px]">
@@ -150,20 +149,13 @@ export default function TunePage() {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Video Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+            {/* Video */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-200 flex items-center gap-3">
                 <Youtube className="w-6 h-6 text-red-600" />
                 <h2 className="text-2xl font-bold text-gray-900">Video Tutorial</h2>
               </div>
-              
               {/* YouTube Player */}
               <div className="aspect-video bg-gray-900 flex items-center justify-center">
                 {tune.youtubeId ? (
