@@ -74,35 +74,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save PDF - try Blob first, fallback to local
-    let sheetMusicPath: string;
-    try {
-      const pdfFileName = `${id}.pdf`;
-      console.log('Uploading PDF to Vercel Blob Storage');
-      
-      const blob = await put(pdfFileName, pdf, {
-        access: 'private',
-        allowOverwrite: true,
-      });
-      
-      console.log('PDF uploaded successfully to Blob:', blob.downloadUrl);
-      sheetMusicPath = `/api/pdf/${id}`;
-    } catch (blobError) {
-      console.log('Blob storage failed, saving PDF locally:', blobError instanceof Error ? blobError.message : String(blobError));
-      
-      // Fallback to local file storage
-      const docsDir = path.join(process.cwd(), 'public', 'docs');
-      if (!fs.existsSync(docsDir)) {
-        fs.mkdirSync(docsDir, { recursive: true });
-      }
-      
-      const pdfPath = path.join(docsDir, `${id}.pdf`);
-      const buffer = Buffer.from(await pdf.arrayBuffer());
-      fs.writeFileSync(pdfPath, buffer);
-      
-      console.log('PDF saved locally:', pdfPath);
-      sheetMusicPath = `/docs/${id}.pdf`;
+    // Save PDF to local storage only (to avoid function size issues)
+    const docsDir = path.join(process.cwd(), 'public', 'docs');
+    if (!fs.existsSync(docsDir)) {
+      fs.mkdirSync(docsDir, { recursive: true });
     }
+    
+    const pdfPath = path.join(docsDir, `${id}.pdf`);
+    const buffer = Buffer.from(await pdf.arrayBuffer());
+    fs.writeFileSync(pdfPath, buffer);
+    
+    console.log('PDF saved locally:', pdfPath);
+    const sheetMusicPath = `/docs/${id}.pdf`;
 
     // Parse tags
     const tagsArray = tags
