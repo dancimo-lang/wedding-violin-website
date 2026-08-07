@@ -68,70 +68,52 @@ export default function TunePage() {
 
   return (
     <>
-      {/* Hero */}
-      <Hero
-        title={tune.title}
-        subtitle={`${tune.type} • ${tune.key} • ${tune.difficulty}`}
-        description={`${tune.description} Composed by ${tune.composer}.`}
-        ctaText="Back to Library"
-        ctaHref="/services/lessons/resources"
-        posterSrc="/images/lessons-hero.jpg"
-        size="medium"
-        overlay={false}
-      />
-
-      {/* Tune Info Bar */}
-      <section className="py-8 bg-gray-50 border-b border-gray-200">
+      {/* Thin Banner */}
+      <section className="bg-gradient-to-r from-amber-600 to-amber-700 py-6">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-amber-600" />
-                <span className="font-medium text-gray-700">Type:</span>
-                <span className="text-gray-600">{tune.type}</span>
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-1">{tune.title}</h1>
+                <p className="text-amber-100">{tune.type} • {tune.key} • {tune.difficulty}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700">Key:</span>
-                <span className="text-gray-600">{tune.key}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700">Difficulty:</span>
-                <span className="text-gray-600">{tune.difficulty}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700">Composer:</span>
-                <span className="text-gray-600">{tune.composer}</span>
-              </div>
+              <Link
+                href="/services/lessons/resources"
+                className="inline-flex items-center gap-2 bg-white hover:bg-gray-100 text-amber-700 px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Back to Library
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* Sheet Music and Video Section */}
-      <section className="py-12">
+      <section className="py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sheet Music */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-6 h-6 text-amber-600" />
-                  <h2 className="text-2xl font-bold text-gray-900">Sheet Music</h2>
+                  <FileText className="w-5 h-5 text-amber-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Sheet Music</h2>
                 </div>
                 <a
                   href={tune.sheetMusicPath}
                   download
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
                 >
-                  <Download className="w-5 h-5" />
-                  {tune.sheetMusicPath.endsWith('.pdf') ? 'Download PDF' : 'Download Image'}
+                  <Download className="w-4 h-4" />
+                  Download
                 </a>
               </div>
-              <div className="p-8 bg-gray-50 min-h-[600px]">
+              <div className="p-4 bg-gray-50 min-h-[500px]">
                 {tune.sheetMusicPath.endsWith('.pdf') ? (
-                  <div className="w-full h-[800px]">
+                  <div className="w-full h-[600px]">
                     <iframe
                       src={tune.sheetMusicPath}
                       className="w-full h-full border-0"
@@ -152,11 +134,10 @@ export default function TunePage() {
 
             {/* Video */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-                <Youtube className="w-6 h-6 text-red-600" />
-                <h2 className="text-2xl font-bold text-gray-900">Video Tutorial</h2>
+              <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+                <Youtube className="w-5 h-5 text-red-600" />
+                <h2 className="text-xl font-bold text-gray-900">Video Tutorial</h2>
               </div>
-              {/* YouTube Player */}
               <div className="aspect-video bg-gray-900 flex items-center justify-center">
                 {tune.youtubeId ? (
                   <iframe
@@ -184,10 +165,45 @@ export default function TunePage() {
         </div>
       </section>
 
+      {/* Description Section */}
+      <section className="py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <Music className="w-6 h-6 text-amber-600" />
+                <h2 className="text-2xl font-bold text-gray-900">About This Tune</h2>
+              </div>
+              <p className="text-gray-700 text-lg leading-relaxed mb-6">
+                {tune.description} Composed by {tune.composer}.
+              </p>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Type:</span>
+                  <span>{tune.type}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Key:</span>
+                  <span>{tune.key}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Difficulty:</span>
+                  <span>{tune.difficulty}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Composer:</span>
+                  <span>{tune.composer}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Tags Section */}
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="flex flex-wrap gap-2">
               {tune.tags.map(tag => (
                 <span
@@ -198,29 +214,6 @@ export default function TunePage() {
                 </span>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Navigation */}
-      <section className="py-8 border-t border-gray-200">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Link
-              href="/services/lessons/resources"
-              className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Tune Library
-            </Link>
-            <a
-              href={tune.sheetMusicPath}
-              download
-              className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              <Download className="w-5 h-5" />
-              Download PDF
-            </a>
           </div>
         </div>
       </section>
