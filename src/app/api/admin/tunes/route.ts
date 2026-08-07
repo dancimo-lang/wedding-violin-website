@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put, list } from '@vercel/blob';
+import fs from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,16 +36,73 @@ export async function POST(request: NextRequest) {
 
     console.log('Generated ID:', id);
 
-    // Save PDF to Vercel Blob Storage
-    const pdfFileName = `${id}.pdf`;
-    console.log('Uploading PDF to Vercel Blob Storage');
+    // Read current tunes - try Blob first, fallback to local
+    let tunesData = { tunes: [] };
     
-    const blob = await put(pdfFileName, pdf, {
-      access: 'private',
-      allowOverwrite: true,
-    });
-    
-    console.log('PDF uploaded successfully:', blob.downloadUrl);
+    try {
+      const { blobs } = await list({ prefix: 'tunes.json' });
+      if (blobs.length > 0) {
+        const response = await fetch(blobs[0].downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+        }
+      });
+        const tunesJsonContent = await response.text();
+        tunesData = JSON.parse(tunesJsonContent);
+        console.log('Loaded tunes from Blob storage');
+      }
+    } catch (error) {
+      console.log('Blob storage failed, reading from local file');
+      // Fallback to local file if Blob is empty
+      try {
+        const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
+        const localTunes = JSON.parse(fs.readFileSync(localTunesPath, 'utf8'));
+        tunesData = localTunes;
+      } catch (localError) {
+        console.log('No local tunes.json found either, starting fresh');
+      }
+    }
+
+    console.log('Current tunes count:', tunesData.tunes.length);
+
+    // Check for duplicate ID
+    const existingTune = tunesData.tunes.find((t: any) => t.id === id);
+    if (existingTune) {
+      return NextResponse.json(
+        { message: 'A tune with this title already exists', existingTune },
+        { status: 409 }
+      );
+    }
+
+    // Save PDF - try Blob first, fallback to local
+    let sheetMusicPath: string;
+    try {
+      const pdfFileName = `${id}.pdf`;
+      console.log('Uploading PDF to Vercel Blob Storage');
+      
+      const blob = await put(pdfFileName, pdf, {
+        access: 'private',
+        allowOverwrite: true,
+      });
+      
+      console.log('PDF uploaded successfully to Blob:', blob.downloadUrl);
+      sheetMusicPath = `/api/pdf/${id}`;
+    } catch (blobError) {
+      console.log('Blob storage failed, saving PDF locally:', blobError instanceof Error ? blobError.message : String(blobError));
+      
+      // Fallback to local file storage
+      const docsDir = path.join(process.cwd(), 'public', 'docs');
+      if (!fs.existsSync(docsDir)) {
+        fs.mkdirSync(docsDir, { recursive: true });
+      }
+      
+      const pdfPath = path.join(docsDir, `${id}.pdf`);
+      const buffer = Buffer.from(await pdf.arrayBuffer());
+      fs.writeFileSync(pdfPath, buffer);
+      
+      console.log('PDF saved locally:', pdfPath);
+      sheetMusicPath = `/docs/${id}.pdf`;
+    }
 
     // Parse tags
     const tagsArray = tags
@@ -61,53 +120,31 @@ export async function POST(request: NextRequest) {
       difficulty,
       description,
       youtubeId: youtubeId || '',
-      sheetMusicPath: `/api/pdf/${id}`,
+      sheetMusicPath,
       tags: tagsArray,
     };
-
-    // Read current tunes from Vercel Blob
-    console.log('Reading tunes.json from Vercel Blob');
-    let tunesData = { tunes: [] };
-    
-    try {
-      const { blobs } = await list({ prefix: 'tunes.json' });
-      if (blobs.length > 0) {
-        const response = await fetch(blobs[0].downloadUrl, {
-        headers: {
-          'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
-        }
-      });
-        const tunesJsonContent = await response.text();
-        tunesData = JSON.parse(tunesJsonContent);
-      }
-    } catch (error) {
-      console.log('No existing tunes.json found, creating new one');
-    }
-
-    console.log('Current tunes count:', tunesData.tunes.length);
 
     // Add to tunes
     const updatedTunes = {
       tunes: [...tunesData.tunes, newTune]
     };
 
-    // Update existing tunes to use new PDF API route
-    const updatedTunesWithApi = {
-      tunes: updatedTunes.tunes.map(tune => ({
-        ...tune,
-        sheetMusicPath: tune.sheetMusicPath.includes('vercel-blob') 
-          ? `/api/pdf/${tune.id}` 
-          : tune.sheetMusicPath
-      }))
-    };
-
-    // Write to Vercel Blob
-    console.log('Writing updated tunes.json to Vercel Blob');
-    await put('tunes.json', JSON.stringify(updatedTunesWithApi, null, 2), {
-      access: 'private',
-      allowOverwrite: true,
-    });
-    console.log('tunes.json updated successfully');
+    // Write tunes.json - try Blob first, fallback to local
+    try {
+      console.log('Writing updated tunes.json to Vercel Blob');
+      await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
+        access: 'private',
+        allowOverwrite: true,
+      });
+      console.log('tunes.json updated successfully in Blob');
+    } catch (blobError) {
+      console.log('Blob storage failed for tunes.json, saving locally:', blobError instanceof Error ? blobError.message : String(blobError));
+      
+      // Fallback to local file
+      const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
+      fs.writeFileSync(localTunesPath, JSON.stringify(updatedTunes, null, 2));
+      console.log('tunes.json saved locally');
+    }
 
     return NextResponse.json(
       { message: 'Tune added successfully', tune: newTune },
