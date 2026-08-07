@@ -133,18 +133,11 @@ export default function TunePage() {
               <div className="p-8 bg-gray-50 min-h-[600px]">
                 {tune.sheetMusicPath.endsWith('.pdf') ? (
                   <div className="w-full h-[800px]">
-                    <object
-                      data={tune.sheetMusicPath}
-                      type="application/pdf"
-                      className="w-full h-full"
+                    <iframe
+                      src={tune.sheetMusicPath}
+                      className="w-full h-full border-0"
                       title={`${tune.title} Sheet Music`}
-                    >
-                      <p className="text-center py-8">
-                        <a href={tune.sheetMusicPath} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700">
-                          Click here to view the PDF
-                        </a>
-                      </p>
-                    </object>
+                    />
                   </div>
                 ) : (
                   <div className="w-full flex justify-center">
