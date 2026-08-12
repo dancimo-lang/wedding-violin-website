@@ -40,22 +40,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       tunes: tunesData.tunes.filter((t: any) => t.id !== id)
     };
 
-    // Write tunes.json - try Blob first, fallback to local
-    try {
-      console.log('Writing updated tunes.json to Vercel Blob');
-      await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
-        access: 'private',
-        allowOverwrite: true,
-      });
-      console.log('tunes.json updated successfully in Blob');
-    } catch (blobError) {
-      console.log('Blob storage failed for tunes.json, saving locally:', blobError instanceof Error ? blobError.message : String(blobError));
-      
-      // Fallback to local file
-      const localTunesPath = path.join(process.cwd(), 'src', 'data', 'tunes.json');
-      fs.writeFileSync(localTunesPath, JSON.stringify(updatedTunes, null, 2));
-      console.log('tunes.json saved locally');
-    }
+    // Write tunes.json to Blob storage
+    console.log('Writing updated tunes.json to Vercel Blob');
+    await put('tunes.json', JSON.stringify(updatedTunes, null, 2), {
+      access: 'public',
+      allowOverwrite: true,
+    });
+    console.log('tunes.json updated successfully in Blob');
 
     return NextResponse.json(
       { message: 'Tune deleted successfully', id },
