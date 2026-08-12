@@ -171,7 +171,7 @@ export default function AddTunePage() {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -188,7 +188,7 @@ export default function AddTunePage() {
                     value={formData.type}
                     onChange={handleInputChange}
                     placeholder="e.g., Waltz, Jig, Scale"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                     required
                   />
                 </div>
@@ -203,7 +203,7 @@ export default function AddTunePage() {
                     value={formData.key}
                     onChange={handleInputChange}
                     placeholder="e.g., G Major, D Minor"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                     required
                   />
                 </div>
@@ -221,7 +221,7 @@ export default function AddTunePage() {
                     value={formData.composer}
                     onChange={handleInputChange}
                     placeholder="e.g., Traditional, Jay Ungar"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                     required
                   />
                 </div>
@@ -234,7 +234,7 @@ export default function AddTunePage() {
                     name="difficulty"
                     value={formData.difficulty}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                   >
                     <option value="Beginner">Beginner</option>
                     <option value="Intermediate">Intermediate</option>
@@ -253,7 +253,7 @@ export default function AddTunePage() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -269,7 +269,7 @@ export default function AddTunePage() {
                   value={formData.youtubeId}
                   onChange={handleInputChange}
                   placeholder="e.g., E6SrQadACCc"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                 />
               </div>
 
@@ -284,7 +284,7 @@ export default function AddTunePage() {
                   value={formData.tags}
                   onChange={handleInputChange}
                   placeholder="e.g., irish, jig, traditional"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
                 />
               </div>
 
