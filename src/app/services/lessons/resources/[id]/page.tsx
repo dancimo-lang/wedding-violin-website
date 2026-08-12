@@ -114,10 +114,9 @@ export default function TunePage() {
               <div className="p-4 bg-gray-50 min-h-[500px]">
                 {tune.sheetMusicPath.endsWith('.pdf') ? (
                   <div className="w-full h-[600px]">
-                    <embed
-                      src={tune.sheetMusicPath}
-                      type="application/pdf"
-                      className="w-full h-full"
+                    <iframe
+                      src={`/api/pdf/${tune.id}`}
+                      className="w-full h-full border-0"
                       title={`${tune.title} Sheet Music`}
                     />
                   </div>
