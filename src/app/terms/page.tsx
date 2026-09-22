@@ -38,7 +38,7 @@ export default function TermsPage() {
           <h2>Contact</h2>
           <p>
             For questions about these terms, please contact us at{' '}
-            <a href="mailto:contact@danielcimo.com">contact@danielcimo.com</a>.
+            <a href="mailto:dancimo@gmail.com">dancimo@gmail.com</a>.
           </p>
 
           <p className="text-sm text-gray-400 mt-8">

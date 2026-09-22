@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       console.log('Attempting to send email...');
       const result = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'noreply@danielcimo.com',
-        to: process.env.CONTACT_EMAIL || 'contact@danielcimo.com',
+        to: process.env.CONTACT_EMAIL || 'dancimo@gmail.com',
         subject: `New ${data.service} inquiry from ${data.name}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

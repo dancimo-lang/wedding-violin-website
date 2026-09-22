@@ -300,10 +300,10 @@ export default function BookingPage() {
               <p className="text-gray-600">
                 Prefer email?{' '}
                 <a
-                  href="mailto:contact@danielcimo.com"
+                  href="mailto:dancimo@gmail.com"
                   className="text-amber-700 font-medium hover:underline"
                 >
-                  contact@danielcimo.com
+                  dancimo@gmail.com
                 </a>
               </p>
             </div>
