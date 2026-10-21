@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+const supabase = createClient();
 
 const LEAD_STATUSES = [
   'New Inquiry',
@@ -24,6 +17,13 @@ const LEAD_STATUSES = [
   'Awaiting Retainer',
   'Lost',
 ] as const;
+
+type Note = {
+  id: string;
+  note_type: string;
+  content: string;
+  created_at: string;
+};
 
 type Lead = {
   id: string;
@@ -49,40 +49,47 @@ export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [lead, setLead] = useState<Lead | null>(null);
-  const [notes, setNotes] = useState<any[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const leadId = params.id;
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function fetchLead() {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', leadId)
+        .single();
+
+      if (cancelled) return;
+      if (error) {
+        setError('Failed to load lead');
+      } else {
+        setLead(data as Lead);
+      }
+      setLoading(false);
+    }
+
+    async function fetchNotes() {
+      const { data } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('created_at', { ascending: false });
+      if (!cancelled) setNotes((data || []) as Note[]);
+    }
+
     fetchLead();
     fetchNotes();
-  }, [params.id]);
-
-  const fetchNotes = async () => {
-    const { data } = await supabase
-      .from('notes')
-      .select('*')
-      .eq('lead_id', params.id)
-      .order('created_at', { ascending: false });
-    setNotes(data || []);
-  };
-
-  const fetchLead = async () => {
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('id', params.id)
-      .single();
-
-    if (error) {
-      setError('Failed to load lead');
-    } else {
-      setLead(data);
-    }
-    setLoading(false);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [leadId]);
 
   const handleSave = async () => {
     if (!lead) return;
@@ -93,13 +100,20 @@ export default function LeadDetailPage() {
       .from('leads')
       .update({
         status: lead.status,
-        event_date: lead.event_date,
-        venue_name: lead.venue_name,
-        venue_address: lead.venue_address,
-        service_type: lead.service_type,
-        package_interest: lead.package_interest,
+        event_date: lead.event_date || null,
+        venue_name: lead.venue_name || null,
+        venue_address: lead.venue_address || null,
+        service_type: lead.service_type || null,
+        package_interest: lead.package_interest || null,
+        performance_start_time: lead.performance_start_time || null,
+        performance_end_time: lead.performance_end_time || null,
+        estimated_duration_hours: lead.estimated_duration_hours,
+        guest_count: lead.guest_count,
+        budget_range: lead.budget_range || null,
+        how_they_found_us: lead.how_they_found_us || null,
+        message: lead.message || null,
         quoted_price: lead.quoted_price,
-        next_follow_up_date: lead.next_follow_up_date,
+        next_follow_up_date: lead.next_follow_up_date || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', lead.id);
@@ -127,18 +141,25 @@ export default function LeadDetailPage() {
   const handleAddNote = async () => {
     if (!newNote.trim() || !lead) return;
 
+    const { data: claims } = await supabase.auth.getClaims();
     const { error } = await supabase.from('notes').insert({
       lead_id: lead.id,
       note_type: 'Internal',
       content: newNote,
       is_private: false,
+      created_by: claims?.claims?.sub ?? null,
     });
 
     if (error) {
       setError('Failed to add note');
     } else {
       setNewNote('');
-      fetchNotes();
+      const { data } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('lead_id', lead.id)
+        .order('created_at', { ascending: false });
+      setNotes((data || []) as Note[]);
     }
   };
 
@@ -386,7 +407,7 @@ export default function LeadDetailPage() {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Add a note..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder:text-gray-500"
             onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
           />
           <button

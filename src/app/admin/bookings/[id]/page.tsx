@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 const BOOKING_STATUSES = ['Tentative', 'Confirmed', 'Cancelled', 'Completed'] as const;
 
@@ -25,13 +23,23 @@ type Booking = {
   performance_end_time: string | null;
   setup_time: string | null;
   breakdown_time: string | null;
-  travel_buffer_hours: number;
+  travel_buffer_hours: number | null;
   total_price: number;
   retainer_amount: number | null;
   retainer_due_date: string | null;
   balance_due_date: string | null;
   special_requests: string | null;
 };
+
+function timeValue(value: string | null) {
+  return value ? value.slice(0, 5) : '';
+}
+
+function optionalNumber(value: string): number | null {
+  if (value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 export default function BookingDetailPage() {
   const params = useParams();
@@ -41,24 +49,32 @@ export default function BookingDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const bookingId = params.id;
+
   useEffect(() => {
-    fetchBooking();
-  }, [params.id]);
+    let cancelled = false;
 
-  const fetchBooking = async () => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', params.id)
-      .single();
+    async function fetchBooking() {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', bookingId)
+        .single();
 
-    if (error) {
-      setError('Failed to load booking');
-    } else {
-      setBooking(data);
+      if (cancelled) return;
+      if (error) {
+        setError('Failed to load booking');
+      } else {
+        setBooking(data as Booking);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  };
+
+    fetchBooking();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingId]);
 
   const handleSave = async () => {
     if (!booking) return;
@@ -70,18 +86,19 @@ export default function BookingDetailPage() {
       .update({
         status: booking.status,
         event_date: booking.event_date,
-        venue_name: booking.venue_name,
-        venue_address: booking.venue_address,
+        venue_name: booking.venue_name || null,
+        venue_address: booking.venue_address || null,
         service_type: booking.service_type,
-        performance_start_time: booking.performance_start_time,
-        performance_end_time: booking.performance_end_time,
-        setup_time: booking.setup_time,
-        breakdown_time: booking.breakdown_time,
+        performance_start_time: booking.performance_start_time || null,
+        performance_end_time: booking.performance_end_time || null,
+        setup_time: booking.setup_time || null,
+        breakdown_time: booking.breakdown_time || null,
+        travel_buffer_hours: booking.travel_buffer_hours,
         total_price: booking.total_price,
         retainer_amount: booking.retainer_amount,
-        retainer_due_date: booking.retainer_due_date,
-        balance_due_date: booking.balance_due_date,
-        special_requests: booking.special_requests,
+        retainer_due_date: booking.retainer_due_date || null,
+        balance_due_date: booking.balance_due_date || null,
+        special_requests: booking.special_requests || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', booking.id);
@@ -237,7 +254,7 @@ export default function BookingDetailPage() {
             </label>
             <input
               type="time"
-              value={booking.performance_start_time || ''}
+              value={timeValue(booking.performance_start_time)}
               onChange={(e) => setBooking({ ...booking, performance_start_time: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
@@ -249,7 +266,7 @@ export default function BookingDetailPage() {
             </label>
             <input
               type="time"
-              value={booking.performance_end_time || ''}
+              value={timeValue(booking.performance_end_time)}
               onChange={(e) => setBooking({ ...booking, performance_end_time: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
@@ -257,12 +274,36 @@ export default function BookingDetailPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estimated Duration (hours)
+              Setup Time
+            </label>
+            <input
+              type="time"
+              value={timeValue(booking.setup_time)}
+              onChange={(e) => setBooking({ ...booking, setup_time: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Breakdown Time
+            </label>
+            <input
+              type="time"
+              value={timeValue(booking.breakdown_time)}
+              onChange={(e) => setBooking({ ...booking, breakdown_time: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Travel Buffer (hours)
             </label>
             <input
               type="number"
-              value={booking.estimated_duration_hours || ''}
-              onChange={(e) => setBooking({ ...booking, estimated_duration_hours: Number(e.target.value) })}
+              value={booking.travel_buffer_hours ?? ''}
+              onChange={(e) => setBooking({ ...booking, travel_buffer_hours: optionalNumber(e.target.value) })}
               step="0.5"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
@@ -270,24 +311,12 @@ export default function BookingDetailPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Guest Count
+              Retainer Amount ($)
             </label>
             <input
               type="number"
-              value={booking.guest_count || ''}
-              onChange={(e) => setBooking({ ...booking, guest_count: Number(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Deposit Amount ($)
-            </label>
-            <input
-              type="number"
-              value={booking.deposit_amount || ''}
-              onChange={(e) => setBooking({ ...booking, deposit_amount: Number(e.target.value) })}
+              value={booking.retainer_amount ?? ''}
+              onChange={(e) => setBooking({ ...booking, retainer_amount: optionalNumber(e.target.value) })}
               step="0.01"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
@@ -295,12 +324,24 @@ export default function BookingDetailPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Deposit Due Date
+              Retainer Due Date
             </label>
             <input
               type="date"
-              value={booking.deposit_due_date || ''}
-              onChange={(e) => setBooking({ ...booking, deposit_due_date: e.target.value })}
+              value={booking.retainer_due_date || ''}
+              onChange={(e) => setBooking({ ...booking, retainer_due_date: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Balance Due Date
+            </label>
+            <input
+              type="date"
+              value={booking.balance_due_date || ''}
+              onChange={(e) => setBooking({ ...booking, balance_due_date: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
           </div>

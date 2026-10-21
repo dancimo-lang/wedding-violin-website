@@ -2,13 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 const LEAD_STATUSES = [
   'New Inquiry',
@@ -52,25 +50,41 @@ export default function NewLeadPage() {
     setSaving(true);
     setError('');
 
-    // First create or find the client
-    const { data: clientData, error: clientError } = await supabase
+    const email = formData.client_id.trim().toLowerCase();
+    const { data: existingClient, error: lookupError } = await supabase
       .from('clients')
-      .upsert({
-        email: formData.client_id,
-        name: formData.client_id.split('@')[0] || 'Unknown',
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
 
-    if (clientError) {
-      setError('Failed to create client');
+    if (lookupError) {
+      setError('Failed to look up client');
       setSaving(false);
       return;
     }
 
+    let clientId = existingClient?.id;
+    if (!clientId) {
+      const { data: createdClient, error: clientError } = await supabase
+        .from('clients')
+        .insert({
+          email,
+          name: email.split('@')[0] || 'Unknown',
+        })
+        .select('id')
+        .single();
+
+      if (clientError || !createdClient) {
+        setError('Failed to create client');
+        setSaving(false);
+        return;
+      }
+      clientId = createdClient.id;
+    }
+
     // Then create the lead
     const { error: leadError } = await supabase.from('leads').insert({
-      client_id: clientData.id,
+      client_id: clientId,
       status: formData.status,
       event_date: formData.event_date || null,
       venue_name: formData.venue_name || null,

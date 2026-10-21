@@ -9,7 +9,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const tunesResponse = await fetch(`${request.nextUrl.origin}/api/tunes`);
     const tunesData = await tunesResponse.json();
     
-    const tune = tunesData.tunes?.find((t: any) => t.id === id);
+    const tune = (tunesData.tunes as { id: string; sheetMusicPath?: string }[] | undefined)?.find(
+      (t) => t.id === id
+    );
     
     if (!tune || !tune.sheetMusicPath) {
       return NextResponse.json({ message: 'PDF not found' }, { status: 404 });

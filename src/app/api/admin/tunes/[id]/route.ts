@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { put, list } from '@vercel/blob';
 import fs from 'fs';
 import path from 'path';
+import { requireAdminApi } from '@/lib/require-admin-api';
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     const { id } = await params;
     console.log('Deleting tune:', id);
@@ -37,7 +41,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     // Remove the tune with the given id
     const updatedTunes = {
-      tunes: tunesData.tunes.filter((t: any) => t.id !== id)
+      tunes: tunesData.tunes.filter((t: { id: string }) => t.id !== id)
     };
 
     // Write tunes.json to Blob storage

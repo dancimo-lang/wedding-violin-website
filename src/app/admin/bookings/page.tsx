@@ -1,15 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-const BOOKING_STATUSES = ['Tentative', 'Confirmed', 'Cancelled', 'Completed'] as const;
+const supabase = createClient();
 
 type Booking = {
   id: string;
@@ -28,23 +24,29 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    let cancelled = false;
 
-  const fetchBookings = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .order('event_date', { ascending: true });
+    async function fetchBookings() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('event_date', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching bookings:', error);
-    } else {
-      setBookings(data || []);
+      if (cancelled) return;
+      if (error) {
+        console.error('Error fetching bookings:', error);
+      } else {
+        setBookings((data || []) as Booking[]);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  };
+
+    fetchBookings();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

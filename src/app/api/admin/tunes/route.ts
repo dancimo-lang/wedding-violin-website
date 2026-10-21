@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { put, list } from '@vercel/blob';
 import fs from 'fs';
 import path from 'path';
+import { requireAdminApi } from '@/lib/require-admin-api';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminApi();
+  if (auth.response) return auth.response;
+
   try {
     console.log('API route called');
     const formData = await request.formData();
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
     console.log('Current tunes count:', tunesData.tunes.length);
 
     // Check for duplicate ID
-    const existingTune = tunesData.tunes.find((t: any) => t.id === id);
+    const existingTune = tunesData.tunes.find((t: { id: string }) => t.id === id);
     if (existingTune) {
       return NextResponse.json(
         { message: 'A tune with this title already exists', existingTune },
