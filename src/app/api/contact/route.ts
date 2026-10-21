@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 interface ContactFormData {
   name: string;
@@ -34,18 +39,80 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Resend
-    console.log('Environment check:', {
-      hasApiKey: !!process.env.RESEND_API_KEY,
-      hasFromEmail: !!process.env.RESEND_FROM_EMAIL,
-      hasContactEmail: !!process.env.CONTACT_EMAIL,
-    });
-
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Send email notification
+    // Create or find client in Supabase
+    let clientId: string | null = null;
     try {
-      console.log('Attempting to send email...');
-      const result = await resend.emails.send({
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .upsert({
+          email: data.email,
+          name: data.name,
+          phone: data.phone || null,
+        }, {
+          onConflict: 'email'
+        })
+        .select()
+        .single();
+
+      if (clientError) throw clientError;
+      clientId = clientData.id;
+    } catch (error) {
+      console.error('Failed to create client:', error);
+      return NextResponse.json(
+        { error: 'Failed to save your information. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    // Create lead in Supabase
+    try {
+      await supabase.from('leads').insert({
+        client_id: clientId,
+        status: 'New Inquiry',
+        event_date: data.eventDate || null,
+        service_type: data.service,
+        package_interest: data.package || null,
+        message: data.message,
+      });
+    } catch (error) {
+      console.error('Failed to create lead:', error);
+      return NextResponse.json(
+        { error: 'Failed to save your inquiry. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    // Send acknowledgment email to client
+    try {
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'noreply@danielcimo.com',
+        to: data.email,
+        subject: 'Thank you for your inquiry - Daniel Cimo Violin',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1f2937;">Thank you for your inquiry!</h2>
+            <p>Hi ${data.name},</p>
+            <p>Thank you for reaching out about ${data.service} services. I've received your message and will get back to you within 24-48 hours.</p>
+            <p>Here's a summary of what you shared:</p>
+            <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Service:</strong> ${data.service}</p>
+              <p><strong>Package:</strong> ${data.package || 'Not specified'}</p>
+              <p><strong>Event Date:</strong> ${data.eventDate || 'Not specified'}</p>
+            </div>
+            <p>I look forward to discussing your special event with you!</p>
+            <p>Best regards,<br>Daniel Cimo</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error('Failed to send client acknowledgment:', emailError);
+    }
+
+    // Send notification email to admin
+    try {
+      await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'noreply@danielcimo.com',
         to: process.env.CONTACT_EMAIL || 'dancimo@gmail.com',
         subject: `New ${data.service} inquiry from ${data.name}`,
@@ -72,10 +139,8 @@ export async function POST(request: NextRequest) {
           </div>
         `,
       });
-      console.log('Email sent successfully:', result);
     } catch (emailError) {
-      console.error('Failed to send email:', emailError);
-      // Continue with response even if email fails
+      console.error('Failed to send admin notification:', emailError);
     }
 
     return NextResponse.json(
