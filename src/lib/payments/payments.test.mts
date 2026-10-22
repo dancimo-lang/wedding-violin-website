@@ -8,6 +8,7 @@ import { verifyZelleRequest, zelleSignatureHex } from './hmac';
 import { extractBookingCodes, ingestZelleOnce, planZelleIngest, selectObligation, type ObligationRef } from './match';
 import { confirmationEmail, THANK_YOU_EMAIL_TODO } from './messages';
 import { planStripeEvent, verifyStripeSignatureHeader } from './stripe-event';
+import { isStripeSecretKey } from './stripe-key';
 import { buildPaymentView } from './view';
 import { resolveZelleQr, zelleInstructionLine, zelleRecipientContact, zelleRecipientName } from './zelle-config';
 
@@ -266,6 +267,27 @@ test('Stripe webhook events are idempotent, and ACH waits for success', () => {
     equalHex: () => true,
   });
   assert.equal(stale.ok, false);
+});
+
+test('Stripe counts as set up for standard and restricted secret keys', () => {
+  assert.equal(isStripeSecretKey('sk_test_51abc'), true);
+  assert.equal(isStripeSecretKey('sk_live_51abc'), true);
+  assert.equal(isStripeSecretKey('rk_test_51abc'), true);
+  assert.equal(isStripeSecretKey('rk_live_51abc'), true);
+  assert.equal(isStripeSecretKey('  rk_live_51abc \n'), true);
+  assert.equal(isStripeSecretKey('pk_test_51abc'), false);
+  assert.equal(isStripeSecretKey('pk_live_51abc'), false);
+  assert.equal(isStripeSecretKey('pk_test_sk_live_nope'), false);
+  assert.equal(isStripeSecretKey(''), false);
+  assert.equal(isStripeSecretKey('   '), false);
+  assert.equal(isStripeSecretKey(undefined), false);
+  assert.equal(isStripeSecretKey(null), false);
+  assert.equal(isStripeSecretKey('sk'), false);
+  assert.equal(isStripeSecretKey('rk'), false);
+
+  const checkout = fs.readFileSync(new URL('./stripe-checkout.ts', import.meta.url), 'utf8');
+  assert.match(checkout, /isStripeSecretKey\(process\.env\.STRIPE_SECRET_KEY\)/);
+  assert.equal(checkout.includes("startsWith('sk_')"), false);
 });
 
 test('card and ACH fees use the published defaults and can be turned on or off', () => {
