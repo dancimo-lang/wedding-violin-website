@@ -5,7 +5,7 @@ import { generateBookingCode, isBookingCode } from '@/lib/contracts/booking-code
 import { contractOwnerEmail } from '@/lib/contracts/mail';
 import { centsToDollarString, computeFees, formatLongDate, formatMoney, parseDollarInput } from '@/lib/contracts/money';
 import { isPackageId, packageDefinition } from '@/lib/contracts/packages';
-import { feeSnapshot, normalizeStoredFields, renderContract, signatureDateLabel } from '@/lib/contracts/render';
+import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
 import { validateTypedName } from '@/lib/contracts/signers';
 import { generateContractToken, isContractToken } from '@/lib/contracts/token';
 import { runGoogleSync } from '@/lib/google/run';
@@ -157,6 +157,13 @@ export async function POST(request: Request) {
   }
   if (!client1Name) return json({ error: 'Enter the client name.' }, 400);
   if (!weddingDate) return json({ error: 'Add the wedding date. The balance is due 30 days before that date.' }, 400);
+  const timeOrder = performanceTimeOrderMessage({
+    ceremonyStart: ceremonyStart || '',
+    ceremonyEnd: ceremonyEnd || '',
+    cocktailStart: packageId === 'FULL' ? '' : cocktailStart || '',
+    cocktailEnd: packageId === 'FULL' ? '' : cocktailEnd || '',
+  });
+  if (timeOrder) return json({ error: timeOrder }, 400);
 
   const loaded = await loadRecords(admin, leadId, bookingIdInput);
   if ('error' in loaded) return json({ error: loaded.error }, loaded.status);
