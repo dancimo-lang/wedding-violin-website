@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server';
 import { disconnectGoogle } from '@/lib/google/store';
 import { requireAdminApi } from '@/lib/require-admin-api';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 export async function POST() {
   const auth = await requireAdminApi();
   if (auth.response) return auth.response;

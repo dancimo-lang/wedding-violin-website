@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useAdminRecordId } from '@/lib/admin-record';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft, Ban, Save } from 'lucide-react';
@@ -23,7 +24,9 @@ import {
 } from '@/lib/schedule/availability';
 import { addCalendarDays, venueRef } from '@/lib/schedule/time';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 const BOOKING_STATUSES = ['Tentative', 'Confirmed', 'Completed'] as const;
 
@@ -60,8 +63,8 @@ function optionalNumber(value: string): number | null {
 }
 
 export default function BookingDetailPage() {
-  const params = useParams();
   const router = useRouter();
+  const recordId = useAdminRecordId('bookings');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [savedStatus, setSavedStatus] = useState('');
   const [events, setEvents] = useState<ActivityItem[]>([]);
@@ -69,19 +72,20 @@ export default function BookingDetailPage() {
   const [googleLabels, setGoogleLabels] = useState<string[]>([]);
   const [externalState, setExternalState] = useState<ExternalCalendarState>('disconnected');
   const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
-  const [loading, setLoading] = useState(true);
+  const [loadedId, setLoadedId] = useState('');
   const [saving, setSaving] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState('');
 
-  const bookingId = params.id;
-
   useEffect(() => {
+    if (!recordId) return;
+
     let cancelled = false;
+    const bookingId = recordId;
 
     async function fetchBooking() {
-      const { data, error } = await supabase
+      const { data, error } = await supabase()
         .from('bookings')
         .select('*')
         .eq('id', bookingId)
@@ -94,20 +98,20 @@ export default function BookingDetailPage() {
         setBooking(data as Booking);
         setSavedStatus((data as Booking).status);
       }
-      const { data: activity } = await supabase
+      const { data: activity } = await supabase()
         .from('activity_events')
         .select('id, event_type, title, body, occurred_at')
         .eq('booking_id', bookingId)
         .order('occurred_at', { ascending: false });
       if (!cancelled) setEvents((activity || []) as ActivityItem[]);
-      setLoading(false);
+      if (!cancelled) setLoadedId(bookingId);
     }
 
     fetchBooking();
     return () => {
       cancelled = true;
     };
-  }, [bookingId]);
+  }, [recordId]);
 
   useEffect(() => {
     if (!booking?.event_date) return;
@@ -117,11 +121,11 @@ export default function BookingDetailPage() {
       const from = addCalendarDays(eventDate, -1);
       const to = addCalendarDays(eventDate, 1);
       const [settingsResult, bookingsResult, blocksResult, googleStatus, busyRows] = await Promise.all([
-        supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
-        supabase.from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
-        supabase.from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
+        supabase().from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
+        supabase().from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
+        supabase().from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
         fetchGoogleStatus(),
-        loadGoogleBusy(supabase, from, to),
+        loadGoogleBusy(supabase(), from, to),
       ]);
       if (cancelled) return;
       const state = statusToExternalState(googleStatus);
@@ -154,7 +158,7 @@ export default function BookingDetailPage() {
   }, [booking?.event_date]);
 
   const refreshEvents = async (id: string) => {
-    const { data } = await supabase
+    const { data } = await supabase()
       .from('activity_events')
       .select('id, event_type, title, body, occurred_at')
       .eq('booking_id', id)
@@ -202,7 +206,7 @@ export default function BookingDetailPage() {
       return;
     }
 
-    const { error: saveError } = await supabase
+    const { error: saveError } = await supabase()
       .from('bookings')
       .update({
         ...bookingFields(booking),
@@ -263,7 +267,7 @@ export default function BookingDetailPage() {
     setSaving(false);
   };
 
-  if (loading) {
+  if (recordId == null || (recordId && loadedId !== recordId)) {
     return <div className="p-8 text-center text-gray-500">Loading booking...</div>;
   }
 
@@ -574,7 +578,7 @@ export default function BookingDetailPage() {
           events={events}
           onAdd={async ({ channel, body }) => {
             const note = channel === 'note';
-            const { error: insertError } = await supabase.from('activity_events').insert({
+            const { error: insertError } = await supabase().from('activity_events').insert({
               booking_id: booking.id,
               lead_id: booking.lead_id,
               event_type: note ? 'note' : 'communication',
@@ -583,7 +587,7 @@ export default function BookingDetailPage() {
               metadata: { channel },
             });
             if (insertError) return 'Could not add that to the timeline.';
-            const { data } = await supabase
+            const { data } = await supabase()
               .from('activity_events')
               .select('id, event_type, title, body, occurred_at')
               .eq('booking_id', booking.id)

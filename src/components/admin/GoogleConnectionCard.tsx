@@ -54,9 +54,13 @@ export function GoogleConnectionCard({
       )}
       <div className="flex flex-wrap gap-2">
         {view.configured && (!view.connected || view.needsReconnect) && (
-          <a href="/api/admin/google/connect" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-            {view.needsReconnect ? 'Reconnect Google' : 'Connect Google Calendar'}
-          </a>
+          <>
+            {/* Full-page navigation so the server can redirect to Google. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a href="/api/admin/google/connect" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              {view.needsReconnect ? 'Reconnect Google' : 'Connect Google Calendar'}
+            </a>
+          </>
         )}
         {view.connected && (
           <>

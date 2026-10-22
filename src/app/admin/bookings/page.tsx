@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type Booking = {
   id: string;
@@ -29,7 +31,7 @@ export default function BookingsPage() {
 
     async function fetchBookings() {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await supabase()
         .from('bookings')
         .select('*')
         .order('event_date', { ascending: true });

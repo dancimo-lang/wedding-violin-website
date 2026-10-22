@@ -7,7 +7,9 @@ import { DISCONNECTED_GOOGLE_STATUS, type GoogleStatusView } from '@/lib/google/
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 const NOTICES: Record<string, string> = {
   connected: 'Google Calendar is connected.',
@@ -31,7 +33,7 @@ export default function SettingsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const { data } = await supabase
+      const { data } = await supabase()
         .from('business_settings')
         .select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count')
         .eq('id', 1)
@@ -70,7 +72,7 @@ export default function SettingsPage() {
       setSaving(false);
       return;
     }
-    const { error } = await supabase.from('business_settings').update(payload).eq('id', 1);
+    const { error } = await supabase().from('business_settings').update(payload).eq('id', 1);
     setMessage(error ? 'Could not save settings.' : 'Saved. The calendar uses these buffers from now on.');
     setSaving(false);
   };

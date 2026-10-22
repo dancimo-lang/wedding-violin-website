@@ -7,9 +7,6 @@ import { saveOAuthConnection } from '@/lib/google/store';
 import { settingsRedirect } from '@/lib/google/settings-redirect';
 import { requireAdminApi } from '@/lib/require-admin-api';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 export async function GET(request: NextRequest) {
   const auth = await requireAdminApi();
   if (auth.response) return auth.response;

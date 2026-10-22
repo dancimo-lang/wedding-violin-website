@@ -3,9 +3,6 @@ import { runGoogleSync } from '@/lib/google/run';
 import { requireAdminApi } from '@/lib/require-admin-api';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 const ACTIONS = new Set([
   'apply_booking',
   'restore_booking',

@@ -4,9 +4,6 @@ import { readConnectionRow } from '@/lib/google/store';
 import { statusViewFromRow } from '@/lib/google/status';
 import { requireAdminApi } from '@/lib/require-admin-api';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
 export async function GET() {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useAdminRecordId } from '@/lib/admin-record';
 import { ArrowLeft } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
 import { LeadFields, SubmittedDetails } from '@/components/admin/LeadFields';
@@ -24,7 +24,9 @@ import {
 import { addCalendarDays, venueRef } from '@/lib/schedule/time';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type LinkedBooking = {
   id: string;
@@ -33,8 +35,8 @@ type LinkedBooking = {
 };
 
 export default function LeadDetailPage() {
-  const params = useParams<{ id: string }>();
-  const leadId = params.id;
+  const recordId = useAdminRecordId('leads');
+  const leadId = recordId ?? '';
   const [draft, setDraft] = useState<LeadDraft | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [details, setDetails] = useState<unknown>(null);
@@ -46,22 +48,25 @@ export default function LeadDetailPage() {
   const [googleLabels, setGoogleLabels] = useState<string[]>([]);
   const [externalState, setExternalState] = useState<ExternalCalendarState>('disconnected');
   const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
-  const [loading, setLoading] = useState(true);
+  const [loadedId, setLoadedId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!recordId) return;
+
     let cancelled = false;
+    const leadId = recordId;
     async function load() {
       const [{ data: lead, error: leadError }, { data: activity }, { data: bookings }] = await Promise.all([
-        supabase.from('leads').select('*, clients(*)').eq('id', leadId).single(),
-        supabase.from('activity_events').select('id, event_type, title, body, occurred_at').eq('lead_id', leadId).order('occurred_at', { ascending: false }),
-        supabase.from('bookings').select('id, status, total_price').eq('lead_id', leadId).order('created_at', { ascending: false }),
+        supabase().from('leads').select('*, clients(*)').eq('id', leadId).single(),
+        supabase().from('activity_events').select('id, event_type, title, body, occurred_at').eq('lead_id', leadId).order('occurred_at', { ascending: false }),
+        supabase().from('bookings').select('id, status, total_price').eq('lead_id', leadId).order('created_at', { ascending: false }),
       ]);
       if (cancelled) return;
       if (leadError || !lead) {
         setError('Could not load this lead.');
-        setLoading(false);
+        setLoadedId(leadId);
         return;
       }
       const client = (lead.clients || null) as ClientRecord | null;
@@ -74,13 +79,13 @@ export default function LeadDetailPage() {
       setEvents((activity || []) as ActivityItem[]);
       const bookingRows = (bookings || []) as LinkedBooking[];
       setBooking(bookingRows.find((row) => row.status !== 'Cancelled') || bookingRows[0] || null);
-      setLoading(false);
+      setLoadedId(leadId);
     }
     load();
     return () => {
       cancelled = true;
     };
-  }, [leadId]);
+  }, [recordId]);
 
   const eventDate = draft?.eventDate || '';
 
@@ -91,11 +96,11 @@ export default function LeadDetailPage() {
       const from = addCalendarDays(eventDate, -1);
       const to = addCalendarDays(eventDate, 1);
       const [settingsResult, bookingsResult, blocksResult, googleStatus, busyRows] = await Promise.all([
-        supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
-        supabase.from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
-        supabase.from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
+        supabase().from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
+        supabase().from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
+        supabase().from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
         fetchGoogleStatus(),
-        loadGoogleBusy(supabase, from, to),
+        loadGoogleBusy(supabase(), from, to),
       ]);
       if (cancelled) return;
       const state = statusToExternalState(googleStatus);
@@ -144,7 +149,7 @@ export default function LeadDetailPage() {
   }, [draft, externalState, occupancies, settings, booking?.id]);
 
   const refreshEvents = async () => {
-    const { data } = await supabase
+    const { data } = await supabase()
       .from('activity_events')
       .select('id, event_type, title, body, occurred_at')
       .eq('lead_id', leadId)
@@ -162,8 +167,8 @@ export default function LeadDetailPage() {
     setSaving(true);
     setError('');
     const { status, ...leadFields } = payload.lead;
-    const { error: clientError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
-    const { error: leadError } = await supabase.from('leads').update(leadFields).eq('id', leadId);
+    const { error: clientError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
+    const { error: leadError } = await supabase().from('leads').update(leadFields).eq('id', leadId);
     if (clientError || leadError) {
       setError('Could not save this lead.');
       setSaving(false);
@@ -200,7 +205,7 @@ export default function LeadDetailPage() {
     if (original.contractStatus !== draft.contractStatus) changes.push(`Contract status is now ${draft.contractStatus}.`);
     if (original.paymentStatus !== draft.paymentStatus) changes.push(`Payment status is now ${draft.paymentStatus}.`);
     if (changes.length > 0) {
-      await supabase.from('activity_events').insert({
+      await supabase().from('activity_events').insert({
         lead_id: leadId,
         booking_id: nextBooking?.id || null,
         event_type: 'status_change',
@@ -232,8 +237,8 @@ export default function LeadDetailPage() {
       return;
     }
     const { status: leadStatus, ...leadFields } = payload.lead;
-    const { error: clientError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
-    const { error: leadError } = await supabase.from('leads').update(leadFields).eq('id', leadId);
+    const { error: clientError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
+    const { error: leadError } = await supabase().from('leads').update(leadFields).eq('id', leadId);
     if (clientError || leadError) {
       setError('Could not save this lead.');
       setSaving(false);
@@ -306,7 +311,9 @@ export default function LeadDetailPage() {
     await refreshEvents();
   };
 
-  if (loading) return <div className="text-gray-600">Loading lead...</div>;
+  if (recordId == null || (recordId && loadedId !== recordId)) {
+    return <div className="text-gray-600">Loading lead...</div>;
+  }
   if (!draft) return <div className="text-gray-600">{error || 'Lead not found.'}</div>;
 
   return (
@@ -356,7 +363,7 @@ export default function LeadDetailPage() {
         events={events}
         onAdd={async ({ channel, body }) => {
           const note = channel === 'note';
-          const { error: insertError } = await supabase.from('activity_events').insert({
+          const { error: insertError } = await supabase().from('activity_events').insert({
             lead_id: leadId,
             booking_id: booking?.id || null,
             event_type: note ? 'note' : 'communication',
