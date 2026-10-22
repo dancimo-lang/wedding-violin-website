@@ -231,7 +231,7 @@ export default function WeddingsPage() {
             </div>
             <div>
               <p className="text-4xl font-bold text-amber-700">10+</p>
-              <p className="text-gray-600 text-sm mt-1">Years Experience</p>
+              <p className="text-gray-600 text-sm mt-1">Years Playing Weddings</p>
             </div>
             <div>
               <p className="text-4xl font-bold text-amber-700">50mi</p>
