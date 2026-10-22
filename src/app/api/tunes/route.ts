@@ -2,6 +2,39 @@ import { NextResponse } from 'next/server';
 import { list } from '@vercel/blob';
 import fs from 'fs';
 import path from 'path';
+import { isPublishableCopy } from '@/lib/publicContent';
+
+function publishedSheetMusicPath(sheetMusicPath: unknown): string {
+  if (typeof sheetMusicPath !== 'string' || !isPublishableCopy(sheetMusicPath)) {
+    return '';
+  }
+  if (/^https?:\/\//i.test(sheetMusicPath)) {
+    return sheetMusicPath;
+  }
+  const relative = sheetMusicPath.replace(/^\/+/, '');
+  if (!relative || relative.includes('..')) {
+    return '';
+  }
+  const filePath = path.join(process.cwd(), 'public', relative);
+  return fs.existsSync(filePath) ? sheetMusicPath : '';
+}
+
+function sanitizeTunesPayload(data: { tunes?: Array<Record<string, unknown>> }) {
+  return {
+    tunes: (data.tunes ?? []).map((tune) => {
+      const youtubeId = typeof tune.youtubeId === 'string' && isPublishableCopy(tune.youtubeId)
+        ? tune.youtubeId
+        : '';
+      return {
+        ...tune,
+        ownerNote: undefined,
+        mediaNote: undefined,
+        youtubeId,
+        sheetMusicPath: publishedSheetMusicPath(tune.sheetMusicPath),
+      };
+    }),
+  };
+}
 
 export async function GET() {
   try {
@@ -32,7 +65,7 @@ export async function GET() {
 
       console.log('Tunes fetched successfully from Blob:', tunesData.tunes.length);
 
-      return NextResponse.json(tunesData);
+      return NextResponse.json(sanitizeTunesPayload(tunesData));
     } catch (blobError) {
       console.log('Blob storage failed, falling back to local file:', blobError instanceof Error ? blobError.message : String(blobError));
 
@@ -42,7 +75,7 @@ export async function GET() {
 
       console.log('Tunes fetched from local file:', localTunes.tunes.length);
 
-      return NextResponse.json(localTunes);
+      return NextResponse.json(sanitizeTunesPayload(localTunes));
     }
   } catch (error) {
     console.error('Error fetching tunes:', error);

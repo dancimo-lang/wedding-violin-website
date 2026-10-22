@@ -6,17 +6,9 @@ interface SingleVideoProps {
 }
 
 export default function SingleVideo({ videoId, title }: SingleVideoProps) {
-  if (!videoId) {
-    return (
-      <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-        <div className="text-center p-8">
-          <p className="text-gray-500 font-medium">YouTube Video</p>
-          <p className="text-sm text-gray-400 mt-2">
-            TODO: Add YouTube video ID to display video
-          </p>
-        </div>
-      </div>
-    );
+  // Owner: leave this empty until a real YouTube video id is available. Nothing is shown until then.
+  if (!videoId || videoId.startsWith('TODO')) {
+    return null;
   }
 
   return (
