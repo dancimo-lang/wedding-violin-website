@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
 import Image from 'next/image';
+import site from '@/data/site.json';
+import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import BookingForm from './booking-form';
 import BookingPrefill from './booking-prefill';
 
@@ -42,6 +44,28 @@ export default function BookingPage() {
 
             {/* Contact Info */}
             <div className="mt-12 text-center">
+              <p className="text-gray-600 mb-2">
+                Prefer to talk?{' '}
+                <a
+                  href={phoneTelHref()}
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  Call
+                </a>
+                {' or '}
+                <a
+                  href={phoneSmsHref()}
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  text
+                </a>{' '}
+                <a
+                  href={phoneTelHref()}
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  {site.phone}
+                </a>
+              </p>
               <p className="text-gray-600">
                 Prefer email?{' '}
                 <a
