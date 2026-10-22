@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { fieldClass } from '@/lib/leads';
+import { postBookingStatus } from '@/lib/booking-status-client';
 import { fetchGoogleStatus, loadGoogleBusy, requestGoogleSync, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import {
   blockToOccupancy,
@@ -427,11 +428,11 @@ function HoldForm({
       }
       clientId = data.id;
     }
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert({
+    const result = await postBookingStatus({
+      action: 'apply_booking',
+      status,
+      fields: {
         client_id: clientId,
-        status,
         event_date: selected,
         venue_name: venue || null,
         venue_address: address || null,
@@ -440,20 +441,24 @@ function HoldForm({
         performance_end_time: end,
         performers_needed: Number(performers) || 1,
         total_price: 0,
-      })
-      .select('id, status, event_date, venue_name, venue_address, service_type, performance_start_time, performance_end_time, performers_needed')
-      .single();
-    if (error || !data) {
-      setMessage('Could not save the hold.');
+      },
+    });
+    if (!result.ok || !result.bookingId) {
+      setMessage(result.ok ? 'Could not save the hold.' : result.error);
       return;
     }
-    await supabase.from('activity_events').insert({
-      booking_id: data.id,
-      event_type: 'calendar',
-      title: status === 'Confirmed' ? 'Booking confirmed. This time now blocks the calendar.' : 'Tentative hold placed on the calendar.',
-      body: `${selected} ${start}–${end}`,
+    onSaved({
+      id: result.bookingId,
+      status: result.bookingStatus || status,
+      event_date: selected,
+      venue_name: venue || null,
+      venue_address: address || null,
+      service_type: service || 'Performance',
+      performance_start_time: start,
+      performance_end_time: end,
+      performers_needed: Number(performers) || 1,
+      clients: { name: name.trim() },
     });
-    onSaved({ ...data, clients: { name: name.trim() } } as CalendarBooking);
     setMessage(status === 'Confirmed' ? 'Confirmed. The calendar is blocked.' : 'Tentative hold saved.');
     setName('');
     await requestGoogleSync();

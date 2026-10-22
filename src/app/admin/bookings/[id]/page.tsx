@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Ban, Save } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
-import { fetchGoogleStatus, loadGoogleBusy, requestGoogleSync, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
+import { friendlyWriteError, postBookingStatus } from '@/lib/booking-status-client';
+import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import { fieldClass } from '@/lib/leads';
 import {
   blockToOccupancy,
@@ -24,7 +25,7 @@ import { addCalendarDays, venueRef } from '@/lib/schedule/time';
 
 const supabase = createClient();
 
-const BOOKING_STATUSES = ['Tentative', 'Confirmed', 'Cancelled', 'Completed'] as const;
+const BOOKING_STATUSES = ['Tentative', 'Confirmed', 'Completed'] as const;
 
 type Booking = {
   id: string;
@@ -70,6 +71,8 @@ export default function BookingDetailPage() {
   const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState('');
 
   const bookingId = params.id;
@@ -150,66 +153,114 @@ export default function BookingDetailPage() {
     };
   }, [booking?.event_date]);
 
+  const refreshEvents = async (id: string) => {
+    const { data } = await supabase
+      .from('activity_events')
+      .select('id, event_type, title, body, occurred_at')
+      .eq('booking_id', id)
+      .order('occurred_at', { ascending: false });
+    setEvents((data || []) as ActivityItem[]);
+  };
+
+  const bookingFields = (current: Booking) => ({
+    event_date: current.event_date,
+    venue_name: current.venue_name || null,
+    venue_address: current.venue_address || null,
+    service_type: current.service_type,
+    performance_start_time: current.performance_start_time || null,
+    performance_end_time: current.performance_end_time || null,
+    setup_time: current.setup_time || null,
+    breakdown_time: current.breakdown_time || null,
+    travel_buffer_hours: current.travel_buffer_hours,
+    total_price: current.total_price,
+    retainer_amount: current.retainer_amount,
+    retainer_due_date: current.retainer_due_date || null,
+    balance_due_date: current.balance_due_date || null,
+    special_requests: current.special_requests || null,
+    performers_needed: current.performers_needed || 1,
+  });
+
   const handleSave = async () => {
     if (!booking) return;
     setSaving(true);
     setError('');
 
-    const { error } = await supabase
+    if (savedStatus !== booking.status) {
+      const result = await postBookingStatus({
+        action: 'apply_booking',
+        bookingId: booking.id,
+        leadId: booking.lead_id,
+        status: booking.status,
+        fields: bookingFields(booking),
+      });
+      if (!result.ok) {
+        setError(result.error);
+        setSaving(false);
+        return;
+      }
+      router.push('/admin/bookings');
+      return;
+    }
+
+    const { error: saveError } = await supabase
       .from('bookings')
       .update({
-        status: booking.status,
-        event_date: booking.event_date,
-        venue_name: booking.venue_name || null,
-        venue_address: booking.venue_address || null,
-        service_type: booking.service_type,
-        performance_start_time: booking.performance_start_time || null,
-        performance_end_time: booking.performance_end_time || null,
-        setup_time: booking.setup_time || null,
-        breakdown_time: booking.breakdown_time || null,
-        travel_buffer_hours: booking.travel_buffer_hours,
-        total_price: booking.total_price,
-        retainer_amount: booking.retainer_amount,
-        retainer_due_date: booking.retainer_due_date || null,
-        balance_due_date: booking.balance_due_date || null,
-        special_requests: booking.special_requests || null,
-        performers_needed: booking.performers_needed || 1,
+        ...bookingFields(booking),
         updated_at: new Date().toISOString(),
       })
       .eq('id', booking.id);
 
-    if (error) {
-      setError('Failed to save booking');
+    if (saveError) {
+      setError(friendlyWriteError(saveError.message, 'Failed to save booking'));
     } else {
-      if (savedStatus !== booking.status) {
-        await supabase.from('activity_events').insert({
-          booking_id: booking.id,
-          lead_id: booking.lead_id,
-          event_type: booking.status === 'Confirmed' ? 'calendar' : 'status_change',
-          title:
-            booking.status === 'Confirmed'
-              ? 'Booking confirmed. This time now blocks the calendar.'
-              : `Booking status is now ${booking.status}.`,
-          body: booking.event_date,
-        });
-      }
-      await requestGoogleSync();
       router.push('/admin/bookings');
     }
     setSaving(false);
   };
 
-  const handleDelete = async () => {
-    if (!booking || !confirm('Are you sure you want to delete this booking?')) return;
-
-    const { error } = await supabase.from('bookings').delete().eq('id', booking.id);
-
-    if (error) {
-      setError('Failed to delete booking');
-    } else {
-      await requestGoogleSync();
-      router.push('/admin/bookings');
+  const handleCancel = async () => {
+    if (!booking) return;
+    setSaving(true);
+    setError('');
+    const result = await postBookingStatus({
+      action: 'apply_booking',
+      bookingId: booking.id,
+      leadId: booking.lead_id,
+      status: 'Cancelled',
+      reason: cancelReason,
+    });
+    if (!result.ok) {
+      setError(result.error);
+      setSaving(false);
+      return;
     }
+    setBooking({ ...booking, status: 'Cancelled' });
+    setSavedStatus('Cancelled');
+    setCancelOpen(false);
+    setCancelReason('');
+    await refreshEvents(booking.id);
+    setSaving(false);
+  };
+
+  const handleRestore = async () => {
+    if (!booking) return;
+    if (!window.confirm('Restore this booking? It goes back on the calendar only if that time is still free.')) return;
+    setSaving(true);
+    setError('');
+    const result = await postBookingStatus({
+      action: 'restore_booking',
+      bookingId: booking.id,
+    });
+    if (!result.ok) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
+    const restored = result.bookingStatus || 'Tentative';
+    setBooking({ ...booking, status: restored });
+    setSavedStatus(restored);
+    await refreshEvents(booking.id);
+    setSaving(false);
   };
 
   if (loading) {
@@ -233,13 +284,25 @@ export default function BookingDetailPage() {
           <h2 className="text-3xl font-bold text-gray-900">Booking Details</h2>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-          >
-            <Trash2 size={20} />
-            Delete
-          </button>
+          {booking.status === 'Cancelled' ? (
+            <button
+              type="button"
+              onClick={handleRestore}
+              disabled={saving}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800"
+            >
+              Restore booking
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCancelOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 text-red-700 hover:bg-red-50 rounded-lg"
+            >
+              <Ban size={20} />
+              Cancel booking
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={saving}
@@ -257,23 +320,66 @@ export default function BookingDetailPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow p-6">
+      {booking.status === 'Cancelled' && (
+        <div className="mb-6 rounded-lg bg-gray-100 px-4 py-3 text-gray-700">
+          This booking is cancelled. It stays on the timeline and does not block the calendar.
+        </div>
+      )}
+
+      {cancelOpen && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-white p-4">
+          <p className="text-gray-800 mb-3">
+            Cancel this booking? The record and its timeline stay. The date comes off the calendar, and the Google event is cleared.
+          </p>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Reason, optional</label>
+          <textarea
+            value={cancelReason}
+            onChange={(event) => setCancelReason(event.target.value)}
+            rows={3}
+            maxLength={500}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 mb-3"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={saving}
+              className="px-4 py-2 rounded-lg bg-red-700 text-white disabled:bg-red-400"
+            >
+              {saving ? 'Cancelling...' : 'Cancel booking'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCancelOpen(false)}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800"
+            >
+              Keep booking
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`rounded-xl shadow p-6 ${booking.status === 'Cancelled' ? 'bg-gray-50 text-gray-600' : 'bg-white'}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Status
             </label>
-            <select
-              value={booking.status}
-              onChange={(e) => setBooking({ ...booking, status: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-            >
-              {BOOKING_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+            {booking.status === 'Cancelled' ? (
+              <p className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700">Cancelled</p>
+            ) : (
+              <select
+                value={booking.status}
+                onChange={(e) => setBooking({ ...booking, status: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              >
+                {BOOKING_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
