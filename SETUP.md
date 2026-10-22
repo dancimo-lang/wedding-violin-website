@@ -318,3 +318,33 @@ Environment variables, in addition to the Resend key you already use:
 
 Then sign in, open a lead or a booking, choose **Create contract**, check the preview, and choose **Send for signature**. The couple opens `/contract?t=` plus the token in that email. After they sign, the PDF is stored in the private bucket and emailed. Use **Countersign** on the lead or booking unless Settings is set to record your signature automatically. **Void** and **Resend** apply only before the client signs.
 
+## 12. Take Zelle and card or bank payments
+
+After section 11, open the Supabase **SQL Editor** and run `supabase/migrations/008_payments.sql` once. Do not run it from the app, and do not point it at a database you have not backed up. Running it again replaces the payment function. It does not charge anyone.
+
+What it adds:
+
+- Columns on `payments` for the method, the amount in cents, the Chase transaction number, and the Stripe Checkout session.
+- `zelle_receipts`, one row per Chase transaction number. A memo with no `DC-####` code is stored as ignored and is not emailed. A code that does not match an open amount is unmatched and shows under **Admin → Payments**.
+- `stripe_events` and `stripe_checkout_sessions`, so a repeated Stripe webhook does not record the payment twice.
+
+Then set these on Vercel (and in `.env.local` if you try payments on your computer). All of them stay on the server. Do not create a `NEXT_PUBLIC_` copy.
+
+- `ZELLE_INGEST_SECRET`. A long random string. The same value goes in the Apps Script property of that name.
+- `STRIPE_SECRET_KEY`. The Stripe secret key (`sk_`), not the publishable key.
+- `STRIPE_WEBHOOK_SECRET`. From the Stripe webhook endpoint below.
+- `ZELLE_RECIPIENT_DISPLAY` and `ZELLE_RECIPIENT_CONTACT` are optional. When they are unset, the couple sees Daniel Cimo and (224) 678-2799.
+- Fee settings are optional. When unset, a card payment adds Stripe's published US card rate (2.9% + 30¢) as its own line, and a bank payment does not add the published ACH rate (0.8%, capped at $5). Set `STRIPE_PASS_CARD_FEE=false` or `STRIPE_PASS_ACH_FEE=true` to change that.
+
+In Stripe, add a webhook endpoint:
+
+`https://danielcimo.com/api/payments/stripe/webhook`
+
+Send `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `checkout.session.async_payment_failed`. Put the signing secret in `STRIPE_WEBHOOK_SECRET`.
+
+The Zelle QR used on the payment page and in payment email is `public/images/zelle-qr.png`. Replace that file with a new export from Chase if the code changes, and redeploy. Do not substitute a generated code.
+
+The Apps Script that reads Chase alerts is `scripts/gmail-zelle-forwarder/`. Its README is the two-minute setup: paste `Code.gs`, set the two script properties, run `setup` once.
+
+A thank-you email after the wedding is not sent. The daily cron is already used for Google Calendar, and this plan does not add another one.
+

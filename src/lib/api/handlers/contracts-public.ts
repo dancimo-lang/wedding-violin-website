@@ -11,7 +11,11 @@ import {
 import { signOnce } from '@/lib/contracts/sign';
 import { validateSignature } from '@/lib/contracts/signers';
 import { isContractToken } from '@/lib/contracts/token';
-import { escapeHtml, requestClientIp, sendContractMail, storeContractPdf } from '@/lib/contracts/delivery';
+import { escapeHtml, publicOrigin, requestClientIp, sendContractMail, storeContractPdf } from '@/lib/contracts/delivery';
+import { paymentInstructionsHtml } from '@/lib/payments/messages';
+import { paymentPageUrl } from '@/lib/payments/urls';
+import { zelleInstructionLine, zelleRecipientContact, zelleRecipientName } from '@/lib/payments/zelle-config';
+import { zelleQrSources } from '@/lib/payments/zelle-qr';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -164,7 +168,7 @@ async function noteSigned(row: ContractRecord) {
   });
 }
 
-function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>) {
+function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>, instructions: string) {
   const who = escapeHtml(name || 'there');
   const retainer = escapeHtml(facts.retainer || '');
   const code = escapeHtml(facts.bookingCode || '');
@@ -175,10 +179,9 @@ function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>)
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <p>Hello ${who},</p>
       <p>Your signed wedding music agreement is attached.</p>
-      <h2>Next: pay your retainer</h2>
       <p>Retainer due: ${retainer}</p>
       <p>Booking code: ${code}</p>
-      <p>Put this booking code in the Zelle memo when you pay the retainer. Card payment will be a backup. This email does not take payment.</p>
+      ${instructions}
       ${balance}
       <p>Daniel Cimo</p>
     </div>
@@ -299,12 +302,26 @@ export async function POST(request: Request) {
   const pdfBytes = await storeContractPdf(row.id, pdfText);
 
   const facts = paymentPayload(signedRow);
+  const qr = zelleQrSources();
+  const instructions = paymentInstructionsHtml({
+    heading: 'Next: pay your retainer',
+    instruction: facts.bookingCode
+      ? zelleInstructionLine({
+          recipientName: zelleRecipientName(),
+          recipientContact: zelleRecipientContact(),
+          amountLabel: facts.retainer || '',
+          bookingCode: facts.bookingCode,
+        })
+      : 'The booking code will be on your payment page.',
+    payUrl: row.access_token ? paymentPageUrl(publicOrigin(request), row.access_token) : null,
+    qrEmailUrl: qr.emailUrl,
+  });
   const client = await clientEmail(row.lead_id, row.booking_id);
   const owner = contractOwnerEmail();
   const attachment = pdfBytes
     ? [{ filename: 'wedding-agreement.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
     : undefined;
-  const html = signedEmailHtml(client.name || client1Name, facts);
+  const html = signedEmailHtml(client.name || client1Name, facts, instructions);
   if (client.email) {
     await sendContractMail({
       to: client.email,

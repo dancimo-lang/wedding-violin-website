@@ -18,6 +18,9 @@ import { GET as getGoogleConnect } from './handlers/google-connect';
 import { POST as postGoogleDisconnect } from './handlers/google-disconnect';
 import { GET as getGoogleStatus } from './handlers/google-status';
 import { POST as postGoogleSync } from './handlers/google-sync';
+import { getAdminPayments, postAssign, postManual } from './handlers/payments-admin';
+import { getPaymentView, postCheckout, postStripeWebhook } from './handlers/payments-stripe';
+import { postZelle } from './handlers/payments-zelle';
 import { GET as getPdf } from './handlers/pdf';
 import { POST as restoreTunes } from './handlers/restore-tunes';
 import { POST as postSignOut } from './handlers/signout';
@@ -58,6 +61,13 @@ const handlers: Record<string, ApiHandler> = {
   availability: mount(getAvailability),
   contact: mount(postContact),
   'cron-google-sync': mount(syncFromCron),
+  'payments-zelle': ({ request, rawBody }) => postZelle(request, rawBody ?? ''),
+  'payments-stripe-webhook': ({ request, rawBody }) => postStripeWebhook(request, rawBody ?? ''),
+  'payments-checkout': ({ request }) => postCheckout(request),
+  'payments-view': ({ request }) => getPaymentView(request),
+  'admin-payments': ({ request }) => getAdminPayments(request),
+  'admin-payments-manual': ({ request }) => postManual(request),
+  'admin-payments-assign': ({ request }) => postAssign(request),
   pdf: ({ request, params }) => getPdf(request, { params: Promise.resolve({ id: params.id ?? '' }) }),
   tunes: mount(getTunes),
   signout: mount(postSignOut),

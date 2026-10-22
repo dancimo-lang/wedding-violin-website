@@ -9,6 +9,7 @@ import { ArrowLeft, Ban, Save } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
 import { friendlyWriteError, postBookingStatus } from '@/lib/booking-status-client';
 import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
+import { BookingPayments } from '@/components/admin/BookingPayments';
 import { ContractPanel } from '@/components/admin/ContractPanel';
 import { fieldClass } from '@/lib/leads';
 import {
@@ -574,6 +575,7 @@ export default function BookingDetailPage() {
         </div>
       </div>
       <ContractPanel bookingId={booking.id} leadId={booking.lead_id} />
+      <BookingPayments bookingId={booking.id} />
       <div className="mt-6">
         <BookingConflicts booking={booking} occupancies={occupancies} settings={settings} googleBusy={googleLabels} externalState={externalState} />
         <Timeline

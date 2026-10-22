@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { PaymentOptions } from '@/components/payments/PaymentOptions';
 import { formatMoney } from '@/lib/contracts/money';
 import {
   normalizeStoredFields,
@@ -227,17 +228,15 @@ export function SignContract() {
 
               {finished?.status === 'signed' && (
                 <section className="mt-8 rounded-lg border border-gray-200 p-4">
-                  <h2 className="text-xl font-bold">Next: pay your retainer</h2>
+                  <h2 className="text-xl font-bold">Amounts on this agreement</h2>
                   <p className="mt-3">Retainer due: {finished.retainer || (finished.retainerCents == null ? '' : `$${formatMoney(finished.retainerCents)}`)}</p>
                   <p>Booking code: {finished.bookingCode || 'The booking code is not on this agreement yet.'}</p>
                   {finished.balance && finished.finalPaymentDueLabel && (
                     <p>Remaining balance of {finished.balance} is due {finished.finalPaymentDueLabel}.</p>
                   )}
-                  <p className="mt-3">
-                    Put this booking code in the Zelle memo when you pay the retainer. Card payment will be a backup. Payment is not collected on this page.
-                  </p>
                 </section>
               )}
+              {finished?.status === 'signed' && token ? <PaymentOptions token={token} /> : null}
             </>
           )}
         </article>

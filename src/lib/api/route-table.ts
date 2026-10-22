@@ -2,13 +2,9 @@
  * Public URL table for the single /api catch-all.
  * Adding a row here does not add a Vercel function.
  *
- * Upcoming phases plug in as more rows:
- * - Stripe webhook: POST ["stripe", "webhook"] with rawBody so the signature
- *   is checked against the unparsed body. ACH stays the default; card is the backup.
- * - Contract signing lives on GET contracts/view and POST contracts/sign.
- *   Admin send, void, resend, countersign, and PDF download are sibling rows.
- * - Resend confirmation, payment receipt, and thank-you mail are sends inside
- *   handlers, not new routes.
+ * Payment routes stay on this catch-all. Stripe's webhook sets rawBody so the
+ * signature is checked against the unparsed body. Zelle ingest does the same.
+ * Confirmation, receipt, and processing mail are sends inside handlers.
  */
 export type PathSegment = string | { readonly param: string };
 
@@ -44,6 +40,13 @@ export const apiRouteCatalog: readonly ApiRouteSpec[] = [
   { id: 'contract-view', methods: ['GET'], segments: ['contracts', 'view'] },
   { id: 'contract-sign', methods: ['POST'], segments: ['contracts', 'sign'] },
   { id: 'cron-google-sync', methods: ['GET', 'POST'], segments: ['cron', 'google-sync'] },
+  { id: 'payments-zelle', methods: ['POST'], segments: ['payments', 'zelle'], rawBody: true },
+  { id: 'payments-stripe-webhook', methods: ['POST'], segments: ['payments', 'stripe', 'webhook'], rawBody: true },
+  { id: 'payments-checkout', methods: ['POST'], segments: ['payments', 'checkout'] },
+  { id: 'payments-view', methods: ['GET'], segments: ['payments', 'view'] },
+  { id: 'admin-payments', methods: ['GET'], segments: ['admin', 'payments'] },
+  { id: 'admin-payments-manual', methods: ['POST'], segments: ['admin', 'payments', 'manual'] },
+  { id: 'admin-payments-assign', methods: ['POST'], segments: ['admin', 'payments', 'assign'] },
   { id: 'pdf', methods: ['GET'], segments: ['pdf', param('id')] },
   { id: 'tunes', methods: ['GET'], segments: ['tunes'] },
   { id: 'signout', methods: ['POST'], segments: ['auth', 'signout'] },
