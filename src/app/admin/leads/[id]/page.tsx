@@ -6,7 +6,8 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
 import { LeadFields, SubmittedDetails } from '@/components/admin/LeadFields';
-import { fetchGoogleStatus, loadGoogleBusy, requestGoogleSync, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
+import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
+import { postBookingStatus } from '@/lib/booking-status-client';
 import { draftFromRecords, leadWritePayload, type ClientRecord, type LeadDraft } from '@/lib/leads';
 import {
   blockToOccupancy,
@@ -55,7 +56,7 @@ export default function LeadDetailPage() {
       const [{ data: lead, error: leadError }, { data: activity }, { data: bookings }] = await Promise.all([
         supabase.from('leads').select('*, clients(*)').eq('id', leadId).single(),
         supabase.from('activity_events').select('id, event_type, title, body, occurred_at').eq('lead_id', leadId).order('occurred_at', { ascending: false }),
-        supabase.from('bookings').select('id, status, total_price').eq('lead_id', leadId).neq('status', 'Cancelled').order('created_at', { ascending: false }).limit(1),
+        supabase.from('bookings').select('id, status, total_price').eq('lead_id', leadId).order('created_at', { ascending: false }),
       ]);
       if (cancelled) return;
       if (leadError || !lead) {
@@ -71,7 +72,8 @@ export default function LeadDetailPage() {
       setDetails(lead.inquiry_details);
       setArchivedAt(lead.archived_at);
       setEvents((activity || []) as ActivityItem[]);
-      setBooking((bookings && bookings[0]) || null);
+      const bookingRows = (bookings || []) as LinkedBooking[];
+      setBooking(bookingRows.find((row) => row.status !== 'Cancelled') || bookingRows[0] || null);
       setLoading(false);
     }
     load();
@@ -159,28 +161,55 @@ export default function LeadDetailPage() {
     }
     setSaving(true);
     setError('');
+    const { status, ...leadFields } = payload.lead;
     const { error: clientError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
-    const { error: leadError } = await supabase.from('leads').update(payload.lead).eq('id', leadId);
+    const { error: leadError } = await supabase.from('leads').update(leadFields).eq('id', leadId);
     if (clientError || leadError) {
       setError('Could not save this lead.');
       setSaving(false);
       return;
     }
+    let nextDraft = draft;
+    let nextBooking = booking;
+    if (original.status !== status) {
+      const result = await postBookingStatus({
+        action: 'set_lead_status',
+        leadId,
+        status,
+        fields: bookingFieldsFromLead(payload.lead, booking?.total_price ?? null),
+      });
+      if (!result.ok) {
+        setError(result.error);
+        setSaving(false);
+        return;
+      }
+      nextDraft = { ...draft, status: result.leadStatus || status };
+      if (result.bookingId) {
+        nextBooking = {
+          id: result.bookingId,
+          status: result.bookingStatus || status,
+          total_price: payload.lead.quoted_price ?? booking?.total_price ?? 0,
+        };
+      } else if (result.bookingStatus === 'Cancelled' && booking) {
+        nextBooking = { ...booking, status: 'Cancelled' };
+      }
+      setDraft(nextDraft);
+      setBooking(nextBooking);
+    }
     const changes: string[] = [];
-    if (original.status !== draft.status) changes.push(`Status changed from ${original.status} to ${draft.status}.`);
     if (original.contractStatus !== draft.contractStatus) changes.push(`Contract status is now ${draft.contractStatus}.`);
     if (original.paymentStatus !== draft.paymentStatus) changes.push(`Payment status is now ${draft.paymentStatus}.`);
     if (changes.length > 0) {
       await supabase.from('activity_events').insert({
         lead_id: leadId,
-        booking_id: booking?.id || null,
+        booking_id: nextBooking?.id || null,
         event_type: 'status_change',
         title: 'Record updated',
         body: changes.join(' '),
       });
       await refreshEvents();
     }
-    setOriginal(draft);
+    setOriginal(nextDraft);
     setSaving(false);
   };
 
@@ -190,6 +219,10 @@ export default function LeadDetailPage() {
       setError('Add an event date before placing this on the calendar.');
       return;
     }
+    if (status === 'Cancelled') {
+      if (!booking || booking.status === 'Cancelled') return;
+      if (!window.confirm('Cancel this booking? It stays on the timeline and leaves the calendar.')) return;
+    }
     setSaving(true);
     setError('');
     const payload = leadWritePayload(draft);
@@ -198,82 +231,78 @@ export default function LeadDetailPage() {
       setSaving(false);
       return;
     }
-    await supabase.from('clients').update(payload.client).eq('id', clientId);
-    await supabase.from('leads').update({
-      ...payload.lead,
-      status: status === 'Confirmed' ? 'Confirmed' : payload.lead.status,
-    }).eq('id', leadId);
-    if (status === 'Confirmed') setDraft({ ...draft, status: 'Confirmed' });
-
-    const bookingFields = {
-      client_id: clientId,
-      lead_id: leadId,
-      status,
-      event_date: draft.eventDate,
-      venue_name: payload.lead.venue_name,
-      venue_address: payload.lead.venue_address,
-      service_type: payload.lead.service_type || 'Performance',
-      performance_start_time: payload.lead.performance_start_time,
-      performance_end_time: payload.lead.performance_end_time,
-      performers_needed: payload.lead.performers_needed,
-      total_price: payload.lead.quoted_price ?? booking?.total_price ?? 0,
-      special_requests: payload.lead.message,
-    };
-    let bookingId = booking?.id || null;
-    if (bookingId) {
-      const { error: updateError } = await supabase.from('bookings').update(bookingFields).eq('id', bookingId);
-      if (updateError) {
-        setError('Could not update the calendar hold.');
-        setSaving(false);
-        return;
-      }
-    } else {
-      const { data, error: insertError } = await supabase.from('bookings').insert(bookingFields).select('id, status, total_price').single();
-      if (insertError || !data) {
-        setError('Could not add this to the calendar.');
-        setSaving(false);
-        return;
-      }
-      bookingId = data.id;
-    }
-    if (!bookingId) {
-      setError('Could not add this to the calendar.');
+    const { status: leadStatus, ...leadFields } = payload.lead;
+    const { error: clientError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
+    const { error: leadError } = await supabase.from('leads').update(leadFields).eq('id', leadId);
+    if (clientError || leadError) {
+      setError('Could not save this lead.');
       setSaving(false);
       return;
     }
-    if (status === 'Cancelled') setBooking(null);
-    else setBooking({ id: bookingId, status, total_price: bookingFields.total_price });
-    await supabase.from('activity_events').insert({
+    const fields = {
+      client_id: clientId,
       lead_id: leadId,
-      booking_id: bookingId,
-      event_type: 'calendar',
-      title:
-        status === 'Confirmed'
-          ? 'Booking confirmed. This time now blocks the calendar.'
-          : status === 'Tentative'
-            ? 'Tentative hold placed on the calendar.'
-            : 'Calendar hold cancelled.',
-      body: draft.eventDate,
+      ...bookingFieldsFromLead(payload.lead, booking?.total_price ?? null),
+    };
+    const result = await postBookingStatus({
+      action: 'apply_booking',
+      bookingId: booking?.id || null,
+      leadId,
+      status,
+      fields,
     });
+    if (!result.ok) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
+    const nextStatus = result.leadStatus || (status === 'Confirmed' ? 'Confirmed' : leadStatus);
+    const nextDraft = { ...draft, status: nextStatus };
+    setDraft(nextDraft);
+    setOriginal(nextDraft);
+    if (result.bookingId) {
+      setBooking({
+        id: result.bookingId,
+        status: result.bookingStatus || status,
+        total_price: fields.total_price,
+      });
+    }
     await refreshEvents();
-    await requestGoogleSync();
+    setSaving(false);
+  };
+
+  const restoreBooking = async () => {
+    if (!booking) return;
+    if (!window.confirm('Restore this booking? It goes back on the calendar only if that time is still free.')) return;
+    setSaving(true);
+    setError('');
+    const result = await postBookingStatus({ action: 'restore_booking', bookingId: booking.id, leadId });
+    if (!result.ok) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
+    setBooking({ ...booking, status: result.bookingStatus || 'Tentative' });
+    if (result.leadStatus && draft) {
+      const nextDraft = { ...draft, status: result.leadStatus };
+      setDraft(nextDraft);
+      setOriginal(nextDraft);
+    }
+    await refreshEvents();
     setSaving(false);
   };
 
   const archive = async (restore: boolean) => {
-    const next = restore ? null : new Date().toISOString();
-    const { error: archiveError } = await supabase.from('leads').update({ archived_at: next }).eq('id', leadId);
-    if (archiveError) {
-      setError('Could not update the archive.');
+    setError('');
+    const result = await postBookingStatus({
+      action: restore ? 'restore_lead' : 'archive_lead',
+      leadId,
+    });
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    setArchivedAt(next);
-    await supabase.from('activity_events').insert({
-      lead_id: leadId,
-      event_type: 'status_change',
-      title: restore ? 'Lead restored' : 'Lead archived',
-      body: restore ? null : 'Archiving hides the lead. A confirmed booking still blocks the calendar until it is cancelled.',
-    });
+    setArchivedAt(restore ? null : new Date().toISOString());
     await refreshEvents();
   };
 
@@ -292,7 +321,7 @@ export default function LeadDetailPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => archive(Boolean(archivedAt))} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">
-            {archivedAt ? 'Restore' : 'Archive'}
+            {archivedAt ? 'Restore lead' : 'Archive'}
           </button>
           <button type="button" onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
             {saving ? 'Saving...' : 'Save'}
@@ -306,17 +335,20 @@ export default function LeadDetailPage() {
         <div className="flex flex-wrap gap-2 mt-6">
           <button type="button" onClick={() => placeHold('Tentative')} className="px-4 py-2 rounded-lg bg-amber-100 text-amber-950">Place tentative hold</button>
           <button type="button" onClick={() => placeHold('Confirmed')} className="px-4 py-2 rounded-lg bg-green-700 text-white">Confirm and block calendar</button>
-          {booking && (
-            <button type="button" onClick={() => placeHold('Cancelled')} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">Cancel calendar hold</button>
+          {booking && booking.status !== 'Cancelled' && (
+            <button type="button" onClick={() => placeHold('Cancelled')} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">Cancel booking</button>
+          )}
+          {booking && booking.status === 'Cancelled' && (
+            <button type="button" onClick={restoreBooking} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">Restore booking</button>
           )}
           {booking && (
-            <Link href={`/admin/bookings/${booking.id}`} className="px-4 py-2 text-blue-700">
+            <Link href={`/admin/bookings/${booking.id}`} className={`px-4 py-2 ${booking.status === 'Cancelled' ? 'text-gray-500' : 'text-blue-700'}`}>
               Open {booking.status.toLowerCase()} booking
             </Link>
           )}
         </div>
         <p className="text-sm text-gray-600 mt-3">
-          Confirming a booking blocks that time. A tentative hold stays visible and makes the public date check ask for a personal confirmation. Times are Pacific Time.
+          Confirming a booking blocks that time and marks this lead Confirmed. Cancelling keeps the timeline, frees the date, and marks the lead Lost unless another booking is still on the calendar. A tentative hold stays visible and makes the public date check ask for a personal confirmation. Times are Pacific Time.
         </p>
       </div>
       <SubmittedDetails details={details} />
@@ -339,6 +371,33 @@ export default function LeadDetailPage() {
       />
     </div>
   );
+}
+
+function bookingFieldsFromLead(
+  lead: {
+    event_date: string | null;
+    venue_name: string | null;
+    venue_address: string | null;
+    service_type: string | null;
+    performance_start_time: string | null;
+    performance_end_time: string | null;
+    performers_needed: number;
+    quoted_price: number | null;
+    message: string | null;
+  },
+  currentPrice: number | null,
+) {
+  return {
+    event_date: lead.event_date,
+    venue_name: lead.venue_name,
+    venue_address: lead.venue_address,
+    service_type: lead.service_type || 'Performance',
+    performance_start_time: lead.performance_start_time,
+    performance_end_time: lead.performance_end_time,
+    performers_needed: lead.performers_needed,
+    total_price: lead.quoted_price ?? currentPrice ?? 0,
+    special_requests: lead.message,
+  };
 }
 
 function busyLabels(rows: GoogleBusyRow[], date: string): string[] {

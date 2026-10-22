@@ -152,7 +152,7 @@ Do this after sections 1 through 8 are working. You connect your own Google acco
 What this does:
 
 - Bookings you create or confirm on the website, and blocks you add by hand, are copied onto a Google calendar named **Weddings (website)**.
-- If you change the time or cancel or delete that booking, the Google event changes or disappears.
+- If you change the time or cancel that booking, the Google event changes or disappears. Cancelling keeps the booking on this site. It does not delete it.
 - The private note on a block stays on this website. It is not sent to Google.
 - The website reads the busy times on your main Google calendar and blocks only those hours. A meeting from 2:00 to 3:00 blocks 2:00 to 3:00. It does not block the rest of that day. An all-day event blocks the span of that all-day event.
 - Events the website itself put on **Weddings (website)** are not read back, so a wedding is not counted twice.
@@ -280,4 +280,18 @@ You can also click **Sync now** on Settings any time. Saving a booking, a hold, 
 **A personal appointment blocks the whole day.** It should not. Only the start and end of that appointment are busy. An all-day Google event does block that whole day. Refresh the admin calendar after Sync now and look for a darker gray “Google Calendar” chip on that day only.
 
 **A wedding shows up twice.** The busy check reads your main calendar and skips the Weddings calendar. If the site had to use your primary calendar instead, it subtracts the events it created. Click Sync now. If a duplicate remains, delete the older copy in Google; the website copy will be rewritten.
+
+## 10. Cancel a booking without erasing its history
+
+After sections 1 through 9, open the Supabase **SQL Editor** and run `supabase/migrations/006_booking_cancel_and_status_sync.sql` once. It is safe to run after migration 005. Running it again replaces the same functions. It does not need a new secret, and it does not change the live site until you deploy the code that calls it.
+
+What changes:
+
+- **Cancel booking** replaces delete. The booking stays, with the time it was cancelled, who cancelled it, and an optional reason. The timeline stays with it, and a “Booking cancelled” entry is added.
+- A cancelled booking no longer blocks the calendar or the public date check. The same save asks Google to remove the mirrored event. If Google is offline, that removal waits in the existing list until the next sync.
+- Confirming a booking also marks its lead **Confirmed**, in one step. The database rejects the confirm when that time overlaps another booking, including setup and breakdown.
+- Cancelling the last booking on a lead marks the lead **Lost**. Leads do not have a separate Cancelled status. If another booking for that lead is still confirmed or completed, the lead keeps that status.
+- Restoring a cancelled booking puts it back only when the time is still free.
+- Archiving a lead is blocked while a tentative or confirmed booking is still on the calendar. Cancel the booking first. A completed booking can stay.
+- The browser cannot set booking status, cancellation fields, or lead status on its own. Those changes go through the server, which checks that you are the admin. The service role key stays in `SUPABASE_SERVICE_ROLE_KEY`. Do not copy it into a `NEXT_PUBLIC_` variable.
 
