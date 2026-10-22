@@ -7,17 +7,9 @@ interface YouTubePlaylistProps {
 }
 
 export default function YouTubePlaylist({ playlistId }: YouTubePlaylistProps) {
+  // Owner: a missing id, or one that still starts with TODO, is not shown.
   if (!playlistId || playlistId.startsWith('TODO')) {
-    return (
-      <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-        <div className="text-center p-8">
-          <p className="text-gray-500 font-medium">YouTube Playlist</p>
-          <p className="text-sm text-gray-400 mt-2">
-            TODO: Add YouTube playlist ID to display videos
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

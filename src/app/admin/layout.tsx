@@ -1,8 +1,28 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import site from '@/data/site.json';
 import { getAdminSession } from '@/lib/admin-session';
 
 export const dynamic = 'force-dynamic';
+
+const title = `${site.name} - ${site.tagline}`;
+
+export const metadata: Metadata = {
+  title: { absolute: title },
+  description: site.description,
+  alternates: {},
+  robots: { index: false, follow: false },
+  openGraph: {
+    title,
+    description: site.description,
+  },
+  twitter: {
+    card: 'summary',
+    title,
+    description: site.description,
+  },
+};
 
 const navItems = [
   { href: '/admin', label: 'Dashboard' },

@@ -1,20 +1,22 @@
-import { Metadata } from 'next';
 import Link from 'next/link';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { Monitor, MapPin, Users } from 'lucide-react';
+import { createPageMetadata } from '@/lib/page-metadata';
 import lessons from '@/data/lessons.json';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Private Violin Lessons',
-  description: 'Private violin lessons in San Luis Obispo and online. All ages and skill levels welcome. Personalized instruction from a professional violinist.',
+  description:
+    'In-person or online violin and fiddle lessons in San Luis Obispo for every skill level. Technique, theory, and improvisation tailored to your musical style.',
+  path: '/services/lessons',
   keywords: [
     'Violin Lessons San Luis Obispo',
     'Private Violin Teacher SLO',
     'Online Violin Lessons',
     'Violin Lessons Central Coast',
   ],
-};
+});
 
 const featureIcons = {
   'In-Person Lessons': MapPin,
