@@ -1,13 +1,29 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { NextResponse, type NextRequest } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
-  await supabase.auth.signOut();
-  return NextResponse.redirect(new URL('/admin/login', request.url), {
-    status: 302,
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch {
+    // Still clear cookies below so a failed sign-out cannot leave a usable session.
+  }
+
+  const response = NextResponse.redirect(new URL('/login', request.url), { status: 303 });
+  const expired = {
+    path: '/',
+    maxAge: 0,
+    expires: new Date(0),
+    sameSite: 'lax' as const,
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+  };
+
+  request.cookies.getAll().forEach((cookie) => {
+    if (cookie.name.startsWith('sb-')) {
+      response.cookies.set(cookie.name, '', expired);
+    }
   });
+
+  return response;
 }

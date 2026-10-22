@@ -1,101 +1,59 @@
-'use client';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getAdminSession } from '@/lib/admin-session';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+const navItems = [
+  { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/leads', label: 'Leads' },
+  { href: '/admin/bookings', label: 'Bookings' },
+  { href: '/admin/add-tune', label: 'Add Tune' },
+];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push('/login');
-      } else {
-        setAuthenticated(true);
-      }
-      setLoading(false);
-    };
-
-    checkSession();
-  }, [router]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
-  if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!authenticated) {
-    return null;
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await getAdminSession();
+  if (!session) {
+    redirect('/login');
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 admin-readable">
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              Sign Out
-            </button>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+              {session.email && <p className="text-sm text-gray-600">{session.email}</p>}
+            </div>
+            <form action="/auth/signout" method="post">
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
+              >
+                Sign Out
+              </button>
+            </form>
           </div>
         </div>
       </header>
 
-      {/* Navigation */}
       <nav className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4">
-          <div className="flex space-x-8">
-            <a
-              href="/admin"
-              className="px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300"
-            >
-              Dashboard
-            </a>
-            <a
-              href="/admin/leads"
-              className="px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300"
-            >
-              Leads
-            </a>
-            <a
-              href="/admin/bookings"
-              className="px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300"
-            >
-              Bookings
-            </a>
+          <div className="flex space-x-8 overflow-x-auto">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="px-4 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap"
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">{children}</main>
     </div>
   );

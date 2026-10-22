@@ -134,3 +134,31 @@ html:focus-within {
   color: var(--blue-300);
   text-shadow: 0 0 20px var(--primary-blue);
 }
+
+/* The public site uses light body text. Admin and login forms sit on white
+   cards, so their typed text must stay dark even when a utility class loses
+   to the unlayered body color. */
+.admin-readable input,
+.admin-readable textarea,
+.admin-readable select {
+  color: #111827;
+  background-color: #ffffff;
+  caret-color: #111827;
+}
+
+.admin-readable input::placeholder,
+.admin-readable textarea::placeholder {
+  color: #6b7280;
+}
+
+.admin-readable option {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+.admin-readable input:-webkit-autofill,
+.admin-readable textarea:-webkit-autofill,
+.admin-readable select:-webkit-autofill {
+  -webkit-text-fill-color: #111827;
+  caret-color: #111827;
+}

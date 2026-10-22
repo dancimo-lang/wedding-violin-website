@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import QRCode from 'qrcode';
 
 export default function QRCodePage() {
@@ -119,7 +120,7 @@ export default function QRCodePage() {
         </div>
 
         <div className="mt-8 text-center">
-          <a
+          <Link
             href="/"
             className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 font-medium transition-colors"
           >
@@ -137,7 +138,7 @@ export default function QRCodePage() {
               />
             </svg>
             <span>Back to Home</span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

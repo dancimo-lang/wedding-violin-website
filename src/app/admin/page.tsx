@@ -1,43 +1,64 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+const supabase = createClient();
+
+type DashboardLead = {
+  id: string;
+  client_id: string | null;
+  service_type: string | null;
+  event_date: string | null;
+  status: string;
+  created_at: string;
+};
+
+type DashboardBooking = {
+  id: string;
+  venue_name: string | null;
+  service_type: string;
+  event_date: string;
+  status: string;
+  total_price: number;
+};
 
 export default function AdminDashboard() {
-  const [leads, setLeads] = useState<any[]>([]);
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [leads, setLeads] = useState<DashboardLead[]>([]);
+  const [bookings, setBookings] = useState<DashboardBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    let cancelled = false;
 
-  const fetchData = async () => {
-    const [
-      { data: leadsData },
-      { data: bookingsData },
-    ] = await Promise.all([
-      supabase.from('leads').select('*').order('created_at', { ascending: false }),
-      supabase.from('bookings').select('*').order('event_date', { ascending: true }),
-    ]);
-    setLeads(leadsData || []);
-    setBookings(bookingsData || []);
-    setLoading(false);
-  };
+    async function fetchData() {
+      const [
+        { data: leadsData },
+        { data: bookingsData },
+      ] = await Promise.all([
+        supabase.from('leads').select('*').order('created_at', { ascending: false }),
+        supabase.from('bookings').select('*').order('event_date', { ascending: true }),
+      ]);
+      if (cancelled) return;
+      setLeads((leadsData || []) as DashboardLead[]);
+      setBookings((bookingsData || []) as DashboardBooking[]);
+      setLoading(false);
+    }
+
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const leadCount = leads?.length || 0;
   const bookingCount = bookings?.length || 0;
   const newLeads = leads?.filter((l) => l.status === 'New Inquiry').length || 0;
   const confirmedBookings = bookings?.filter((b) => b.status === 'Confirmed').length || 0;
+
+  if (loading) {
+    return <div className="text-gray-600">Loading dashboard...</div>;
+  }
 
   return (
     <div>

@@ -1,18 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Search, Plus, Filter } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+const supabase = createClient();
 
 const LEAD_STATUSES = [
   'New Inquiry',
@@ -41,23 +34,29 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    fetchLeads();
-  }, []);
+    let cancelled = false;
 
-  const fetchLeads = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false });
+    async function fetchLeads() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching leads:', error);
-    } else {
-      setLeads(data || []);
+      if (cancelled) return;
+      if (error) {
+        console.error('Error fetching leads:', error);
+      } else {
+        setLeads((data || []) as Lead[]);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  };
+
+    fetchLeads();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
@@ -116,7 +115,7 @@ export default function LeadsPage() {
                 placeholder="Search by client, venue, or service..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
               />
             </div>
           </div>
@@ -125,7 +124,7 @@ export default function LeadsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
             >
               <option value="all">All Statuses</option>
               {LEAD_STATUSES.map((status) => (

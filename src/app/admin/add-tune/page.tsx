@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { ArrowLeft, Upload, Plus } from 'lucide-react';
 
 export default function AddTunePage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     type: '',
@@ -20,16 +18,6 @@ export default function AddTunePage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple password check - in production, use proper authentication
-    if (password === 'admin123') {
-      setIsAuthenticated(true);
-    } else {
-      setMessage({ type: 'error', text: 'Incorrect password' });
-    }
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -99,46 +87,6 @@ export default function AddTunePage() {
       setIsSubmitting(false);
     }
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Access</h1>
-              <form onSubmit={handlePasswordSubmit}>
-                <div className="mb-4">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                {message.text && (
-                  <div className={`mb-4 p-3 rounded-lg ${message.type === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>
-                    {message.text}
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  Access Admin
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">

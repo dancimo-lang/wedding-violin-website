@@ -1,233 +1,129 @@
-# Daniel Cimo Violin - Booking System Setup Guide
+# Daniel Cimo Violin - Booking System Setup
 
-This guide covers setting up the booking system locally and deploying to production.
+This guide is for putting the private booking admin on the existing website. The public pages do not change. The live site still deploys from the `main` branch. Do not merge this work into `main`, and do not point the live Vercel project at it, until the steps below are done.
 
-## Prerequisites
+## What you need
 
-- Node.js 18+ installed
-- Supabase account (free tier works)
-- Resend account (free tier: 3,000 emails/month)
-- Git
+- The Supabase project already used for this booking system
+- The Resend account already used for contact emails
+- Access to the Vercel project, when you are ready to deploy this branch
 
-## Environment Variables
+## 1. Add the secret keys
 
-Create a `.env.local` file in the project root:
+Create a file named `.env.local` in the project folder. Copy `.env.example` and fill in the real values. `.env.local` is ignored by git. Do not commit it.
 
 ```bash
-# Supabase
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
-# Resend
 RESEND_API_KEY=your-resend-api-key
 RESEND_FROM_EMAIL=noreply@yourdomain.com
-CONTACT_EMAIL=your-email@gmail.com
+CONTACT_EMAIL=dancimo@gmail.com
 
-# Vercel Blob (optional, for file storage)
 BLOB_READ_WRITE_TOKEN=your-blob-token
 ```
 
-## Supabase Setup
+In Supabase, open **Project Settings → API**.
 
-### 1. Create a Supabase Project
+- The project URL and the `anon` `public` key go in the two `NEXT_PUBLIC_` lines. Those are safe to use in the browser.
+- The `service_role` `secret` key goes in `SUPABASE_SERVICE_ROLE_KEY`. This key can read and change every row, so it must stay on the server. Never put it in a `NEXT_PUBLIC_` variable, in the website code, or in an email.
 
-1. Go to https://supabase.com
-2. Sign up and create a new project
-3. Wait for the project to be ready (2-3 minutes)
-4. Copy your project URL and keys from Settings → API
+## 2. Update the database
 
-### 2. Run Database Migrations
+Open the Supabase **SQL Editor** and run the migration files in this order, if you have not already:
 
-1. Go to the Supabase SQL Editor
-2. Run the migration files in order:
+1. `supabase/migrations/001_initial_schema.sql` — creates the booking tables. Skip this if those tables already exist.
+2. `supabase/migrations/002_rls_policies.sql` — the first version of the permissions. Skip this if you already ran it.
+3. `supabase/migrations/003_admin_only_access.sql` — **run this now.** It replaces the old rule that let any signed-in person read client records. After this file, only people on the admin list can see or change clients, leads, bookings, notes, and the other private tables.
 
-**First migration** (`supabase/migrations/001_initial_schema.sql`):
+The public contact form still works. It saves inquiries through the server, using the service role key, which never goes to the browser.
+
+## 3. Create your login and add yourself as the only admin
+
+1. In Supabase, open **Authentication → Users**.
+2. Click **Add user** and create the account you will use to sign in. Use your own email and a long password. Turn on **Auto Confirm User** if that choice is shown.
+3. If that email is `dancimo@gmail.com`, migration 003 tries to add the account for you. If you created the user *after* running the migration, or you use a different email, open the SQL Editor and run this, with your real email:
+
 ```sql
--- This creates all tables: clients, leads, bookings, contracts, payments, services, packages, notes, communications, availability_blocks, follow_up_tasks
--- Run this entire file in the SQL Editor
+INSERT INTO public.admins (user_id, email)
+SELECT id, email
+FROM auth.users
+WHERE lower(email) = lower('dancimo@gmail.com')
+ON CONFLICT (user_id) DO UPDATE SET email = EXCLUDED.email;
 ```
 
-**Second migration** (`supabase/migrations/002_rls_policies.sql`):
-```sql
--- This enables Row Level Security and creates policies
--- Only authenticated users can access data
--- Run this entire file in the SQL Editor
-```
+4. Check the result in **Table Editor → admins**. There should be one row, and it should be you.
 
-### 3. Create Admin User
+Signing in is not enough by itself. A Supabase account that is not in the `admins` table cannot open `/admin` and cannot read client records.
 
-1. Go to Authentication → Users
-2. Click "Add User"
-3. Enter your admin email and password
-4. Click "Save"
+## 4. Turn off public sign-up
 
-## Resend Setup
+The admin list is the real lock, but visitors should not be able to create accounts on your project.
 
-### 1. Create Resend Account
+1. In Supabase, open **Authentication → Sign In / Providers** (sometimes labeled **Providers**).
+2. Open **Email**.
+3. Turn **off** “Allow new users to sign up” (the wording may be “Enable sign ups”).
+4. Save.
 
-1. Go to https://resend.com
-2. Sign up for a free account
-3. Go to API Keys → Create API Key
-4. Name it "Daniel Cimo Website"
-5. **Copy the key immediately** (you won't see it again)
-6. Add it to your `.env.local` as `RESEND_API_KEY`
+Leave your own user in place. You can still add another owner later from **Authentication → Users**, then add that person to `admins` with the SQL above. Do not turn public sign-up back on.
 
-### 2. Configure Sender Domain
+The file `supabase/config.toml` turns public sign-up off for a local Supabase started with the Supabase CLI. That file does not change the hosted project by itself. Do not run a command that pushes this config to the hosted project unless you intend to change those hosted settings. Use the dashboard steps above for the live database.
 
-1. In Resend, go to Domains
-2. Add your domain (e.g., `danielcimo.com`)
-3. Follow the DNS verification steps
-4. Once verified, use an email from your domain as `RESEND_FROM_EMAIL`
-
-## Local Development
-
-### Install Dependencies
+## 5. Run the site on your computer
 
 ```bash
 npm install
-```
-
-### Start Development Server
-
-```bash
 npm run dev
 ```
 
-The app will be available at http://localhost:3000
+Open http://localhost:3000/login and sign in with the admin user from step 3. The dashboard is http://localhost:3000/admin.
 
-### Access the Admin Dashboard
+Sign Out ends the session. After that, opening `/admin` sends you back to the login page. Refreshing the dashboard while you are signed in should keep you signed in.
 
-1. Navigate to http://localhost:3000/login
-2. Log in with your Supabase admin credentials
-3. Access the dashboard at http://localhost:3000/admin
+The old shared password on the sheet-music page has been removed. Adding a tune is now at http://localhost:3000/admin/add-tune and uses the same login as the rest of the admin area.
 
-## Testing the System
+## 6. Check the contact form
 
-### 1. Submit a Test Inquiry
+1. Open http://localhost:3000/booking and send a test inquiry.
+2. In Supabase **Table Editor**, confirm a row appeared in `clients` and a row with status “New Inquiry” appeared in `leads`.
+3. Sign in and confirm that lead shows under **Leads**.
+4. The form still emails you and the client when `RESEND_API_KEY` is set and the sender domain is verified. Saving the inquiry does not depend on the email going out.
 
-1. Go to http://localhost:3000/booking
-2. Fill out the form with test data
-3. Submit the form
+## 7. Deploy only when you mean to
 
-### 2. Verify Database Records
+The live website deploys from `main`. This booking work lives on `booking-system`. Deploying it will replace the live site with this branch, so wait until the database steps above are finished.
 
-1. Go to Supabase → Table Editor
-2. Check `clients` table - a new client should be created
-3. Check `leads` table - a new lead with status "New Inquiry" should be created
+When you are ready:
 
-### 3. Verify Emails
+1. In Vercel, add the same environment variables listed in section 1. Mark `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and `BLOB_READ_WRITE_TOKEN` as sensitive.
+2. Deploy the `booking-system` branch, or merge it into `main` only after you have checked login on a preview.
+3. Open `/login` on the deployed site, sign in, open a lead, refresh the page, then sign out and confirm `/admin` asks you to sign in again.
 
-1. Check the client's email inbox - acknowledgment email should arrive
-2. Check your admin email inbox - notification email should arrive
+## How the private data is protected
 
-### 4. Test Admin Dashboard
+- Login uses a cookie session that the server checks. The admin pages are not protected only by code running in the browser.
+- Every `/admin` page, and the tune-upload APIs, require a signed-in user who is in the `admins` table.
+- The database itself rejects reads and edits from anyone else, including someone who creates their own Supabase account.
+- The contact form is the only public way to create an inquiry. It checks the form fields and does not send back client records.
+- There is no shared admin password in the code.
 
-1. Log in at http://localhost:3000/login
-2. Navigate to Leads
-3. Verify leads appear
-4. Try editing status, adding notes, searching, and filtering
+## If something does not work
 
-## Deployment to Vercel
+**The login page says the email or password is incorrect.** The user does not exist, the password is wrong, or the user was not confirmed. Check **Authentication → Users**.
 
-### 1. Push to GitHub
+**The login page says the account is not on the admin list.** The password worked, but there is no matching row in `admins`. Run the SQL in section 3.
 
-```bash
-git add .
-git commit -m "Initial booking system"
-git push origin main
-```
+**Leads from the contact form do not appear.** Run migration 003, confirm your user is in `admins`, then sign out and sign in again. The older “check localStorage” advice no longer applies.
 
-### 2. Deploy to Vercel
+**A visitor can create an account.** Turn off public sign-up in section 4. They still should not see client data unless you also add them to `admins`.
 
-1. Go to https://vercel.com
-2. Click "Add New Project"
-3. Import your GitHub repository
-4. Add environment variables in Vercel settings:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `RESEND_API_KEY`
-   - `RESEND_FROM_EMAIL`
-   - `CONTACT_EMAIL`
-5. Click "Deploy"
+**Emails do not send.** Check the Resend API key and that the sender domain is verified. The inquiry should still be saved.
 
-### 3. Configure Custom Domain (Optional)
+## Security notes
 
-1. In Vercel project settings, add your custom domain
-2. Update DNS records as instructed by Vercel
-3. Your site will be live at your domain
-
-## Database Schema Overview
-
-### Tables
-
-- **clients**: Client information (name, email, phone)
-- **leads**: Inquiry tracking (status, service type, event date, message)
-- **bookings**: Confirmed bookings (venue, times, pricing)
-- **contracts**: Contract documents and signatures
-- **payments**: Payment tracking
-- **services**: Service types (weddings, lessons, recording)
-- **packages**: Pricing packages
-- **notes**: Notes attached to leads
-- **communications**: Email/phone communication log
-- **availability_blocks**: Calendar availability
-- **follow_up_tasks**: Task reminders
-
-### Lead Status Workflow
-
-1. New Inquiry
-2. Needs Information
-3. Quote Sent
-4. Awaiting Response
-5. Contract Sent
-6. Awaiting Retainer
-7. Lost
-
-## Troubleshooting
-
-### Login Not Working
-
-- Ensure Supabase client is configured with localStorage persistence
-- Check that your user exists in Supabase Authentication → Users
-- Verify environment variables are set correctly
-
-### Leads Not Showing
-
-- Ensure session is persisted (check localStorage)
-- Verify RLS policies are applied (run migration 002)
-- Check browser console for errors
-
-### Emails Not Sending
-
-- Verify Resend API key is correct
-- Check Resend logs for delivery status
-- Ensure sender domain is verified in Resend
-
-### Port 3000 Already in Use
-
-```bash
-# Windows
-netstat -ano | findstr :3000
-# Find the PID and kill the process
-taskkill /PID <PID> /F
-
-# Or use a different port
-npm run dev -- -p 3001
-```
-
-## Security Notes
-
-- **Never commit** `.env.local` to version control
-- **Never share** your service role key
-- Use environment variables for all sensitive data
-- RLS policies restrict database access to authenticated users only
-- Admin routes are protected by session checks
-
-## Support
-
-For issues with:
-- **Supabase**: https://supabase.com/docs
-- **Resend**: https://resend.com/docs
-- **Vercel**: https://vercel.com/docs
-- **Next.js**: https://nextjs.org/docs
+- Never commit `.env.local`.
+- Never share the service role key.
+- Do not put the service role key in any variable that starts with `NEXT_PUBLIC_`.
+- Keep public sign-up turned off.
+- Keep only the owner in the `admins` table.

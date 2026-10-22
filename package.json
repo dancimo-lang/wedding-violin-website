@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@codesweetly/react-youtube-playlist": "^3.1.0",
-    "@supabase/auth-helpers-nextjs": "^0.15.0",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "@vercel/blob": "^2.6.1",
     "lucide-react": "^0.563.0",
@@ -18,7 +18,8 @@
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "resend": "^6.9.1"
+    "resend": "^6.9.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
