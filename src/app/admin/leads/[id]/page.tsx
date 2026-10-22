@@ -1,443 +1,327 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
+import { LeadFields, SubmittedDetails } from '@/components/admin/LeadFields';
+import { draftFromRecords, leadWritePayload, type ClientRecord, type LeadDraft } from '@/lib/leads';
+import {
+  blockToOccupancy,
+  bookingToOccupancy,
+  DEFAULT_SCHEDULE_SETTINGS,
+  evaluateAvailability,
+  rosterWarning,
+  type Occupancy,
+  type ScheduleSettings,
+} from '@/lib/schedule/availability';
+import { addCalendarDays, venueRef } from '@/lib/schedule/time';
+import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
 
-const LEAD_STATUSES = [
-  'New Inquiry',
-  'Needs Information',
-  'Quote Sent',
-  'Awaiting Response',
-  'Contract Sent',
-  'Awaiting Retainer',
-  'Lost',
-] as const;
-
-type Note = {
+type LinkedBooking = {
   id: string;
-  note_type: string;
-  content: string;
-  created_at: string;
-};
-
-type Lead = {
-  id: string;
-  client_id: string;
   status: string;
-  event_date: string | null;
-  venue_name: string | null;
-  venue_address: string | null;
-  service_type: string | null;
-  package_interest: string | null;
-  performance_start_time: string | null;
-  performance_end_time: string | null;
-  estimated_duration_hours: number | null;
-  guest_count: number | null;
-  budget_range: string | null;
-  how_they_found_us: string | null;
-  message: string | null;
-  quoted_price: number | null;
-  next_follow_up_date: string | null;
+  total_price: number;
 };
 
 export default function LeadDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const [lead, setLead] = useState<Lead | null>(null);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState('');
+  const params = useParams<{ id: string }>();
+  const leadId = params.id;
+  const [draft, setDraft] = useState<LeadDraft | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [details, setDetails] = useState<unknown>(null);
+  const [archivedAt, setArchivedAt] = useState<string | null>(null);
+  const [events, setEvents] = useState<ActivityItem[]>([]);
+  const [booking, setBooking] = useState<LinkedBooking | null>(null);
+  const [original, setOriginal] = useState<LeadDraft | null>(null);
+  const [occupancies, setOccupancies] = useState<Occupancy[]>([]);
+  const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const leadId = params.id;
 
   useEffect(() => {
     let cancelled = false;
-
-    async function fetchLead() {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('id', leadId)
-        .single();
-
+    async function load() {
+      const [{ data: lead, error: leadError }, { data: activity }, { data: bookings }] = await Promise.all([
+        supabase.from('leads').select('*, clients(*)').eq('id', leadId).single(),
+        supabase.from('activity_events').select('id, event_type, title, body, occurred_at').eq('lead_id', leadId).order('occurred_at', { ascending: false }),
+        supabase.from('bookings').select('id, status, total_price').eq('lead_id', leadId).neq('status', 'Cancelled').order('created_at', { ascending: false }).limit(1),
+      ]);
       if (cancelled) return;
-      if (error) {
-        setError('Failed to load lead');
-      } else {
-        setLead(data as Lead);
+      if (leadError || !lead) {
+        setError('Could not load this lead.');
+        setLoading(false);
+        return;
       }
+      const client = (lead.clients || null) as ClientRecord | null;
+      const nextDraft = draftFromRecords(lead, client);
+      setDraft(nextDraft);
+      setOriginal(nextDraft);
+      setClientId(client?.id || lead.client_id);
+      setDetails(lead.inquiry_details);
+      setArchivedAt(lead.archived_at);
+      setEvents((activity || []) as ActivityItem[]);
+      setBooking((bookings && bookings[0]) || null);
       setLoading(false);
     }
-
-    async function fetchNotes() {
-      const { data } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('lead_id', leadId)
-        .order('created_at', { ascending: false });
-      if (!cancelled) setNotes((data || []) as Note[]);
-    }
-
-    fetchLead();
-    fetchNotes();
+    load();
     return () => {
       cancelled = true;
     };
   }, [leadId]);
 
-  const handleSave = async () => {
-    if (!lead) return;
+  const eventDate = draft?.eventDate || '';
+
+  useEffect(() => {
+    if (!eventDate) return;
+    let cancelled = false;
+    async function loadCalendar() {
+      const from = addCalendarDays(eventDate, -1);
+      const to = addCalendarDays(eventDate, 1);
+      const [settingsResult, bookingsResult, blocksResult] = await Promise.all([
+        supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
+        supabase.from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
+        supabase.from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
+      ]);
+      if (cancelled) return;
+      if (settingsResult.data) {
+        setSettings({
+          setupBufferMinutes: settingsResult.data.setup_buffer_minutes,
+          breakdownBufferMinutes: settingsResult.data.breakdown_buffer_minutes,
+          travelBufferMinutes: settingsResult.data.travel_buffer_minutes,
+          performerCount: settingsResult.data.performer_count,
+        });
+      }
+      setOccupancies([
+        ...(bookingsResult.data || []).flatMap((row) => {
+          const occupancy = bookingToOccupancy(row);
+          return occupancy ? [occupancy] : [];
+        }),
+        ...(blocksResult.data || []).map(blockToOccupancy),
+      ]);
+    }
+    loadCalendar();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventDate]);
+
+  const conflicts = useMemo(() => {
+    if (!draft?.eventDate) return [];
+    const assessment = evaluateAvailability(
+      {
+        date: draft.eventDate,
+        startTime: draft.performanceStart,
+        endTime: draft.performanceEnd,
+        venue: venueRef(draft.venueAddress, draft.venueName),
+        excludeId: booking?.id,
+      },
+      occupancies,
+      settings,
+    );
+    const roster = rosterWarning(Number(draft.performersNeeded), settings);
+    return roster ? [...assessment.reasons, roster] : assessment.reasons;
+  }, [draft, occupancies, settings, booking?.id]);
+
+  const refreshEvents = async () => {
+    const { data } = await supabase
+      .from('activity_events')
+      .select('id, event_type, title, body, occurred_at')
+      .eq('lead_id', leadId)
+      .order('occurred_at', { ascending: false });
+    setEvents((data || []) as ActivityItem[]);
+  };
+
+  const save = async () => {
+    if (!draft || !clientId || !original) return;
+    const payload = leadWritePayload(draft);
+    if (!payload.ok) {
+      setError(payload.error);
+      return;
+    }
     setSaving(true);
     setError('');
-
-    const { error } = await supabase
-      .from('leads')
-      .update({
-        status: lead.status,
-        event_date: lead.event_date || null,
-        venue_name: lead.venue_name || null,
-        venue_address: lead.venue_address || null,
-        service_type: lead.service_type || null,
-        package_interest: lead.package_interest || null,
-        performance_start_time: lead.performance_start_time || null,
-        performance_end_time: lead.performance_end_time || null,
-        estimated_duration_hours: lead.estimated_duration_hours,
-        guest_count: lead.guest_count,
-        budget_range: lead.budget_range || null,
-        how_they_found_us: lead.how_they_found_us || null,
-        message: lead.message || null,
-        quoted_price: lead.quoted_price,
-        next_follow_up_date: lead.next_follow_up_date || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', lead.id);
-
-    if (error) {
-      setError('Failed to save lead');
-    } else {
-      router.push('/admin/leads');
+    const { error: clientError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
+    const { error: leadError } = await supabase.from('leads').update(payload.lead).eq('id', leadId);
+    if (clientError || leadError) {
+      setError('Could not save this lead.');
+      setSaving(false);
+      return;
     }
+    const changes: string[] = [];
+    if (original.status !== draft.status) changes.push(`Status changed from ${original.status} to ${draft.status}.`);
+    if (original.contractStatus !== draft.contractStatus) changes.push(`Contract status is now ${draft.contractStatus}.`);
+    if (original.paymentStatus !== draft.paymentStatus) changes.push(`Payment status is now ${draft.paymentStatus}.`);
+    if (changes.length > 0) {
+      await supabase.from('activity_events').insert({
+        lead_id: leadId,
+        booking_id: booking?.id || null,
+        event_type: 'status_change',
+        title: 'Record updated',
+        body: changes.join(' '),
+      });
+      await refreshEvents();
+    }
+    setOriginal(draft);
     setSaving(false);
   };
 
-  const handleDelete = async () => {
-    if (!lead || !confirm('Are you sure you want to delete this lead?')) return;
-
-    const { error } = await supabase.from('leads').delete().eq('id', lead.id);
-
-    if (error) {
-      setError('Failed to delete lead');
-    } else {
-      router.push('/admin/leads');
+  const placeHold = async (status: 'Tentative' | 'Confirmed' | 'Cancelled') => {
+    if (!draft || !clientId) return;
+    if (!draft.eventDate && status !== 'Cancelled') {
+      setError('Add an event date before placing this on the calendar.');
+      return;
     }
-  };
+    setSaving(true);
+    setError('');
+    const payload = leadWritePayload(draft);
+    if (!payload.ok) {
+      setError(payload.error);
+      setSaving(false);
+      return;
+    }
+    await supabase.from('clients').update(payload.client).eq('id', clientId);
+    await supabase.from('leads').update({
+      ...payload.lead,
+      status: status === 'Confirmed' ? 'Confirmed' : payload.lead.status,
+    }).eq('id', leadId);
+    if (status === 'Confirmed') setDraft({ ...draft, status: 'Confirmed' });
 
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !lead) return;
-
-    const { data: claims } = await supabase.auth.getClaims();
-    const { error } = await supabase.from('notes').insert({
-      lead_id: lead.id,
-      note_type: 'Internal',
-      content: newNote,
-      is_private: false,
-      created_by: claims?.claims?.sub ?? null,
+    const bookingFields = {
+      client_id: clientId,
+      lead_id: leadId,
+      status,
+      event_date: draft.eventDate,
+      venue_name: payload.lead.venue_name,
+      venue_address: payload.lead.venue_address,
+      service_type: payload.lead.service_type || 'Performance',
+      performance_start_time: payload.lead.performance_start_time,
+      performance_end_time: payload.lead.performance_end_time,
+      performers_needed: payload.lead.performers_needed,
+      total_price: payload.lead.quoted_price ?? booking?.total_price ?? 0,
+      special_requests: payload.lead.message,
+    };
+    let bookingId = booking?.id || null;
+    if (bookingId) {
+      const { error: updateError } = await supabase.from('bookings').update(bookingFields).eq('id', bookingId);
+      if (updateError) {
+        setError('Could not update the calendar hold.');
+        setSaving(false);
+        return;
+      }
+    } else {
+      const { data, error: insertError } = await supabase.from('bookings').insert(bookingFields).select('id, status, total_price').single();
+      if (insertError || !data) {
+        setError('Could not add this to the calendar.');
+        setSaving(false);
+        return;
+      }
+      bookingId = data.id;
+    }
+    if (!bookingId) {
+      setError('Could not add this to the calendar.');
+      setSaving(false);
+      return;
+    }
+    if (status === 'Cancelled') setBooking(null);
+    else setBooking({ id: bookingId, status, total_price: bookingFields.total_price });
+    await supabase.from('activity_events').insert({
+      lead_id: leadId,
+      booking_id: bookingId,
+      event_type: 'calendar',
+      title:
+        status === 'Confirmed'
+          ? 'Booking confirmed. This time now blocks the calendar.'
+          : status === 'Tentative'
+            ? 'Tentative hold placed on the calendar.'
+            : 'Calendar hold cancelled.',
+      body: draft.eventDate,
     });
-
-    if (error) {
-      setError('Failed to add note');
-    } else {
-      setNewNote('');
-      const { data } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('lead_id', lead.id)
-        .order('created_at', { ascending: false });
-      setNotes((data || []) as Note[]);
-    }
+    await refreshEvents();
+    setSaving(false);
   };
 
-  if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading lead...</div>;
-  }
+  const archive = async (restore: boolean) => {
+    const next = restore ? null : new Date().toISOString();
+    const { error: archiveError } = await supabase.from('leads').update({ archived_at: next }).eq('id', leadId);
+    if (archiveError) {
+      setError('Could not update the archive.');
+      return;
+    }
+    setArchivedAt(next);
+    await supabase.from('activity_events').insert({
+      lead_id: leadId,
+      event_type: 'status_change',
+      title: restore ? 'Lead restored' : 'Lead archived',
+      body: restore ? null : 'Archiving hides the lead. A confirmed booking still blocks the calendar until it is cancelled.',
+    });
+    await refreshEvents();
+  };
 
-  if (!lead) {
-    return <div className="p-8 text-center text-gray-500">Lead not found</div>;
-  }
+  if (loading) return <div className="text-gray-600">Loading lead...</div>;
+  if (!draft) return <div className="text-gray-600">{error || 'Lead not found.'}</div>;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <div className="flex items-center gap-4">
-          <Link
-            href="/admin/leads"
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h2 className="text-3xl font-bold text-gray-900">Lead Details</h2>
+          <Link href="/admin/leads" className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={20} /></Link>
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">{draft.clientName || 'Lead'}</h2>
+            {archivedAt && <p className="text-sm text-gray-500">Archived</p>}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-          >
-            <Trash2 size={20} />
-            Delete
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => archive(Boolean(archivedAt))} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">
+            {archivedAt ? 'Restore' : 'Archive'}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
-          >
-            <Save size={20} />
+          <button type="button" onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={lead.status}
-              onChange={(e) => setLead({ ...lead, status: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-            >
-              {LEAD_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Event Date
-            </label>
-            <input
-              type="date"
-              value={lead.event_date || ''}
-              onChange={(e) => setLead({ ...lead, event_date: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Service Type
-            </label>
-            <input
-              type="text"
-              value={lead.service_type || ''}
-              onChange={(e) => setLead({ ...lead, service_type: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Package Interest
-            </label>
-            <input
-              type="text"
-              value={lead.package_interest || ''}
-              onChange={(e) => setLead({ ...lead, package_interest: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Venue Name
-            </label>
-            <input
-              type="text"
-              value={lead.venue_name || ''}
-              onChange={(e) => setLead({ ...lead, venue_name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Venue Address
-            </label>
-            <input
-              type="text"
-              value={lead.venue_address || ''}
-              onChange={(e) => setLead({ ...lead, venue_address: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Performance Start Time
-            </label>
-            <input
-              type="time"
-              value={lead.performance_start_time || ''}
-              onChange={(e) => setLead({ ...lead, performance_start_time: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Performance End Time
-            </label>
-            <input
-              type="time"
-              value={lead.performance_end_time || ''}
-              onChange={(e) => setLead({ ...lead, performance_end_time: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estimated Duration (hours)
-            </label>
-            <input
-              type="number"
-              value={lead.estimated_duration_hours || ''}
-              onChange={(e) => setLead({ ...lead, estimated_duration_hours: Number(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Guest Count
-            </label>
-            <input
-              type="number"
-              value={lead.guest_count || ''}
-              onChange={(e) => setLead({ ...lead, guest_count: Number(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Budget Range
-            </label>
-            <input
-              type="text"
-              value={lead.budget_range || ''}
-              onChange={(e) => setLead({ ...lead, budget_range: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Quoted Price
-            </label>
-            <input
-              type="number"
-              value={lead.quoted_price || ''}
-              onChange={(e) => setLead({ ...lead, quoted_price: Number(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Next Follow-up Date
-            </label>
-            <input
-              type="date"
-              value={lead.next_follow_up_date || ''}
-              onChange={(e) => setLead({ ...lead, next_follow_up_date: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              How They Found Us
-            </label>
-            <input
-              type="text"
-              value={lead.how_they_found_us || ''}
-              onChange={(e) => setLead({ ...lead, how_they_found_us: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message
-            </label>
-            <textarea
-              value={lead.message || ''}
-              onChange={(e) => setLead({ ...lead, message: e.target.value })}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Notes Section */}
-      <div className="bg-white rounded-xl shadow p-6 mt-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Notes</h3>
-        
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add a note..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder:text-gray-500"
-            onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
-          />
-          <button
-            onClick={handleAddNote}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-          >
-            Add
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {notes.length === 0 ? (
-            <p className="text-gray-500 text-sm">No notes yet</p>
-          ) : (
-            notes.map((note) => (
-              <div key={note.id} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-500 uppercase">
-                    {note.note_type}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(note.created_at).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-700">{note.content}</p>
-              </div>
-            ))
+      {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
+      <ConflictList reasons={conflicts} />
+      <div className="bg-white rounded-xl shadow p-6 mb-6">
+        <LeadFields draft={draft} onChange={setDraft} />
+        <div className="flex flex-wrap gap-2 mt-6">
+          <button type="button" onClick={() => placeHold('Tentative')} className="px-4 py-2 rounded-lg bg-amber-100 text-amber-950">Place tentative hold</button>
+          <button type="button" onClick={() => placeHold('Confirmed')} className="px-4 py-2 rounded-lg bg-green-700 text-white">Confirm and block calendar</button>
+          {booking && (
+            <button type="button" onClick={() => placeHold('Cancelled')} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">Cancel calendar hold</button>
+          )}
+          {booking && (
+            <Link href={`/admin/bookings/${booking.id}`} className="px-4 py-2 text-blue-700">
+              Open {booking.status.toLowerCase()} booking
+            </Link>
           )}
         </div>
+        <p className="text-sm text-gray-600 mt-3">
+          Confirming a booking blocks that time. A tentative hold stays visible and makes the public date check ask for a personal confirmation. Times are Pacific Time.
+        </p>
       </div>
+      <SubmittedDetails details={details} />
+      <Timeline
+        events={events}
+        onAdd={async ({ channel, body }) => {
+          const note = channel === 'note';
+          const { error: insertError } = await supabase.from('activity_events').insert({
+            lead_id: leadId,
+            booking_id: booking?.id || null,
+            event_type: note ? 'note' : 'communication',
+            title: note ? 'Note' : channel.replace('_', ' '),
+            body,
+            metadata: { channel },
+          });
+          if (insertError) return 'Could not add that to the timeline.';
+          await refreshEvents();
+          return null;
+        }}
+      />
     </div>
   );
 }

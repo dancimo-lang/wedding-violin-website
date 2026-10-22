@@ -8,6 +8,8 @@ const navItems = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/bookings', label: 'Bookings' },
+  { href: '/admin/calendar', label: 'Calendar' },
+  { href: '/admin/settings', label: 'Settings' },
   { href: '/admin/add-tune', label: 'Add Tune' },
 ];
 

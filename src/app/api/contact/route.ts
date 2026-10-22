@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const SERVICE_OPTIONS = new Set(['weddings', 'proposal', 'lessons', 'recording', 'other']);
+const HOW_FOUND = new Set(['Google', 'Instagram', 'Referral', 'Wedding vendor', 'Other']);
 const MAX_BODY_BYTES = 100_000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -51,6 +52,11 @@ export async function POST(request: NextRequest) {
     const service = requiredText(body.service, 50);
     const packageInterest = optionalText(body.package, 100);
     const eventDate = optionalText(body.eventDate, 10);
+    const partnerName = optionalText(body.partnerName, 200);
+    const venueName = optionalText(body.venueName, 200);
+    const eventStart = optionalText(body.eventStart, 8);
+    const howFound = optionalText(body.howFound, 50);
+    const guestCountRaw = optionalText(body.guestCount, 6);
     const message = requiredText(body.message, 5000);
     const privacy = body.privacy === true;
 
@@ -59,6 +65,14 @@ export async function POST(request: NextRequest) {
       phone === null || (phone !== 'invalid' && /^[0-9+().\-\s]{7,50}$/.test(phone));
     const dateLooksValid =
       eventDate === null || (eventDate !== 'invalid' && /^\d{4}-\d{2}-\d{2}$/.test(eventDate));
+    const timeLooksValid =
+      eventStart === null || (eventStart !== 'invalid' && /^\d{2}:\d{2}$/.test(eventStart));
+    const guestCount =
+      guestCountRaw && guestCountRaw !== 'invalid' && /^\d{1,5}$/.test(guestCountRaw)
+        ? Number(guestCountRaw)
+        : null;
+    const guestLooksValid = guestCountRaw === null || guestCountRaw === 'invalid' || (guestCount !== null && guestCount > 0 && guestCount <= 10000);
+    const howFoundLooksValid = howFound === null || (howFound !== 'invalid' && HOW_FOUND.has(howFound));
 
     if (
       !name ||
@@ -71,7 +85,15 @@ export async function POST(request: NextRequest) {
       !phoneLooksValid ||
       packageInterest === 'invalid' ||
       eventDate === 'invalid' ||
-      !dateLooksValid
+      !dateLooksValid ||
+      partnerName === 'invalid' ||
+      venueName === 'invalid' ||
+      eventStart === 'invalid' ||
+      !timeLooksValid ||
+      howFound === 'invalid' ||
+      !howFoundLooksValid ||
+      guestCountRaw === 'invalid' ||
+      !guestLooksValid
     ) {
       return NextResponse.json({ error: 'Please check the form and try again.' }, { status: 400 });
     }
@@ -102,6 +124,7 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           name,
           phone,
+          partner_name: partnerName,
         })
         .select('id')
         .single();
@@ -129,24 +152,67 @@ export async function POST(request: NextRequest) {
       } else {
         clientId = createdClient.id;
       }
+    } else if (partnerName || phone) {
+      await supabase
+        .from('clients')
+        .update({
+          ...(partnerName ? { partner_name: partnerName } : {}),
+          ...(phone ? { phone } : {}),
+        })
+        .eq('id', clientId);
     }
 
-    const { error: leadError } = await supabase.from('leads').insert({
-      client_id: clientId,
-      status: 'New Inquiry',
-      event_date: eventDate,
-      service_type: service,
-      package_interest: packageInterest,
+    const inquiryDetails = {
+      name,
+      email: normalizedEmail,
+      phone,
+      partnerName,
+      service,
+      package: packageInterest,
+      eventDate,
+      eventStart,
+      venueName,
+      guestCount,
+      howFound,
       message,
-    });
+      source: 'website',
+    };
 
-    if (leadError) {
+    const { data: createdLead, error: leadError } = await supabase
+      .from('leads')
+      .insert({
+        client_id: clientId,
+        status: 'New Inquiry',
+        inquiry_source: 'website',
+        event_date: eventDate,
+        venue_name: venueName,
+        service_type: service,
+        requested_services: service,
+        package_interest: packageInterest,
+        performance_start_time: eventStart,
+        guest_count: guestCount,
+        how_they_found_us: howFound,
+        message,
+        inquiry_details: inquiryDetails,
+      })
+      .select('id')
+      .single();
+
+    if (leadError || !createdLead) {
       console.error('Failed to create lead');
       return NextResponse.json(
         { error: 'Failed to save your inquiry. Please try again.' },
         { status: 500 }
       );
     }
+
+    await supabase.from('activity_events').insert({
+      lead_id: createdLead.id,
+      event_type: 'inquiry',
+      title: 'Website inquiry',
+      body: message,
+      metadata: { source: 'website' },
+    });
 
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {

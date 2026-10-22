@@ -68,11 +68,11 @@ export default function BookingsPage() {
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl font-bold text-gray-900">Bookings</h2>
         <Link
-          href="/admin/bookings/new"
+          href="/admin/calendar"
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
         >
           <Plus size={20} />
-          Add Booking
+          Add on calendar
         </Link>
       </div>
 
