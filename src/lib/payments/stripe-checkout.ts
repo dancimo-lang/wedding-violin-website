@@ -6,6 +6,7 @@ import { readFeeSettings, processingFeeCents } from './fees';
 import { buildPaymentView } from './view';
 import type { ObligationRef } from './match';
 import { verifyStripeWebhook } from './stripe-signature';
+import { isStripeSecretKey } from './stripe-key';
 import { planStripeEvent, type CheckoutSessionStatus } from './stripe-event';
 import { paymentPageUrl, siteOrigin } from './urls';
 import { zelleQrSources } from './zelle-qr';
@@ -40,8 +41,7 @@ async function signedContract(admin: Admin, token: string): Promise<ContractPayR
 }
 
 function stripeReady(): boolean {
-  const key = process.env.STRIPE_SECRET_KEY?.trim() ?? '';
-  return key.startsWith('sk_');
+  return isStripeSecretKey(process.env.STRIPE_SECRET_KEY);
 }
 
 export async function paymentView(token: string): Promise<{ status: number; body: Record<string, unknown> }> {
