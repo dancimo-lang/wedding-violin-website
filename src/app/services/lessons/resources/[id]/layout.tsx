@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${tune.title} Sheet Music`,
     description: tuneDescription(tune),
     path,
+    imageAlt: `${tune.title} sheet music in Daniel Cimo's violin tune library`,
   });
 }
 
