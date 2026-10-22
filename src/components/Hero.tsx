@@ -16,12 +16,14 @@ interface HeroProps {
   tertiaryCtaOnClick?: () => void;
   videoSrc?: string;
   posterSrc?: string;
+  posterAlt?: string;
   backgroundPosition?: string;
   overlay?: boolean;
   size?: 'full' | 'large' | 'medium';
   splitLayout?: boolean;
   leftSideImage?: string;
   rightSideImage?: string | null;
+  rightSideImageAlt?: string;
 }
 
 export default function Hero({
@@ -38,12 +40,14 @@ export default function Hero({
   tertiaryCtaOnClick,
   videoSrc,
   posterSrc,
+  posterAlt,
   backgroundPosition = 'center',
   overlay = true,
   size = 'large',
   splitLayout = false,
   leftSideImage,
   rightSideImage,
+  rightSideImageAlt,
 }: HeroProps) {
   const sizeClasses = {
     full: 'min-h-screen',
@@ -72,8 +76,14 @@ export default function Hero({
         <div className="absolute inset-0">
           <Image
             src={posterSrc || '/images/hero-poster.jpg'}
-            alt="Hero Background"
+            alt={
+              posterAlt ??
+              (posterSrc
+                ? 'Hero background'
+                : 'Daniel playing violin in a dark suit against a plain backdrop')
+            }
             fill
+            sizes="100vw"
             className="object-cover"
             style={{ objectPosition: backgroundPosition }}
             priority
@@ -157,9 +167,10 @@ export default function Hero({
               {rightSideImage && (
                 <Image
                   src={rightSideImage}
-                  alt="Daniel Cimo Portrait"
+                  alt={rightSideImageAlt ?? 'Daniel playing violin'}
                   width={800}
                   height={1200}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="w-full h-full object-cover"
                   priority
                 />

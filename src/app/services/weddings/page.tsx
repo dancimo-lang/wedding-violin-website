@@ -52,6 +52,7 @@ export default function WeddingsPage() {
         tertiaryCtaText="Listen"
         tertiaryCtaOnClick={scrollToSampler}
         posterSrc="/images/weddings-hero.jpg"
+        posterAlt="Daniel playing violin outdoors in a black suit, with trees and blue sky behind him"
         size="large"
       />
 

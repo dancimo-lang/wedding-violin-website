@@ -77,6 +77,7 @@ export default function ResourcesPage() {
         ctaText="Back to Lessons"
         ctaHref="/services/lessons"
         posterSrc="/images/lessons-hero.jpg"
+        posterAlt="Daniel playing violin indoors beside a microphone"
         size="large"
         overlay={false}
       />
