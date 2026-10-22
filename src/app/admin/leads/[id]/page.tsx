@@ -6,13 +6,17 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
 import { LeadFields, SubmittedDetails } from '@/components/admin/LeadFields';
+import { fetchGoogleStatus, loadGoogleBusy, requestGoogleSync, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import { draftFromRecords, leadWritePayload, type ClientRecord, type LeadDraft } from '@/lib/leads';
 import {
   blockToOccupancy,
   bookingToOccupancy,
   DEFAULT_SCHEDULE_SETTINGS,
   evaluateAvailability,
+  googleBusyChip,
+  publicExternalOccupancies,
   rosterWarning,
+  type ExternalCalendarState,
   type Occupancy,
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
@@ -38,6 +42,8 @@ export default function LeadDetailPage() {
   const [booking, setBooking] = useState<LinkedBooking | null>(null);
   const [original, setOriginal] = useState<LeadDraft | null>(null);
   const [occupancies, setOccupancies] = useState<Occupancy[]>([]);
+  const [googleLabels, setGoogleLabels] = useState<string[]>([]);
+  const [externalState, setExternalState] = useState<ExternalCalendarState>('disconnected');
   const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,12 +88,17 @@ export default function LeadDetailPage() {
     async function loadCalendar() {
       const from = addCalendarDays(eventDate, -1);
       const to = addCalendarDays(eventDate, 1);
-      const [settingsResult, bookingsResult, blocksResult] = await Promise.all([
+      const [settingsResult, bookingsResult, blocksResult, googleStatus, busyRows] = await Promise.all([
         supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
         supabase.from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
         supabase.from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
+        fetchGoogleStatus(),
+        loadGoogleBusy(supabase, from, to),
       ]);
       if (cancelled) return;
+      const state = statusToExternalState(googleStatus);
+      setExternalState(state);
+      setGoogleLabels(busyLabels(busyRows, eventDate));
       if (settingsResult.data) {
         setSettings({
           setupBufferMinutes: settingsResult.data.setup_buffer_minutes,
@@ -102,6 +113,7 @@ export default function LeadDetailPage() {
           return occupancy ? [occupancy] : [];
         }),
         ...(blocksResult.data || []).map(blockToOccupancy),
+        ...publicExternalOccupancies(state, busyRows),
       ]);
     }
     loadCalendar();
@@ -122,10 +134,12 @@ export default function LeadDetailPage() {
       },
       occupancies,
       settings,
+      undefined,
+      externalState,
     );
     const roster = rosterWarning(Number(draft.performersNeeded), settings);
     return roster ? [...assessment.reasons, roster] : assessment.reasons;
-  }, [draft, occupancies, settings, booking?.id]);
+  }, [draft, externalState, occupancies, settings, booking?.id]);
 
   const refreshEvents = async () => {
     const { data } = await supabase
@@ -242,6 +256,7 @@ export default function LeadDetailPage() {
       body: draft.eventDate,
     });
     await refreshEvents();
+    await requestGoogleSync();
     setSaving(false);
   };
 
@@ -285,7 +300,7 @@ export default function LeadDetailPage() {
         </div>
       </div>
       {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
-      <ConflictList reasons={conflicts} />
+      <ConflictList reasons={conflicts} googleBusy={googleLabels} />
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <LeadFields draft={draft} onChange={setDraft} />
         <div className="flex flex-wrap gap-2 mt-6">
@@ -324,4 +339,11 @@ export default function LeadDetailPage() {
       />
     </div>
   );
+}
+
+function busyLabels(rows: GoogleBusyRow[], date: string): string[] {
+  return rows.flatMap((row) => {
+    const chip = googleBusyChip(row, date);
+    return chip ? [`${chip.time} · ${chip.label}`] : [];
+  });
 }

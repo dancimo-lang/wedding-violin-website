@@ -1,10 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { GoogleConnectionCard } from '@/components/admin/GoogleConnectionCard';
+import { fetchGoogleStatus, requestGoogleSync } from '@/lib/google/browser';
+import { DISCONNECTED_GOOGLE_STATUS, type GoogleStatusView } from '@/lib/google/status';
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
+
+const NOTICES: Record<string, string> = {
+  connected: 'Google Calendar is connected.',
+  reconnect: 'Google needs to be connected again.',
+  missing: 'The Google keys are not on the server yet.',
+  denied: 'Google access was not allowed.',
+  error: 'Google Calendar could not be connected. Try again.',
+};
 
 export default function SettingsPage() {
   const [setup, setSetup] = useState('30');
@@ -13,6 +24,9 @@ export default function SettingsPage() {
   const [performers, setPerformers] = useState('1');
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [google, setGoogle] = useState<GoogleStatusView>(DISCONNECTED_GOOGLE_STATUS);
+  const [googleNotice, setGoogleNotice] = useState('');
+  const [googlePending, setGooglePending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,6 +43,12 @@ export default function SettingsPage() {
       setPerformers(String(data.performer_count));
     }
     load();
+    fetchGoogleStatus().then((status) => {
+      if (cancelled) return;
+      setGoogle(status);
+      const flag = new URLSearchParams(window.location.search).get('google') || '';
+      if (NOTICES[flag]) setGoogleNotice(NOTICES[flag]);
+    });
     return () => {
       cancelled = true;
     };
@@ -56,6 +76,7 @@ export default function SettingsPage() {
   };
 
   return (
+    <>
     <form onSubmit={save} className="max-w-xl bg-white rounded-xl shadow p-6 space-y-4">
       <h2 className="text-3xl font-bold text-gray-900">Calendar settings</h2>
       <p className="text-sm text-gray-600">
@@ -78,5 +99,27 @@ export default function SettingsPage() {
       </button>
       {message && <p className="text-sm text-gray-800">{message}</p>}
     </form>
+    <GoogleConnectionCard
+      view={google}
+      notice={googleNotice}
+      pending={googlePending}
+      onSync={async () => {
+        setGooglePending(true);
+        setGoogleNotice('');
+        await requestGoogleSync();
+        setGoogle(await fetchGoogleStatus());
+        setGoogleNotice('Sync finished. If Google still needs attention, the status above will say so.');
+        setGooglePending(false);
+      }}
+      onDisconnect={async () => {
+        setGooglePending(true);
+        setGoogleNotice('');
+        const response = await fetch('/api/admin/google/disconnect', { method: 'POST' });
+        setGoogle(await fetchGoogleStatus());
+        setGoogleNotice(response.ok ? 'Google Calendar is disconnected.' : 'Google Calendar could not be disconnected.');
+        setGooglePending(false);
+      }}
+    />
+    </>
   );
 }

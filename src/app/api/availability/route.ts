@@ -5,9 +5,12 @@ import {
   bookingToOccupancy,
   DEFAULT_SCHEDULE_SETTINGS,
   evaluateAvailability,
+  externalCalendarState,
+  publicExternalOccupancies,
+  type ExternalCalendarState,
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
-import { addCalendarDays } from '@/lib/schedule/time';
+import { addCalendarDays, zonedWallTimeToUtc } from '@/lib/schedule/time';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
@@ -58,7 +61,11 @@ export async function GET(request: NextRequest) {
 
   const from = addCalendarDays(date, -1);
   const to = addCalendarDays(date, 1);
-  const [settingsResult, bookingsResult, blocksResult] = await Promise.all([
+  const windowStart = zonedWallTimeToUtc(from, '00:00');
+  const windowEnd = zonedWallTimeToUtc(addCalendarDays(to, 1), '00:00');
+  if (!windowStart.ok || !windowEnd.ok) return manual();
+
+  const [settingsResult, bookingsResult, blocksResult, connectionResult, busyResult] = await Promise.all([
     admin
       .from('business_settings')
       .select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count')
@@ -74,9 +81,21 @@ export async function GET(request: NextRequest) {
       .select('id, block_type, start_date, end_date, start_time, end_time, all_day')
       .lte('start_date', to)
       .gte('end_date', from),
+    admin.from('google_calendar_connection').select('status, busy_synced_at').eq('id', 1).maybeSingle(),
+    admin
+      .from('google_busy_times')
+      .select('id, starts_at, ends_at')
+      .lt('starts_at', new Date(windowEnd.utcMs).toISOString())
+      .gt('ends_at', new Date(windowStart.utcMs).toISOString()),
   ]);
 
   if (bookingsResult.error || blocksResult.error) return manual();
+
+  let externalState: ExternalCalendarState = 'disconnected';
+  if (!connectionResult.error) {
+    externalState = externalCalendarState(connectionResult.data);
+    if (externalState !== 'disconnected' && busyResult.error) externalState = 'stale';
+  }
 
   const row = settingsResult.data;
   const settings: ScheduleSettings = row
@@ -94,12 +113,18 @@ export async function GET(request: NextRequest) {
       return occupancy ? [occupancy] : [];
     }),
     ...(blocksResult.data || []).map(blockToOccupancy),
+    ...publicExternalOccupancies(
+      externalState,
+      externalState === 'disconnected' || busyResult.error ? [] : busyResult.data || [],
+    ),
   ];
 
   const assessment = evaluateAvailability(
     { date, startTime: start, endTime: end, venue: null },
     occupancies,
     settings,
+    undefined,
+    externalState,
   );
 
   return NextResponse.json({ result: assessment.result }, { headers: NO_STORE });

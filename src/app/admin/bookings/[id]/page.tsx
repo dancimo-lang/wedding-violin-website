@@ -6,13 +6,17 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
+import { fetchGoogleStatus, loadGoogleBusy, requestGoogleSync, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import { fieldClass } from '@/lib/leads';
 import {
   blockToOccupancy,
   bookingToOccupancy,
   DEFAULT_SCHEDULE_SETTINGS,
   evaluateAvailability,
+  googleBusyChip,
+  publicExternalOccupancies,
   rosterWarning,
+  type ExternalCalendarState,
   type Occupancy,
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
@@ -61,6 +65,8 @@ export default function BookingDetailPage() {
   const [savedStatus, setSavedStatus] = useState('');
   const [events, setEvents] = useState<ActivityItem[]>([]);
   const [occupancies, setOccupancies] = useState<Occupancy[]>([]);
+  const [googleLabels, setGoogleLabels] = useState<string[]>([]);
+  const [externalState, setExternalState] = useState<ExternalCalendarState>('disconnected');
   const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,12 +113,20 @@ export default function BookingDetailPage() {
     async function loadNearby() {
       const from = addCalendarDays(eventDate, -1);
       const to = addCalendarDays(eventDate, 1);
-      const [settingsResult, bookingsResult, blocksResult] = await Promise.all([
+      const [settingsResult, bookingsResult, blocksResult, googleStatus, busyRows] = await Promise.all([
         supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
         supabase.from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
         supabase.from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
+        fetchGoogleStatus(),
+        loadGoogleBusy(supabase, from, to),
       ]);
       if (cancelled) return;
+      const state = statusToExternalState(googleStatus);
+      setExternalState(state);
+      setGoogleLabels(busyRows.flatMap((row: GoogleBusyRow) => {
+        const chip = googleBusyChip(row, eventDate);
+        return chip ? [`${chip.time} · ${chip.label}`] : [];
+      }));
       if (settingsResult.data) {
         setSettings({
           setupBufferMinutes: settingsResult.data.setup_buffer_minutes,
@@ -127,6 +141,7 @@ export default function BookingDetailPage() {
           return occupancy ? [occupancy] : [];
         }),
         ...(blocksResult.data || []).map(blockToOccupancy),
+        ...publicExternalOccupancies(state, busyRows),
       ]);
     }
     loadNearby();
@@ -178,6 +193,7 @@ export default function BookingDetailPage() {
           body: booking.event_date,
         });
       }
+      await requestGoogleSync();
       router.push('/admin/bookings');
     }
     setSaving(false);
@@ -191,6 +207,7 @@ export default function BookingDetailPage() {
     if (error) {
       setError('Failed to delete booking');
     } else {
+      await requestGoogleSync();
       router.push('/admin/bookings');
     }
   };
@@ -446,7 +463,7 @@ export default function BookingDetailPage() {
         </div>
       </div>
       <div className="mt-6">
-        <BookingConflicts booking={booking} occupancies={occupancies} settings={settings} />
+        <BookingConflicts booking={booking} occupancies={occupancies} settings={settings} googleBusy={googleLabels} externalState={externalState} />
         <Timeline
           events={events}
           onAdd={async ({ channel, body }) => {
@@ -478,10 +495,14 @@ function BookingConflicts({
   booking,
   occupancies,
   settings,
+  googleBusy,
+  externalState,
 }: {
   booking: Booking;
   occupancies: Occupancy[];
   settings: ScheduleSettings;
+  googleBusy: string[];
+  externalState: ExternalCalendarState;
 }) {
   const assessment = evaluateAvailability(
     {
@@ -493,8 +514,10 @@ function BookingConflicts({
     },
     occupancies,
     settings,
+    undefined,
+    externalState,
   );
   const roster = rosterWarning(booking.performers_needed || 1, settings);
   const reasons = roster ? [...assessment.reasons, roster] : assessment.reasons;
-  return <ConflictList reasons={booking.status === 'Cancelled' ? [] : reasons} />;
+  return <ConflictList reasons={booking.status === 'Cancelled' ? [] : reasons} googleBusy={googleBusy} />;
 }

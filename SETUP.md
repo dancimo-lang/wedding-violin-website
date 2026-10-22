@@ -143,4 +143,141 @@ Then:
 
 Times are Pacific Time, for San Luis Obispo, including the spring and fall clock changes.
 
-Google Calendar is not connected. A later step can copy confirmed bookings and manual blocks into Google as a read-only mirror. This website should stay the place that decides whether a date is free, because the travel buffer, tentative holds, and private blocks live here. If Google has an appointment this site does not know about, that appointment should be reviewed by hand. It should not silently become a booking.
+Google Calendar is connected in the next section. This website still decides travel time and tentative holds. Google busy times block only the hours they cover.
+
+## 9. Connect your Google Calendar
+
+Do this after sections 1 through 8 are working. You connect your own Google account once, from the admin Settings page. Visitors never see Google, and they never see the names of your other appointments.
+
+What this does:
+
+- Bookings you create or confirm on the website, and blocks you add by hand, are copied onto a Google calendar named **Weddings (website)**.
+- If you change the time or cancel or delete that booking, the Google event changes or disappears.
+- The private note on a block stays on this website. It is not sent to Google.
+- The website reads the busy times on your main Google calendar and blocks only those hours. A meeting from 2:00 to 3:00 blocks 2:00 to 3:00. It does not block the rest of that day. An all-day event blocks the span of that all-day event.
+- Events the website itself put on **Weddings (website)** are not read back, so a wedding is not counted twice.
+- If Google is disconnected, or the busy times are more than about two hours old, the public date check will not say a date “appears available.” It will say the date needs you to confirm it.
+
+### Create the Google Cloud project
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/) and sign in with the Google account you want on the calendar. Use the account that already has your personal appointments.
+2. At the top, open the project menu and click **New project**. Name it something you will recognize, such as `Daniel Cimo Violin`. Create it, then make sure that project is selected.
+3. Open the menu (three lines) → **APIs & Services** → **Library**.
+4. Search for **Google Calendar API**. Open it and click **Enable**.
+
+### Set the permission screen
+
+1. Go to **APIs & Services** → **OAuth consent screen** (Google sometimes labels this **Google Auth platform**).
+2. If Google asks for a user type:
+   - Choose **Internal** if this Google account is a Google Workspace account for a business you administer. Internal is the simple path.
+   - Choose **External** if this is a normal Gmail account.
+3. App name: `Daniel Cimo Violin`. User support email and developer contact email: your email. Save.
+4. On the scopes step, click **Add or remove scopes** and add these four, then update and save:
+
+   - `https://www.googleapis.com/auth/calendar.app.created` — lets the site create the Weddings calendar and edit events on it
+   - `https://www.googleapis.com/auth/calendar.events` — backup, used only if that Weddings calendar cannot be created, so events can go on your main calendar
+   - `https://www.googleapis.com/auth/calendar.freebusy` — lets the site see when you are busy, without reading event titles
+   - `https://www.googleapis.com/auth/userinfo.email` — lets the Settings page show which Google account is connected
+
+5. If the app is **External**, open **Audience** (or **Publishing status**) and click **Publish app**. The status must say **In production**, not **Testing**.
+   - Testing mode expires the connection after 7 days. You would have to click Reconnect every week.
+   - In production, Google may show a warning that the app is not verified. That is expected for a private site. On that screen choose **Advanced**, then **Go to Daniel Cimo Violin (unsafe)**. Only you use this connection. You do not need to submit the app for Google’s review unless you want that warning to go away.
+
+### Create the OAuth client
+
+1. Go to **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
+2. Application type: **Web application**. Name it `Website`.
+3. Under **Authorized redirect URIs**, add both of these. They must match character for character, including `http` versus `https`:
+
+   - `http://localhost:3000/api/admin/google/callback`
+   - `https://danielcimo.com/api/admin/google/callback`
+
+   If you also use `www.danielcimo.com`, add `https://www.danielcimo.com/api/admin/google/callback` as well. The value you put in `GOOGLE_OAUTH_REDIRECT_URI` has to be one of these.
+4. Create it. Copy the **Client ID** and the **Client secret**. Leave this page open until they are pasted somewhere safe. Do not email them or put them in the website code.
+
+### Make two secret keys
+
+On your computer, in Terminal, run this twice. Use the first result for the encryption key and the second for the cron secret. They must be different.
+
+```bash
+openssl rand -base64 32
+```
+
+### Put the values on your computer
+
+Open `.env.local` in the project folder (the same file from section 1). Add these lines. None of them start with `NEXT_PUBLIC_`.
+
+```bash
+GOOGLE_CLIENT_ID=the-client-id-from-google
+GOOGLE_CLIENT_SECRET=the-client-secret-from-google
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:3000/api/admin/google/callback
+GOOGLE_TOKEN_ENCRYPTION_KEY=the-first-openssl-result
+CRON_SECRET=the-second-openssl-result
+```
+
+Save the file. Do not commit it. Git is already set to ignore `.env.local`.
+
+### Put the same values on Vercel
+
+1. Open the Vercel project → **Settings** → **Environment Variables**.
+2. Add the same five names and values. For the live site, set `GOOGLE_OAUTH_REDIRECT_URI` to `https://danielcimo.com/api/admin/google/callback` (or the `www` version if that is the real address).
+3. Mark `GOOGLE_CLIENT_SECRET`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, and `CRON_SECRET` as sensitive.
+4. Apply them to the environment you will deploy. Do not add a `NEXT_PUBLIC_` copy of any of them.
+
+The encryption key must be the same in `.env.local` and on Vercel if you ever copy the database between them. If you change the encryption key later, open Settings and click **Reconnect Google**. The old saved connection cannot be read with a new key.
+
+### Update the database
+
+In the Supabase **SQL Editor**, run `supabase/migrations/005_google_calendar.sql` once. It adds the connection row, the link between a booking and its Google event, a waiting list of changes, and a table of busy times. Busy times have a start and an end only. They do not store event titles.
+
+The connection table is not readable from the browser. The Settings page asks the server, and the server checks that you are the admin before it answers. It never sends the refresh token to the browser.
+
+### Connect from the website
+
+1. Restart the local site (`npm run dev`) so it sees the new `.env.local` values.
+2. Sign in and open **Settings**.
+3. Click **Connect Google Calendar**.
+4. Sign in to Google if it asks, allow the permissions, and accept the unverified-app warning if it appears.
+5. You should land back on Settings with “Google Calendar is connected,” your Google email, and the calendar name **Weddings (website)**.
+6. Open [Google Calendar](https://calendar.google.com/) and confirm that calendar is in the list. New bookings and blocks from the website show up there after you save them. The save also asks the server to sync. If that request fails, the change stays in a waiting list until the next sync.
+
+**Disconnect** on the same page stops the sync and removes the saved key. It does not delete the Weddings calendar or the events already on it.
+
+**Reconnect Google** appears if Google rejects the saved key. Click it and allow access again. Until you do, the public date check will not say a date appears available.
+
+### Keep busy times fresh
+
+The file `vercel.json` asks Vercel to call `https://your-site/api/cron/google-sync` once a day, at 15:00 UTC. Vercel sends `Authorization: Bearer` plus the `CRON_SECRET` you saved. The route refuses any other caller.
+
+Vercel’s Hobby plan only allows a cron job to run once a day. Busy times older than about two hours are treated as stale, so on Hobby the public date check will usually say a date needs you to confirm it, even when the day is empty. That is deliberate. It will not promise a date is free when it has not looked at Google recently.
+
+To make “appears available” work again, use one of these:
+
+- Vercel Pro, and change the schedule in `vercel.json` to every 10 or 15 minutes, for example `*/15 * * * *`.
+- Or Supabase **pg_cron** with the **pg_net** extension, calling the same URL every 10 or 15 minutes. In the Supabase SQL editor, after those extensions are on, you can schedule it like this. Replace the secret with your real `CRON_SECRET` at the moment you run it. Do not save the secret into a file that gets committed.
+
+```sql
+select cron.schedule(
+  'google-calendar-sync',
+  '*/15 * * * *',
+  $$select net.http_get(
+      url := 'https://danielcimo.com/api/cron/google-sync',
+      headers := jsonb_build_object('Authorization', 'Bearer YOUR_CRON_SECRET')
+    )$$
+);
+```
+
+You can also click **Sync now** on Settings any time. Saving a booking, a hold, or a block asks for a sync as well.
+
+### If something does not work
+
+**Settings says the Google keys are not set.** The dev server was started before `.env.local` changed, or a name is misspelled. Restart `npm run dev`. On Vercel, confirm the five variables exist and redeploy.
+
+**Google says redirect URI mismatch.** The URI in Google Cloud and `GOOGLE_OAUTH_REDIRECT_URI` are not identical. Check `http` versus `https`, and whether you included `www`.
+
+**The connection dies after a week.** The consent screen is still in Testing. Publish it to In production, then click Reconnect Google.
+
+**A personal appointment blocks the whole day.** It should not. Only the start and end of that appointment are busy. An all-day Google event does block that whole day. Refresh the admin calendar after Sync now and look for a darker gray “Google Calendar” chip on that day only.
+
+**A wedding shows up twice.** The busy check reads your main calendar and skips the Weddings calendar. If the site had to use your primary calendar instead, it subtracts the events it created. Click Sync now. If a duplicate remains, delete the older copy in Google; the website copy will be rewritten.
+
