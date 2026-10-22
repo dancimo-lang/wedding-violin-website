@@ -21,6 +21,7 @@ export default function AboutPage() {
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/0N1A8246.jpg"
+        rightSideImageAlt="Daniel playing violin on a paved path through a park"
         size="full"
       />
 
@@ -33,9 +34,10 @@ export default function AboutPage() {
               <div className="aspect-[3/4] bg-gray-200 rounded-2xl overflow-hidden">
                 <Image
                   src="/images/daniel-cimo-professional.jpg"
-                  alt="Daniel Cimo - Professional Violinist"
+                  alt="Daniel in a black tuxedo playing violin against a wooden wall"
                   width={600}
                   height={800}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="w-full h-full object-cover"
                 />
               </div>

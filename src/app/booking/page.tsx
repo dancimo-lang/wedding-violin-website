@@ -268,8 +268,9 @@ export default function BookingPage() {
         <div className="absolute inset-0">
           <Image
             src="/images/booking-hero.jpg"
-            alt="Booking Hero"
+            alt="Violin and bow resting on sheet music beside a piano"
             fill
+            sizes="100vw"
             className="object-cover"
             priority
           />
