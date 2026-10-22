@@ -145,9 +145,17 @@ function photoLine(optOut: boolean): string {
 
 const WEDDING_PACKAGE_IDS = ['A', 'B', 'C', 'D'] as const;
 
-/** Drop the other package options and the checkbox in front of the chosen one. The words stay as written. */
-function weddingMusicTemplateForPackage(packageId: PackageId): string {
-  if (packageId === 'FULL') throw new Error('That package does not use this agreement.');
+const PACKAGE_PLUS_LEAD: Partial<Record<PackageId, string>> = {
+  B: 'Includes everything in Package A, plus:\n',
+  D: 'Includes everything in Package C, plus:\n',
+};
+
+const PACKAGE_BASE: Partial<Record<PackageId, 'A' | 'C'>> = {
+  B: 'A',
+  D: 'C',
+};
+
+function weddingPackageBlocks(): Record<(typeof WEDDING_PACKAGE_IDS)[number], string> {
   const markers = WEDDING_PACKAGE_IDS.map((id) => `{{PACKAGE_${id}_MARK}} `);
   const starts = markers.map((marker) => weddingMusicTemplate.indexOf(marker));
   const selectedAt = weddingMusicTemplate.indexOf('Selected Package:');
@@ -158,11 +166,40 @@ function weddingMusicTemplateForPackage(packageId: PackageId): string {
   for (let i = 1; i < boundaries.length; i += 1) {
     if (boundaries[i] <= boundaries[i - 1]) throw new Error('Wedding music agreement is missing a package option.');
   }
-  const index = WEDDING_PACKAGE_IDS.indexOf(packageId);
-  const checkbox = markers[index];
-  const block = weddingMusicTemplate.slice(boundaries[index], boundaries[index + 1]);
-  if (!checkbox || !block.startsWith(checkbox)) throw new Error('Wedding music agreement is missing a package option.');
-  return weddingMusicTemplate.slice(0, starts[0]) + block.slice(checkbox.length) + weddingMusicTemplate.slice(selectedAt);
+  const blocks = {} as Record<(typeof WEDDING_PACKAGE_IDS)[number], string>;
+  WEDDING_PACKAGE_IDS.forEach((id, index) => {
+    const checkbox = markers[index];
+    const block = weddingMusicTemplate.slice(boundaries[index], boundaries[index + 1]);
+    if (!checkbox || !block.startsWith(checkbox)) throw new Error('Wedding music agreement is missing a package option.');
+    blocks[id] = block.slice(checkbox.length);
+  });
+  return blocks;
+}
+
+/**
+ * One package, with no checkbox. Packages B and D keep their own title and price,
+ * then the base package's existing "Includes:" list, then their own added lines.
+ * The "everything in Package …, plus" sentence is omitted because those lines are printed.
+ */
+function weddingMusicTemplateForPackage(packageId: PackageId): string {
+  if (packageId === 'FULL') throw new Error('That package does not use this agreement.');
+  const blocks = weddingPackageBlocks();
+  const selectedAt = weddingMusicTemplate.indexOf('Selected Package:');
+  const head = weddingMusicTemplate.slice(0, weddingMusicTemplate.indexOf('{{PACKAGE_A_MARK}} '));
+  const baseId = PACKAGE_BASE[packageId];
+  let description = blocks[packageId];
+  if (baseId) {
+    const titleBreak = description.indexOf('\n');
+    const plusLead = PACKAGE_PLUS_LEAD[packageId];
+    const baseBreak = blocks[baseId].indexOf('\n');
+    const baseList = blocks[baseId].slice(baseBreak + 1);
+    const added = description.slice(titleBreak + 1);
+    if (titleBreak < 0 || !plusLead || !added.startsWith(plusLead) || !baseList.startsWith('Includes:\n')) {
+      throw new Error('Wedding music agreement is missing a package option.');
+    }
+    description = description.slice(0, titleBreak + 1) + baseList + added.slice(plusLead.length);
+  }
+  return head + description + weddingMusicTemplate.slice(selectedAt);
 }
 
 function fillTemplate(template: string, values: Record<string, string>): string {

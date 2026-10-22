@@ -189,12 +189,26 @@ test('a new agreement prints only the selected package, and an older one keeps e
   assert.equal(packageB.includes('☐ Package'), false);
   assert.match(packageB, /☐ The Client opts out of promotional use of photographs and video clips from the event\./);
   assert.doesNotMatch(packageB, /Package A: Solo Violin Ceremony — \$450/);
+  assert.doesNotMatch(packageB, /Includes everything in Package A/);
   assert.doesNotMatch(packageB, /Package C: Violin & Guitar Duo Ceremony/);
   assert.doesNotMatch(packageB, /Package D: Violin & Guitar Duo Ceremony & Cocktail Hour/);
-  assert.match(
-    packageB,
-    /1\. Package Selection\nThe Client shall select one of the following packages\. The selected package determines the services provided under this Agreement\.\nPackage B: Solo Violin Ceremony & Cocktail Hour — \$1,000\nIncludes everything in Package A, plus:\nLive solo violin performance during cocktail hour\nCocktail-hour repertoire tailored to the Client's musical preferences\nMusic across styles such as classical, jazz, Celtic, folk, pop, and other selections within the Musician's repertoire\nSelected Package: Package B: Solo Violin Ceremony & Cocktail Hour\nThe standard package prices above apply to the services described in this section\. Any additional fees, discounts, or customized arrangements will be documented below\./,
-  );
+  const packageBServices = `Package B: Solo Violin Ceremony & Cocktail Hour — $1,000
+Includes:
+Up to 30 minutes of pre-ceremony music as guests arrive
+Live solo violin for the wedding party entrance, bridal entrance, and recessional
+Music during other portions of the ceremony as agreed upon
+Sound amplification for the violin
+Up to three (3) custom song requests arranged for solo violin
+Music consultation and coordination of ceremony selections
+Live solo violin performance during cocktail hour
+Cocktail-hour repertoire tailored to the Client's musical preferences
+Music across styles such as classical, jazz, Celtic, folk, pop, and other selections within the Musician's repertoire
+Selected Package: Package B: Solo Violin Ceremony & Cocktail Hour`;
+  assert.ok(packageB.includes(packageBServices));
+  for (const line of packageBServices.split('\n')) {
+    if (line.startsWith('Selected Package:')) continue;
+    assert.equal(templateSource('wedding-music').includes(line), true, line);
+  }
   assert.match(packageB, /Live Duo Performance, \$300 per hour; DJ Services, \$200 per hour\./);
   assert.match(packageB, /For packages that include cocktail hour, the Client may provide preferred musical styles and specific song requests\./);
 
@@ -209,11 +223,29 @@ test('a new agreement prints only the selected package, and an older one keeps e
   assert.equal(packageA.includes('☑'), false);
 
   const packageD = renderContract({ ...sampleFields, packageId: 'D', renderEdition: 2 }, signedOverlay);
-  assert.match(
-    packageD,
-    /Package D: Violin & Guitar Duo Ceremony & Cocktail Hour — \$1,500\nIncludes everything in Package C, plus:\nLive violin and acoustic guitar duo performance during cocktail hour\n/,
-  );
+  const packageDServices = `Package D: Violin & Guitar Duo Ceremony & Cocktail Hour — $1,500
+Includes:
+Up to 30 minutes of pre-ceremony music as guests arrive
+Live violin and acoustic guitar duo for the wedding ceremony
+Music for the wedding party entrance, bridal entrance, and recessional
+Music during other portions of the ceremony as agreed upon
+Sound equipment and amplification for the ceremony
+Wireless microphones for the couple and officiant, as needed and subject to the agreed setup
+Up to three (3) custom song requests arranged for violin and guitar
+Music consultation and coordination of ceremony selections
+Live violin and acoustic guitar duo performance during cocktail hour
+Cocktail-hour repertoire tailored to the Client's musical preferences
+Music across styles such as classical, jazz, bossa nova, tango, Celtic, folk, pop, and other selections within the musicians' repertoires
+Sound equipment and amplification appropriate for the performance areas
+Selected Package: Package D: Violin & Guitar Duo Ceremony & Cocktail Hour`;
+  assert.ok(packageD.includes(packageDServices));
+  for (const line of packageDServices.split('\n')) {
+    if (line.startsWith('Selected Package:')) continue;
+    assert.equal(templateSource('wedding-music').includes(line), true, line);
+  }
   assert.doesNotMatch(packageD, /Package C: Violin & Guitar Duo Ceremony — \$1,000/);
+  assert.doesNotMatch(packageD, /Includes everything in Package C/);
+  assert.equal(packageD.includes('☑'), false);
 
   const storedLegacy = normalizeStoredFields(sampleFields);
   assert.equal(storedLegacy?.renderEdition, undefined);
