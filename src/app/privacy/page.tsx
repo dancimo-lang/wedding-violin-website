@@ -1,11 +1,13 @@
-import { Metadata } from 'next';
+import { createPageMetadata } from '@/lib/page-metadata';
 import { isPublishableCopy } from '@/lib/publicContent';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Privacy Policy',
-  description: 'Privacy policy for Daniel Cimo Violin services.',
-  robots: 'noindex, nofollow',
-};
+  description:
+    'Name, email, phone, and event details from the booking form are used only to answer inquiries and share quotes. Daniel Cimo does not sell this information.',
+  path: '/privacy',
+  noIndex: true,
+});
 
 // Owner: replace any value that starts with TODO. Those lines are omitted until you do.
 const ownerDraft = {

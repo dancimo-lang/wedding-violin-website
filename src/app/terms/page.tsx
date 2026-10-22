@@ -1,12 +1,14 @@
 import { Fragment } from 'react';
-import { Metadata } from 'next';
+import { createPageMetadata } from '@/lib/page-metadata';
 import { isPublishableCopy } from '@/lib/publicContent';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Terms of Service',
-  description: 'Terms of service for Daniel Cimo Violin services.',
-  robots: 'noindex, nofollow',
-};
+  description:
+    'Terms for violin performance, private lessons, and studio recording from Daniel Cimo. All bookings are subject to availability. Contact dancimo@gmail.com.',
+  path: '/terms',
+  noIndex: true,
+});
 
 // Owner: a section whose text starts with TODO is omitted, including its heading.
 const ownerDraft = {
