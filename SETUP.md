@@ -333,7 +333,7 @@ What it adds:
 Then set these on Vercel (and in `.env.local` if you try payments on your computer). All of them stay on the server. Do not create a `NEXT_PUBLIC_` copy.
 
 - `ZELLE_INGEST_SECRET`. A long random string. The same value goes in the Apps Script property of that name.
-- `STRIPE_SECRET_KEY`. The Stripe secret key (`sk_`), not the publishable key.
+- `STRIPE_SECRET_KEY`. A Stripe secret key (`sk_` or restricted `rk_`), not the publishable key (`pk_`).
 - `STRIPE_WEBHOOK_SECRET`. From the Stripe webhook endpoint below.
 - `ZELLE_RECIPIENT_DISPLAY` and `ZELLE_RECIPIENT_CONTACT` are optional. When they are unset, the couple sees Daniel Cimo and (224) 678-2799.
 - Fee settings are optional. When unset, a card payment adds Stripe's published US card rate (2.9% + 30¢) as its own line, and a bank payment does not add the published ACH rate (0.8%, capped at $5). Set `STRIPE_PASS_CARD_FEE=false` or `STRIPE_PASS_ACH_FEE=true` to change that.

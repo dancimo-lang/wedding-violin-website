@@ -2,7 +2,7 @@ import { fullWeddingTemplate } from '@/data/contracts/full-wedding';
 import { weddingMusicTemplate } from '@/data/contracts/wedding-music';
 import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import { formatLongDate, formatMoney, type FeeSummary } from './money';
-import { packageDefinition, weddingMusicOvertimeClause, type ContractTemplateId, type PackageId } from './packages';
+import { DUO_DJ_OVERTIME, packageDefinition, weddingMusicOvertimeClause, type ContractTemplateId, type PackageId } from './packages';
 
 export const BLANK = '__________________________________';
 
@@ -11,6 +11,12 @@ const PHOTO_SENTENCE = 'The Client opts out of promotional use of photographs an
 export type StoredRenderFields = {
   templateId: ContractTemplateId;
   packageId: PackageId;
+  /**
+   * Absent on agreements created before package-specific text.
+   * Those keep the master checklist so a later signature still matches the stored text.
+   * Edition 2 prints only the chosen wedding-music package, with no package checkboxes.
+   */
+  renderEdition?: 2;
   client1Name: string;
   client2Name: string;
   weddingDateIso: string;
@@ -88,6 +94,37 @@ export function formatClock(value: string | null | undefined): string {
   return `${hour12}:${minute} ${suffix}`;
 }
 
+function clockMinutes(value: string): number | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+/** A message when an entered end is earlier than its start. A blank side is not a range. */
+export function performanceTimeOrderMessage(input: {
+  ceremonyStart: string;
+  ceremonyEnd: string;
+  cocktailStart: string;
+  cocktailEnd: string;
+}): string {
+  const lines: string[] = [];
+  const ceremonyStart = clockMinutes(input.ceremonyStart);
+  const ceremonyEnd = clockMinutes(input.ceremonyEnd);
+  const cocktailStart = clockMinutes(input.cocktailStart);
+  const cocktailEnd = clockMinutes(input.cocktailEnd);
+  if (ceremonyStart != null && ceremonyEnd != null && ceremonyEnd < ceremonyStart) {
+    lines.push('Ceremony end is before ceremony start.');
+  }
+  if (cocktailStart != null && cocktailEnd != null && cocktailEnd < cocktailStart) {
+    lines.push('Cocktail hour end is before cocktail hour start.');
+  }
+  if (lines.length === 0) return '';
+  return `${lines.join(' ')} Fix the times before sending this agreement.`;
+}
+
 function eventTime(start: string, end: string): string {
   const startText = formatClock(start) || start.trim();
   const endText = formatClock(end) || end.trim();
@@ -104,6 +141,65 @@ function clientLine(first: string, second: string): string {
 
 function photoLine(optOut: boolean): string {
   return `${mark(optOut)} ${PHOTO_SENTENCE}`;
+}
+
+const WEDDING_PACKAGE_IDS = ['A', 'B', 'C', 'D'] as const;
+
+const PACKAGE_PLUS_LEAD: Partial<Record<PackageId, string>> = {
+  B: 'Includes everything in Package A, plus:\n',
+  D: 'Includes everything in Package C, plus:\n',
+};
+
+const PACKAGE_BASE: Partial<Record<PackageId, 'A' | 'C'>> = {
+  B: 'A',
+  D: 'C',
+};
+
+function weddingPackageBlocks(): Record<(typeof WEDDING_PACKAGE_IDS)[number], string> {
+  const markers = WEDDING_PACKAGE_IDS.map((id) => `{{PACKAGE_${id}_MARK}} `);
+  const starts = markers.map((marker) => weddingMusicTemplate.indexOf(marker));
+  const selectedAt = weddingMusicTemplate.indexOf('Selected Package:');
+  if (starts.some((index) => index < 0) || selectedAt < 0) {
+    throw new Error('Wedding music agreement is missing a package option.');
+  }
+  const boundaries = [...starts, selectedAt];
+  for (let i = 1; i < boundaries.length; i += 1) {
+    if (boundaries[i] <= boundaries[i - 1]) throw new Error('Wedding music agreement is missing a package option.');
+  }
+  const blocks = {} as Record<(typeof WEDDING_PACKAGE_IDS)[number], string>;
+  WEDDING_PACKAGE_IDS.forEach((id, index) => {
+    const checkbox = markers[index];
+    const block = weddingMusicTemplate.slice(boundaries[index], boundaries[index + 1]);
+    if (!checkbox || !block.startsWith(checkbox)) throw new Error('Wedding music agreement is missing a package option.');
+    blocks[id] = block.slice(checkbox.length);
+  });
+  return blocks;
+}
+
+/**
+ * One package, with no checkbox. Packages B and D keep their own title and price,
+ * then the base package's existing "Includes:" list, then their own added lines.
+ * The "everything in Package …, plus" sentence is omitted because those lines are printed.
+ */
+function weddingMusicTemplateForPackage(packageId: PackageId): string {
+  if (packageId === 'FULL') throw new Error('That package does not use this agreement.');
+  const blocks = weddingPackageBlocks();
+  const selectedAt = weddingMusicTemplate.indexOf('Selected Package:');
+  const head = weddingMusicTemplate.slice(0, weddingMusicTemplate.indexOf('{{PACKAGE_A_MARK}} '));
+  const baseId = PACKAGE_BASE[packageId];
+  let description = blocks[packageId];
+  if (baseId) {
+    const titleBreak = description.indexOf('\n');
+    const plusLead = PACKAGE_PLUS_LEAD[packageId];
+    const baseBreak = blocks[baseId].indexOf('\n');
+    const baseList = blocks[baseId].slice(baseBreak + 1);
+    const added = description.slice(titleBreak + 1);
+    if (titleBreak < 0 || !plusLead || !added.startsWith(plusLead) || !baseList.startsWith('Includes:\n')) {
+      throw new Error('Wedding music agreement is missing a package option.');
+    }
+    description = description.slice(0, titleBreak + 1) + baseList + added.slice(plusLead.length);
+  }
+  return head + description + weddingMusicTemplate.slice(selectedAt);
 }
 
 function fillTemplate(template: string, values: Record<string, string>): string {
@@ -145,7 +241,8 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   const musicianOn = signature.musicianSignedOn.trim();
 
   if (fields.templateId === 'wedding-music') {
-    return fillTemplate(weddingMusicTemplate, {
+    const packageSpecific = fields.renderEdition === 2;
+    return fillTemplate(packageSpecific ? weddingMusicTemplateForPackage(fields.packageId) : weddingMusicTemplate, {
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       WEDDING_DATE: filled(formatLongDate(fields.weddingDateIso)),
       VENUE_NAME: filled(fields.venueName),
@@ -153,10 +250,14 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
       CEREMONY_START: ceremony,
       COCKTAIL_START: cocktailStart,
       COCKTAIL_END: cocktailEnd,
-      PACKAGE_A_MARK: mark(fields.packageId === 'A'),
-      PACKAGE_B_MARK: mark(fields.packageId === 'B'),
-      PACKAGE_C_MARK: mark(fields.packageId === 'C'),
-      PACKAGE_D_MARK: mark(fields.packageId === 'D'),
+      ...(packageSpecific
+        ? {}
+        : {
+            PACKAGE_A_MARK: mark(fields.packageId === 'A'),
+            PACKAGE_B_MARK: mark(fields.packageId === 'B'),
+            PACKAGE_C_MARK: mark(fields.packageId === 'C'),
+            PACKAGE_D_MARK: mark(fields.packageId === 'D'),
+          }),
       SELECTED_PACKAGE: definition.title,
       PACKAGE_FEE: formatMoney(fields.packageFeeCents),
       TRAVEL_FEE: formatMoney(fields.travelFeeCents),
@@ -177,7 +278,8 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
       CLIENT_2_DATE: client2 ? filled(signedOn) : BLANK,
       MUSICIAN_SIGNATURE: filled(musician),
       MUSICIAN_DATE: filled(musicianOn),
-      OVERTIME_CLAUSE: weddingMusicOvertimeClause(fields.packageId),
+      // Agreements saved before this choice keep the duo and DJ sentence, so their hash still matches.
+      OVERTIME_CLAUSE: fields.renderEdition === 2 ? weddingMusicOvertimeClause(fields.packageId) : DUO_DJ_OVERTIME,
     });
   }
 
@@ -209,6 +311,7 @@ export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields
   return {
     templateId: definition.templateId,
     packageId: summary.packageId,
+    renderEdition: 2,
     client1Name: fields.client1Name,
     client2Name: fields.client2Name,
     weddingDateIso: fields.weddingDateIso,
@@ -236,6 +339,7 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
   const row = value as StoredRenderFields;
   return {
     ...row,
+    renderEdition: row.renderEdition === 2 ? 2 : undefined,
     client1Name: row.client1Name ?? '',
     client2Name: row.client2Name ?? '',
     venueName: row.venueName ?? '',
