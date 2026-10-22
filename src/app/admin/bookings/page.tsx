@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type Booking = {
   id: string;
@@ -21,6 +23,7 @@ type Booking = {
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [showCancelled, setShowCancelled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export default function BookingsPage() {
 
     async function fetchBookings() {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await supabase()
         .from('bookings')
         .select('*')
         .order('event_date', { ascending: true });
@@ -48,6 +51,10 @@ export default function BookingsPage() {
     };
   }, []);
 
+  const visibleBookings = showCancelled
+    ? bookings
+    : bookings.filter((booking) => booking.status !== 'Cancelled');
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Confirmed':
@@ -55,7 +62,7 @@ export default function BookingsPage() {
       case 'Tentative':
         return 'bg-yellow-100 text-yellow-800';
       case 'Cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gray-200 text-gray-600';
       case 'Completed':
         return 'bg-blue-100 text-blue-800';
       default:
@@ -65,8 +72,16 @@ export default function BookingsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 gap-4">
         <h2 className="text-3xl font-bold text-gray-900">Bookings</h2>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={showCancelled}
+            onChange={(event) => setShowCancelled(event.target.checked)}
+          />
+          Show cancelled
+        </label>
         <Link
           href="/admin/calendar"
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
@@ -79,9 +94,11 @@ export default function BookingsPage() {
       <div className="bg-white rounded-xl shadow overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading bookings...</div>
-        ) : bookings.length === 0 ? (
+        ) : visibleBookings.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            No bookings yet. Convert a lead to a booking to get started.
+            {bookings.length === 0
+              ? 'No bookings yet. Convert a lead to a booking to get started.'
+              : 'No open bookings. Show cancelled to see bookings that were taken off the calendar.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -98,8 +115,15 @@ export default function BookingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((booking) => (
-                  <tr key={booking.id} className="border-b border-gray-100 hover:bg-gray-50">
+                {visibleBookings.map((booking) => (
+                  <tr
+                    key={booking.id}
+                    className={
+                      booking.status === 'Cancelled'
+                        ? 'border-b border-gray-100 bg-gray-50 text-gray-500'
+                        : 'border-b border-gray-100 hover:bg-gray-50'
+                    }
+                  >
                     <td className="py-4 px-6 text-sm text-gray-900">{booking.client_id}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.venue_name || '-'}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.service_type}</td>

@@ -4,17 +4,24 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { fieldClass } from '@/lib/leads';
+import { postBookingStatus } from '@/lib/booking-status-client';
+import { fetchGoogleStatus, loadGoogleBusy, requestGoogleSync, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import {
   blockToOccupancy,
   bookingToOccupancy,
   DEFAULT_SCHEDULE_SETTINGS,
   evaluateAvailability,
+  googleBusyChip,
+  publicExternalOccupancies,
   rosterWarning,
+  type ExternalCalendarState,
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
 import { addCalendarDays, monthGrid, todayInTimeZone, venueRef } from '@/lib/schedule/time';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type CalendarBooking = {
   id: string;
@@ -48,6 +55,8 @@ export default function CalendarPage() {
   const [bookings, setBookings] = useState<CalendarBooking[]>([]);
   const [blocks, setBlocks] = useState<CalendarBlock[]>([]);
   const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
+  const [googleBusy, setGoogleBusy] = useState<GoogleBusyRow[]>([]);
+  const [externalState, setExternalState] = useState<ExternalCalendarState>('disconnected');
   const [error, setError] = useState('');
 
   const range = useMemo(() => {
@@ -61,12 +70,16 @@ export default function CalendarPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [settingsResult, bookingsResult, blocksResult] = await Promise.all([
-        supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
-        supabase.from('bookings').select('id, status, event_date, venue_name, venue_address, service_type, performance_start_time, performance_end_time, performers_needed, clients(name)').gte('event_date', range.from).lte('event_date', range.to).neq('status', 'Cancelled'),
-        supabase.from('availability_blocks').select('id, start_date, end_date, start_time, end_time, all_day, block_type, reason').lte('start_date', range.to).gte('end_date', range.from),
+      const [settingsResult, bookingsResult, blocksResult, googleStatus, busyRows] = await Promise.all([
+        supabase().from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
+        supabase().from('bookings').select('id, status, event_date, venue_name, venue_address, service_type, performance_start_time, performance_end_time, performers_needed, clients(name)').gte('event_date', range.from).lte('event_date', range.to).neq('status', 'Cancelled'),
+        supabase().from('availability_blocks').select('id, start_date, end_date, start_time, end_time, all_day, block_type, reason').lte('start_date', range.to).gte('end_date', range.from),
+        fetchGoogleStatus(),
+        loadGoogleBusy(supabase(), range.from, range.to),
       ]);
       if (cancelled) return;
+      setExternalState(statusToExternalState(googleStatus));
+      setGoogleBusy(busyRows);
       if (bookingsResult.error || blocksResult.error) setError('Could not load the calendar.');
       if (settingsResult.data) {
         setSettings({
@@ -94,6 +107,7 @@ export default function CalendarPage() {
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Calendar</h2>
           <p className="text-sm text-gray-600">Pacific Time, San Luis Obispo. Setup {settings.setupBufferMinutes} min, breakdown {settings.breakdownBufferMinutes} min, travel {settings.travelBufferMinutes} min.</p>
+          <p className="text-xs text-gray-500 mt-1">Green is confirmed, amber is tentative, light gray is a block, and darker gray is busy on Google Calendar.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <input
@@ -125,6 +139,7 @@ export default function CalendarPage() {
           selected={selected}
           bookings={bookings}
           blocks={blocks}
+          googleBusy={googleBusy}
           onSelect={(date) => {
             setSelected(date);
             setCursor(date.slice(0, 7) + '-01');
@@ -138,20 +153,24 @@ export default function CalendarPage() {
           today={today}
           bookings={bookings}
           blocks={blocks}
+          googleBusy={googleBusy}
           onPrev={() => setSelected(addCalendarDays(selected, -7))}
           onNext={() => setSelected(addCalendarDays(selected, 7))}
         />
       )}
-      {view === 'agenda' && <AgendaView today={today} bookings={bookings} blocks={blocks} />}
+      {view === 'agenda' && <AgendaView today={today} bookings={bookings} blocks={blocks} googleBusy={googleBusy} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <BlockForm selected={selected} onSaved={(block) => setBlocks((current) => [...current, block])} />
-        <HoldForm selected={selected} settings={settings} bookings={bookings} blocks={blocks} onSaved={(booking) => setBookings((current) => [...current, booking])} />
+        <HoldForm selected={selected} settings={settings} bookings={bookings} blocks={blocks} googleBusy={googleBusy} externalState={externalState} onSaved={(booking) => setBookings((current) => [...current, booking])} />
       </div>
-      <DayList date={selected} bookings={bookings} blocks={blocks} onDelete={async (id) => {
-        const { error: deleteError } = await supabase.from('availability_blocks').delete().eq('id', id);
+      <DayList date={selected} bookings={bookings} blocks={blocks} googleBusy={googleBusy} onDelete={async (id) => {
+        const { error: deleteError } = await supabase().from('availability_blocks').delete().eq('id', id);
         if (deleteError) setError('Could not remove that block.');
-        else setBlocks((current) => current.filter((block) => block.id !== id));
+        else {
+          setBlocks((current) => current.filter((block) => block.id !== id));
+          await requestGoogleSync();
+        }
       }} />
     </div>
   );
@@ -164,6 +183,7 @@ function MonthView({
   selected,
   bookings,
   blocks,
+  googleBusy,
   onSelect,
   onMonth,
 }: {
@@ -173,6 +193,7 @@ function MonthView({
   selected: string;
   bookings: CalendarBooking[];
   blocks: CalendarBlock[];
+  googleBusy: GoogleBusyRow[];
   onSelect: (date: string) => void;
   onMonth: (delta: number) => void;
 }) {
@@ -192,7 +213,7 @@ function MonthView({
       <div className="grid grid-cols-7 gap-1">
         {days.map((date) => {
           const inMonth = date.slice(0, 7) === cursor.slice(0, 7);
-          const items = itemsOnDate(date, bookings, blocks);
+          const items = itemsOnDate(date, bookings, blocks, googleBusy);
           return (
             <button
               key={date}
@@ -219,6 +240,7 @@ function WeekView({
   today,
   bookings,
   blocks,
+  googleBusy,
   onPrev,
   onNext,
 }: {
@@ -226,6 +248,7 @@ function WeekView({
   today: string;
   bookings: CalendarBooking[];
   blocks: CalendarBlock[];
+  googleBusy: GoogleBusyRow[];
   onPrev: () => void;
   onNext: () => void;
 }) {
@@ -241,7 +264,7 @@ function WeekView({
         {days.map((date) => (
           <div key={date} className={`rounded-lg border p-2 min-h-40 ${date === today ? 'border-blue-400' : 'border-gray-200'}`}>
             <div className="text-sm font-medium text-gray-900 mb-2">{date.slice(5)}</div>
-            {itemsOnDate(date, bookings, blocks).map((item) => (
+            {itemsOnDate(date, bookings, blocks, googleBusy).map((item) => (
               <div key={item.id} className={`mb-2 rounded px-2 py-1 text-xs ${chipClass(item.tone)}`}>
                 <div className="font-medium">{item.time}</div>
                 <div>{item.label}</div>
@@ -254,9 +277,9 @@ function WeekView({
   );
 }
 
-function AgendaView({ today, bookings, blocks }: { today: string; bookings: CalendarBooking[]; blocks: CalendarBlock[] }) {
+function AgendaView({ today, bookings, blocks, googleBusy }: { today: string; bookings: CalendarBooking[]; blocks: CalendarBlock[]; googleBusy: GoogleBusyRow[] }) {
   const dates = Array.from({ length: 45 }, (_, index) => addCalendarDays(today, index));
-  const rows = dates.flatMap((date) => itemsOnDate(date, bookings, blocks).map((item) => ({ ...item, date })));
+  const rows = dates.flatMap((date) => itemsOnDate(date, bookings, blocks, googleBusy).map((item) => ({ ...item, date })));
   return (
     <div className="bg-white rounded-xl shadow p-4">
       <h3 className="font-semibold text-gray-900 mb-3">Coming up</h3>
@@ -288,7 +311,7 @@ function BlockForm({ selected, onSaved }: { selected: string; onSaved: (block: C
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage('');
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('availability_blocks')
       .insert({
         start_date: selected,
@@ -308,6 +331,7 @@ function BlockForm({ selected, onSaved }: { selected: string; onSaved: (block: C
     onSaved(data as CalendarBlock);
     setReason('');
     setMessage('Date blocked.');
+    await requestGoogleSync();
   };
 
   return (
@@ -343,12 +367,16 @@ function HoldForm({
   settings,
   bookings,
   blocks,
+  googleBusy,
+  externalState,
   onSaved,
 }: {
   selected: string;
   settings: ScheduleSettings;
   bookings: CalendarBooking[];
   blocks: CalendarBlock[];
+  googleBusy: GoogleBusyRow[];
+  externalState: ExternalCalendarState;
   onSaved: (booking: CalendarBooking) => void;
 }) {
   const [name, setName] = useState('');
@@ -369,15 +397,18 @@ function HoldForm({
         return occupancy ? [occupancy] : [];
       }),
       ...blocks.map(blockToOccupancy),
+      ...publicExternalOccupancies(externalState, googleBusy),
     ];
     const assessment = evaluateAvailability(
       { date: selected, startTime: start, endTime: end, venue: venueRef(address, venue) },
       occupancies,
       settings,
+      undefined,
+      externalState,
     );
     const roster = rosterWarning(Number(performers), settings);
     return roster ? [...assessment.reasons, roster] : assessment.reasons;
-  }, [address, blocks, bookings, end, performers, selected, settings, start, venue]);
+  }, [address, blocks, bookings, end, externalState, googleBusy, performers, selected, settings, start, venue]);
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -388,22 +419,22 @@ function HoldForm({
     const normalizedEmail = email.trim().toLowerCase();
     let clientId: string | null = null;
     if (normalizedEmail) {
-      const { data } = await supabase.from('clients').select('id').eq('email', normalizedEmail).maybeSingle();
+      const { data } = await supabase().from('clients').select('id').eq('email', normalizedEmail).maybeSingle();
       clientId = data?.id || null;
     }
     if (!clientId) {
-      const { data, error } = await supabase.from('clients').insert({ name: name.trim(), email: normalizedEmail || null }).select('id').single();
+      const { data, error } = await supabase().from('clients').insert({ name: name.trim(), email: normalizedEmail || null }).select('id').single();
       if (error || !data) {
         setMessage('Could not save the client.');
         return;
       }
       clientId = data.id;
     }
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert({
+    const result = await postBookingStatus({
+      action: 'apply_booking',
+      status,
+      fields: {
         client_id: clientId,
-        status,
         event_date: selected,
         venue_name: venue || null,
         venue_address: address || null,
@@ -412,22 +443,27 @@ function HoldForm({
         performance_end_time: end,
         performers_needed: Number(performers) || 1,
         total_price: 0,
-      })
-      .select('id, status, event_date, venue_name, venue_address, service_type, performance_start_time, performance_end_time, performers_needed')
-      .single();
-    if (error || !data) {
-      setMessage('Could not save the hold.');
+      },
+    });
+    if (!result.ok || !result.bookingId) {
+      setMessage(result.ok ? 'Could not save the hold.' : result.error);
       return;
     }
-    await supabase.from('activity_events').insert({
-      booking_id: data.id,
-      event_type: 'calendar',
-      title: status === 'Confirmed' ? 'Booking confirmed. This time now blocks the calendar.' : 'Tentative hold placed on the calendar.',
-      body: `${selected} ${start}–${end}`,
+    onSaved({
+      id: result.bookingId,
+      status: result.bookingStatus || status,
+      event_date: selected,
+      venue_name: venue || null,
+      venue_address: address || null,
+      service_type: service || 'Performance',
+      performance_start_time: start,
+      performance_end_time: end,
+      performers_needed: Number(performers) || 1,
+      clients: { name: name.trim() },
     });
-    onSaved({ ...data, clients: { name: name.trim() } } as CalendarBooking);
     setMessage(status === 'Confirmed' ? 'Confirmed. The calendar is blocked.' : 'Tentative hold saved.');
     setName('');
+    await requestGoogleSync();
   };
 
   return (
@@ -460,14 +496,16 @@ function DayList({
   date,
   bookings,
   blocks,
+  googleBusy,
   onDelete,
 }: {
   date: string;
   bookings: CalendarBooking[];
   blocks: CalendarBlock[];
+  googleBusy: GoogleBusyRow[];
   onDelete: (id: string) => void;
 }) {
-  const items = itemsOnDate(date, bookings, blocks);
+  const items = itemsOnDate(date, bookings, blocks, googleBusy);
   return (
     <div className="bg-white rounded-xl shadow p-6 mt-6">
       <h3 className="font-semibold text-gray-900 mb-3">{date}</h3>
@@ -480,9 +518,9 @@ function DayList({
               <span className="text-sm text-gray-800">{item.time} · {item.label}</span>
               {item.href ? (
                 <Link href={item.href} className="text-sm text-blue-700">Open</Link>
-              ) : (
+              ) : item.removable ? (
                 <button type="button" onClick={() => onDelete(item.id)} className="text-sm text-red-700">Remove block</button>
-              )}
+              ) : null}
             </li>
           ))}
         </ul>
@@ -491,7 +529,7 @@ function DayList({
   );
 }
 
-function itemsOnDate(date: string, bookings: CalendarBooking[], blocks: CalendarBlock[]) {
+function itemsOnDate(date: string, bookings: CalendarBooking[], blocks: CalendarBlock[], googleBusy: GoogleBusyRow[]) {
   const bookingItems = bookings
     .filter((booking) => booking.event_date === date || (booking.performance_end_time && booking.performance_start_time && booking.performance_end_time <= booking.performance_start_time && addCalendarDays(booking.event_date, 1) === date))
     .map((booking) => ({
@@ -500,6 +538,7 @@ function itemsOnDate(date: string, bookings: CalendarBooking[], blocks: Calendar
       time: `${(booking.performance_start_time || '').slice(0, 5)}–${(booking.performance_end_time || '').slice(0, 5)}`,
       label: `${booking.clients?.name || 'Hold'} · ${booking.service_type}${booking.performers_needed && booking.performers_needed > 1 ? ` · ${booking.performers_needed} musicians` : ''}`,
       href: `/admin/bookings/${booking.id}`,
+      removable: false,
     }));
   const blockItems = blocks
     .filter((block) => block.start_date <= date && block.end_date >= date)
@@ -509,13 +548,27 @@ function itemsOnDate(date: string, bookings: CalendarBooking[], blocks: Calendar
       time: block.all_day ? 'All day' : `${(block.start_time || '').slice(0, 5)}–${(block.end_time || '').slice(0, 5)}`,
       label: block.reason || block.block_type,
       href: null,
+      removable: true,
     }));
-  return [...bookingItems, ...blockItems];
+  const googleItems = googleBusy.flatMap((row) => {
+    const chip = googleBusyChip(row, date);
+    if (!chip) return [];
+    return [{
+      id: `google-${chip.id}`,
+      tone: 'google' as const,
+      time: chip.time,
+      label: chip.label,
+      href: null,
+      removable: false,
+    }];
+  });
+  return [...bookingItems, ...blockItems, ...googleItems];
 }
 
-function chipClass(tone: 'confirmed' | 'tentative' | 'block') {
+function chipClass(tone: 'confirmed' | 'tentative' | 'block' | 'google') {
   if (tone === 'confirmed') return 'bg-green-100 text-green-900';
   if (tone === 'tentative') return 'bg-amber-100 text-amber-950';
+  if (tone === 'google') return 'bg-gray-300 text-gray-600';
   return 'bg-gray-200 text-gray-800';
 }
 

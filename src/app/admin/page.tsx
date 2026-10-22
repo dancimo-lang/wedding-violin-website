@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type DashboardLead = {
   id: string;
@@ -38,8 +40,8 @@ export default function AdminDashboard() {
         { data: leadsData },
         { data: bookingsData },
       ] = await Promise.all([
-        supabase.from('leads').select('id, service_type, requested_services, event_date, status, created_at, clients(name)').is('archived_at', null).order('created_at', { ascending: false }),
-        supabase.from('bookings').select('*').order('event_date', { ascending: true }),
+        supabase().from('leads').select('id, service_type, requested_services, event_date, status, created_at, clients(name)').is('archived_at', null).order('created_at', { ascending: false }),
+        supabase().from('bookings').select('*').order('event_date', { ascending: true }),
       ]);
       if (cancelled) return;
       setLeads((leadsData || []) as unknown as DashboardLead[]);
@@ -53,8 +55,9 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  const openBookings = bookings.filter((booking) => booking.status !== 'Cancelled');
   const leadCount = leads?.length || 0;
-  const bookingCount = bookings?.length || 0;
+  const bookingCount = openBookings.length;
   const newLeads = leads?.filter((l) => l.status === 'New Inquiry').length || 0;
   const confirmedBookings = bookings?.filter((b) => b.status === 'Confirmed').length || 0;
 
@@ -77,7 +80,7 @@ export default function AdminDashboard() {
           <div className="text-3xl font-bold text-blue-600">{newLeads}</div>
         </div>
         <div className="bg-white rounded-xl shadow p-6">
-          <div className="text-sm text-gray-600 mb-2">Total Bookings</div>
+          <div className="text-sm text-gray-600 mb-2">Open bookings</div>
           <div className="text-3xl font-bold text-gray-900">{bookingCount}</div>
         </div>
         <div className="bg-white rounded-xl shadow p-6">
@@ -132,7 +135,7 @@ export default function AdminDashboard() {
       {/* Upcoming Bookings */}
       <div className="bg-white rounded-xl shadow p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-4">Upcoming Bookings</h3>
-        {bookings && bookings.length > 0 ? (
+        {openBookings.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -145,7 +148,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.slice(0, 5).map((booking) => (
+                {openBookings.slice(0, 5).map((booking) => (
                   <tr key={booking.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm text-gray-900">{booking.venue_name || '-'}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{booking.service_type}</td>

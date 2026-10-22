@@ -3,6 +3,7 @@ import {
   addCalendarDays,
   timeInput,
   venueRef,
+  zonedClock,
   zonedWallTimeToUtc,
   type VenueRef,
 } from './time';
@@ -23,9 +24,22 @@ export const DEFAULT_SCHEDULE_SETTINGS: ScheduleSettings = {
   performerCount: 1,
 };
 
+export type OccupancyKind = 'confirmed' | 'tentative' | 'block' | 'external';
+
+export type ExternalCalendarState = 'fresh' | 'stale' | 'disconnected';
+
+export const BUSY_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+
+export const GOOGLE_STALE_REASON =
+  'Google Calendar busy times are more than two hours old, so this needs you to confirm.';
+export const GOOGLE_DISCONNECTED_REASON =
+  'Google Calendar is not connected, so this needs you to confirm.';
+export const GOOGLE_OVERLAP_REASON = 'This overlaps a busy time on Google Calendar.';
+export const GOOGLE_ALL_DAY_REASON = 'Google Calendar is busy across this whole day.';
+
 export type Occupancy = {
   id: string;
-  kind: 'confirmed' | 'tentative' | 'block';
+  kind: OccupancyKind;
   allDay: boolean;
   startDate: string;
   endDate: string;
@@ -33,6 +47,9 @@ export type Occupancy = {
   endTime: string | null;
   venue: VenueRef;
   performersNeeded: number;
+  /** Absolute instants for Google busy periods. These are not expanded by setup or breakdown. */
+  startMs?: number;
+  endMs?: number;
 };
 
 export type AvailabilityRequest = {
@@ -76,6 +93,19 @@ function windowForOccupancy(
   settings: ScheduleSettings,
   timeZone: string,
 ): TimedWindow | 'unreliable' | null {
+  if (occupancy.kind === 'external') {
+    if (occupancy.startMs == null || occupancy.endMs == null || occupancy.endMs <= occupancy.startMs) {
+      return 'unreliable';
+    }
+    return {
+      startMs: occupancy.startMs,
+      endMs: occupancy.endMs,
+      venue: { precision: 'none', key: null },
+      kind: 'external',
+      allDay: occupancy.allDay,
+    };
+  }
+
   if (occupancy.allDay) {
     const start = zonedWallTimeToUtc(occupancy.startDate, '00:00', timeZone);
     const end = zonedWallTimeToUtc(addCalendarDays(occupancy.endDate || occupancy.startDate, 1), '00:00', timeZone);
@@ -134,11 +164,22 @@ export function rosterWarning(performersNeeded: number, settings: ScheduleSettin
   return null;
 }
 
+export function externalCalendarState(
+  connection: { status?: string | null; busy_synced_at?: string | null } | null | undefined,
+  now = Date.now(),
+): ExternalCalendarState {
+  if (!connection || connection.status !== 'connected') return 'disconnected';
+  const synced = connection.busy_synced_at ? Date.parse(connection.busy_synced_at) : Number.NaN;
+  if (!Number.isFinite(synced) || now - synced > BUSY_MAX_AGE_MS) return 'stale';
+  return 'fresh';
+}
+
 export function evaluateAvailability(
   request: AvailabilityRequest,
   occupancies: Occupancy[],
   rawSettings: ScheduleSettings,
   timeZone = BUSINESS_TIME_ZONE,
+  externalCalendar: ExternalCalendarState = 'fresh',
 ): AvailabilityAssessment {
   const settings = clampSettings(rawSettings);
   const reasons: string[] = [];
@@ -157,6 +198,9 @@ export function evaluateAvailability(
       reasons: ['The date is not valid.'],
     };
   }
+
+  if (externalCalendar === 'stale') mark('soft', GOOGLE_STALE_REASON);
+  if (externalCalendar === 'disconnected') mark('soft', GOOGLE_DISCONNECTED_REASON);
 
   const others = occupancies.filter((occupancy) => occupancy.id !== request.excludeId);
   const startTime = timeInput(request.startTime);
@@ -198,7 +242,7 @@ export function evaluateAvailability(
 
   for (const occupancy of others) {
     const timed = windowForOccupancy(occupancy, settings, timeZone);
-    const level = occupancy.kind === 'confirmed' || occupancy.kind === 'block' ? 'hard' : 'soft';
+    const level = occupancy.kind === 'tentative' ? 'soft' : 'hard';
 
     if (timed === 'unreliable') {
       if (occupancy.startDate === request.date || occupancy.endDate === request.date) {
@@ -211,22 +255,27 @@ export function evaluateAvailability(
     const coversDay =
       occupancy.allDay && occupancy.startDate <= request.date && occupancy.endDate >= request.date;
     if (coversDay) {
-      mark(level, level === 'hard' ? 'This date is blocked for the whole day.' : 'This date has an all-day hold.');
+      if (occupancy.kind === 'external') mark('hard', GOOGLE_ALL_DAY_REASON);
+      else mark(level, level === 'hard' ? 'This date is blocked for the whole day.' : 'This date has an all-day hold.');
       continue;
     }
 
     if (!requestWindow) continue;
     if (overlaps(requestWindow.startMs, requestWindow.endMs, timed.startMs, timed.endMs)) {
-      mark(
-        level,
-        level === 'hard'
-          ? 'This overlaps a confirmed event or a blocked time, including setup and breakdown.'
-          : 'This overlaps a tentative hold, including setup and breakdown.',
-      );
+      if (occupancy.kind === 'external') {
+        mark('hard', GOOGLE_OVERLAP_REASON);
+      } else {
+        mark(
+          level,
+          level === 'hard'
+            ? 'This overlaps a confirmed event or a blocked time, including setup and breakdown.'
+            : 'This overlaps a tentative hold, including setup and breakdown.',
+        );
+      }
       continue;
     }
 
-    if (occupancy.kind === 'block' || timed.allDay) continue;
+    if (occupancy.kind === 'block' || occupancy.kind === 'external' || timed.allDay) continue;
     const gapMinutes =
       requestWindow.endMs <= timed.startMs
         ? (timed.startMs - requestWindow.endMs) / 60_000
@@ -242,7 +291,7 @@ export function evaluateAvailability(
     }
   }
 
-  if (!startTime && !hard) {
+  if (!startTime && !hard && externalCalendar === 'fresh') {
     const anything = others.some(
       (occupancy) => occupancy.startDate <= request.date && occupancy.endDate >= request.date,
     );
@@ -295,6 +344,84 @@ export function bookingToOccupancy(row: BookingRow): Occupancy | null {
     venue: venueRef(row.venue_address, row.venue_name),
     performersNeeded: row.performers_needed || 1,
   };
+}
+
+type ExternalBusyRow = {
+  id: string;
+  start_at?: string;
+  end_at?: string;
+  starts_at?: string;
+  ends_at?: string;
+};
+
+export function externalBusyToOccupancy(
+  row: ExternalBusyRow,
+  timeZone = BUSINESS_TIME_ZONE,
+): Occupancy | null {
+  const startRaw = row.starts_at || row.start_at;
+  const endRaw = row.ends_at || row.end_at;
+  if (!startRaw || !endRaw) return null;
+  const startMs = Date.parse(startRaw);
+  const endMs = Date.parse(endRaw);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return null;
+
+  const startClock = zonedClock(startMs, timeZone);
+  const endClock = zonedClock(endMs, timeZone);
+  const lastMoment = zonedClock(endMs - 1, timeZone);
+  const allDay = startClock.time === '00:00' && endClock.time === '00:00';
+  return {
+    id: row.id,
+    kind: 'external',
+    allDay,
+    startDate: startClock.date,
+    endDate: lastMoment.date,
+    startTime: allDay ? null : startClock.time,
+    endTime: allDay ? null : endClock.time === '00:00' ? '24:00' : endClock.time,
+    venue: { precision: 'none', key: null },
+    performersNeeded: 1,
+    startMs,
+    endMs,
+  };
+}
+
+export function intervalOverlapsLocalDate(
+  startMs: number,
+  endMs: number,
+  date: string,
+  timeZone = BUSINESS_TIME_ZONE,
+): boolean {
+  const dayStart = zonedWallTimeToUtc(date, '00:00', timeZone);
+  const dayEnd = zonedWallTimeToUtc(addCalendarDays(date, 1), '00:00', timeZone);
+  if (!dayStart.ok || !dayEnd.ok) return false;
+  return startMs < dayEnd.utcMs && dayStart.utcMs < endMs;
+}
+
+export function publicExternalOccupancies(
+  state: ExternalCalendarState,
+  rows: ExternalBusyRow[],
+  timeZone = BUSINESS_TIME_ZONE,
+): Occupancy[] {
+  if (state === 'disconnected') return [];
+  return rows.flatMap((row) => {
+    const occupancy = externalBusyToOccupancy(row, timeZone);
+    return occupancy ? [occupancy] : [];
+  });
+}
+
+export function googleBusyChip(
+  row: ExternalBusyRow,
+  date: string,
+  timeZone = BUSINESS_TIME_ZONE,
+): { id: string; time: string; label: string } | null {
+  const occupancy = externalBusyToOccupancy(row, timeZone);
+  if (!occupancy || occupancy.startMs == null || occupancy.endMs == null) return null;
+  if (!intervalOverlapsLocalDate(occupancy.startMs, occupancy.endMs, date, timeZone)) return null;
+  let time = 'Busy';
+  if (occupancy.allDay || (occupancy.startDate < date && occupancy.endDate > date)) time = 'All day';
+  else if (occupancy.startDate === date && occupancy.endDate === date) time = `${occupancy.startTime}–${occupancy.endTime}`;
+  else if (occupancy.startDate === date) time = `${occupancy.startTime} onward`;
+  else if (occupancy.endDate === date) time = `until ${occupancy.endTime}`;
+  return { id: row.id, time, label: 'Google Calendar' };
 }
 
 export function blockToOccupancy(row: BlockRow): Occupancy {

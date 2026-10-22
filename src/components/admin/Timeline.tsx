@@ -105,16 +105,30 @@ export function Timeline({
   );
 }
 
-export function ConflictList({ reasons }: { reasons: string[] }) {
-  if (reasons.length === 0) return null;
+export function ConflictList({ reasons, googleBusy = [] }: { reasons: string[]; googleBusy?: string[] }) {
+  if (reasons.length === 0 && googleBusy.length === 0) return null;
   return (
-    <div className="bg-amber-50 border border-amber-200 text-amber-950 px-4 py-3 rounded-lg mb-6">
-      <p className="font-medium mb-1">Check the calendar before relying on this time</p>
-      <ul className="list-disc pl-5 text-sm space-y-1">
-        {reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
-        ))}
-      </ul>
+    <div className="space-y-3 mb-6">
+      {reasons.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-950 px-4 py-3 rounded-lg">
+          <p className="font-medium mb-1">Check the calendar before relying on this time</p>
+          <ul className="list-disc pl-5 text-sm space-y-1">
+            {reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {googleBusy.length > 0 && (
+        <div className="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 rounded-lg">
+          <p className="font-medium mb-1">Busy on Google Calendar</p>
+          <ul className="list-disc pl-5 text-sm space-y-1">
+            {googleBusy.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

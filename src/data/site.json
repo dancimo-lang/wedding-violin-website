@@ -4,7 +4,7 @@
   "tagline": "Central Coast Wedding Violinist",
   "description": "Professional violinist serving San Luis Obispo, Paso Robles, and the Central Coast. Specializing in wedding ceremonies, private lessons, and studio recording sessions.",
   "email": "dancimo@gmail.com",
-  "phone": "(805) 555-0123",
+  "phone": "(224) 678-2799",
   "location": {
     "city": "San Luis Obispo",
     "region": "Central Coast",
@@ -16,6 +16,9 @@
     "youtube": "https://www.youtube.com/@weddingviolinistslo",
     "facebook": "https://www.facebook.com/profile.php?id=61586308868948",
     "google": "https://g.page/daniel-cimo-violinist"
+  },
+  "ownerNotes": {
+    "google": "Do not publish social.google yet. https://g.page/daniel-cimo-violinist does not open a Google Business Profile; it redirects to a Google web search, and no replacement URL exists in this repo. Header and footer hide the map icon while this note is set. Replace social.google with the real profile URL, then delete this note."
   },
   "seo": {
     "keywords": [

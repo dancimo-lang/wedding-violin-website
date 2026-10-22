@@ -5,15 +5,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { LeadFields } from '@/components/admin/LeadFields';
+import { postBookingStatus } from '@/lib/booking-status-client';
 import { emptyLeadDraft, leadWritePayload, type LeadDraft } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 export default function NewLeadPage() {
   const router = useRouter();
   const [draft, setDraft] = useState<LeadDraft>(emptyLeadDraft());
   const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const save = async (event: React.FormEvent) => {
@@ -28,7 +32,7 @@ export default function NewLeadPage() {
 
     let clientId: string | null = null;
     if (payload.client.email) {
-      const { data: existing, error: lookupError } = await supabase
+      const { data: existing, error: lookupError } = await supabase()
         .from('clients')
         .select('id')
         .eq('email', payload.client.email)
@@ -42,7 +46,7 @@ export default function NewLeadPage() {
     }
 
     if (!clientId) {
-      const { data: created, error: clientError } = await supabase
+      const { data: created, error: clientError } = await supabase()
         .from('clients')
         .insert(payload.client)
         .select('id')
@@ -54,7 +58,7 @@ export default function NewLeadPage() {
       }
       clientId = created.id;
     } else {
-      const { error: updateError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
+      const { error: updateError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
       if (updateError) {
         setError('Could not update the client.');
         setSaving(false);
@@ -62,10 +66,12 @@ export default function NewLeadPage() {
       }
     }
 
-    const { data: lead, error: leadError } = await supabase
+    const booked = payload.lead.status === 'Confirmed' || payload.lead.status === 'Completed';
+    const { data: lead, error: leadError } = await supabase()
       .from('leads')
       .insert({
         ...payload.lead,
+        status: booked ? 'Awaiting Response' : payload.lead.status,
         client_id: clientId,
         inquiry_details: {
           source: payload.lead.inquiry_source,
@@ -87,13 +93,40 @@ export default function NewLeadPage() {
       return;
     }
 
-    await supabase.from('activity_events').insert({
+    await supabase().from('activity_events').insert({
       lead_id: lead.id,
       event_type: 'inquiry',
       title: `Lead added by ${payload.lead.inquiry_source || 'hand'}`,
       body: payload.lead.message,
       metadata: { source: payload.lead.inquiry_source },
     });
+
+    if (booked) {
+      const result = await postBookingStatus({
+        action: 'set_lead_status',
+        leadId: lead.id,
+        status: payload.lead.status,
+        fields: {
+          client_id: clientId,
+          lead_id: lead.id,
+          event_date: payload.lead.event_date,
+          venue_name: payload.lead.venue_name,
+          venue_address: payload.lead.venue_address,
+          service_type: payload.lead.service_type || payload.lead.requested_services || 'Performance',
+          performance_start_time: payload.lead.performance_start_time,
+          performance_end_time: payload.lead.performance_end_time,
+          performers_needed: payload.lead.performers_needed,
+          total_price: payload.lead.quoted_price ?? 0,
+          special_requests: payload.lead.message,
+        },
+      });
+      if (!result.ok) {
+        setSavedId(lead.id);
+        setError(`${result.error} The lead was saved without that booking.`);
+        setSaving(false);
+        return;
+      }
+    }
 
     router.push(`/admin/leads/${lead.id}`);
   };
@@ -105,11 +138,16 @@ export default function NewLeadPage() {
           <Link href="/admin/leads" className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={20} /></Link>
           <h2 className="text-3xl font-bold text-gray-900">New lead</h2>
         </div>
-        <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
+        <button type="submit" disabled={saving || Boolean(savedId)} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
           {saving ? 'Saving...' : 'Save lead'}
         </button>
       </div>
-      {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
+      {error && (
+        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}{' '}
+          {savedId && <Link href={`/admin/leads/${savedId}`} className="underline">Open the lead</Link>}
+        </div>
+      )}
       <div className="bg-white rounded-xl shadow p-6">
         <LeadFields draft={draft} onChange={setDraft} />
       </div>

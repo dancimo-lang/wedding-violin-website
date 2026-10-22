@@ -3,30 +3,41 @@
 interface SingleVideoProps {
   videoId: string;
   title?: string;
+  /**
+   * Frame shape. "landscape" (default) is 16:9, matching existing embeds.
+   * "portrait" is 9:16 for YouTube Shorts and is capped so it stays a
+   * narrow column instead of a letterboxed widescreen player.
+   */
+  orientation?: 'landscape' | 'portrait';
+  /** When false, `title` is used only as the iframe accessible name. */
+  showTitle?: boolean;
 }
 
-export default function SingleVideo({ videoId, title }: SingleVideoProps) {
-  if (!videoId) {
-    return (
-      <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-        <div className="text-center p-8">
-          <p className="text-gray-500 font-medium">YouTube Video</p>
-          <p className="text-sm text-gray-400 mt-2">
-            TODO: Add YouTube video ID to display video
-          </p>
-        </div>
-      </div>
-    );
+export default function SingleVideo({
+  videoId,
+  title,
+  orientation = 'landscape',
+  showTitle = true,
+}: SingleVideoProps) {
+  // Owner: a missing id, or one that still starts with TODO, is not shown.
+  if (!videoId || videoId.startsWith('TODO')) {
+    return null;
   }
 
+  const portrait = orientation === 'portrait';
+
   return (
-    <div className="rounded-lg overflow-hidden shadow-lg">
-      {title && (
+    <div
+      className={`rounded-lg overflow-hidden shadow-lg ${
+        portrait ? 'mx-auto w-full max-w-[280px]' : ''
+      }`}
+    >
+      {showTitle && title && (
         <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
           {title}
         </h3>
       )}
-      <div className="aspect-video">
+      <div className={portrait ? 'aspect-[9/16]' : 'aspect-video'}>
         <iframe
           src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
           title={title || "YouTube video player"}

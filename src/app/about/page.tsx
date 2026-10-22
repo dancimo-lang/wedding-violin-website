@@ -1,17 +1,22 @@
-import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
+import { createPageMetadata } from '@/lib/page-metadata';
 import about from '@/data/about.json';
+import { isPublishableCopy } from '@/lib/publicContent';
 
-export const metadata: Metadata = {
-  title: 'About Daniel Cimo',
-  description: 'Learn about Daniel Cimo, a professional violinist based in San Luis Obispo, California. Specializing in wedding performances, private lessons, and studio recording.',
+export const metadata = createPageMetadata({
+  title: 'Violinist, Educator & Recording Artist',
+  description:
+    'A San Luis Obispo violinist blending classical repertoire, gypsy jazz, traditional fiddle, and improvisation. Performer, teacher, and recording artist.',
+  path: '/about',
   keywords: ['San Luis Obispo Violinist', 'Central Coast Musician', 'Violin Teacher SLO'],
-};
+});
 
 export default function AboutPage() {
+  const training = about.credentials.items.filter((item) => isPublishableCopy(item));
+
   return (
     <>
       {/* Hero */}
@@ -56,6 +61,26 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      {training.length > 0 && (
+        <section className="py-20 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+                {about.credentials.title}
+              </h2>
+              <ul className="bg-white p-8 rounded-2xl shadow-lg space-y-3">
+                {training.map((item) => (
+                  <li key={item} className="text-gray-600 flex items-start gap-3">
+                    <span className="mt-2 w-1.5 h-1.5 bg-amber-500 rounded-full flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Philosophy Section */}
       <section className="py-20 bg-gray-50">

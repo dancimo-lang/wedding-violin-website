@@ -103,10 +103,16 @@ export function addCalendarDays(isoDate: string, days: number): string {
 }
 
 export function todayInTimeZone(timeZone = BUSINESS_TIME_ZONE, now = new Date()): string {
-  const parts = readParts(now, timeZone);
+  return zonedClock(now.getTime(), timeZone).date;
+}
+
+export function zonedClock(utcMs: number, timeZone = BUSINESS_TIME_ZONE): { date: string; time: string } {
+  const parts = readParts(new Date(utcMs), timeZone);
   const month = String(parts.month).padStart(2, '0');
   const day = String(parts.day).padStart(2, '0');
-  return `${parts.year}-${month}-${day}`;
+  const hour = String(parts.hour).padStart(2, '0');
+  const minute = String(parts.minute).padStart(2, '0');
+  return { date: `${parts.year}-${month}-${day}`, time: `${hour}:${minute}` };
 }
 
 export function monthGrid(year: number, month: number): string[] {

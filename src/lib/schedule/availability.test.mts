@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { evaluateAvailability, rosterWarning, type Occupancy, type ScheduleSettings } from './availability';
+import {
+  BUSY_MAX_AGE_MS,
+  GOOGLE_ALL_DAY_REASON,
+  GOOGLE_DISCONNECTED_REASON,
+  GOOGLE_OVERLAP_REASON,
+  GOOGLE_STALE_REASON,
+  evaluateAvailability,
+  externalBusyToOccupancy,
+  externalCalendarState,
+  publicExternalOccupancies,
+  rosterWarning,
+  type Occupancy,
+  type ScheduleSettings,
+} from './availability';
 import { addCalendarDays, venueRef, zonedWallTimeToUtc } from './time';
 
 const settings: ScheduleSettings = {
@@ -15,8 +28,6 @@ function confirmed(partial: Partial<Occupancy> & Pick<Occupancy, 'id'>): Occupan
   return {
     kind: 'confirmed',
     allDay: false,
-    startDate,
-    endDate: startDate,
     startTime: '14:00',
     endTime: '15:00',
     venue: venueRef('100 Madonna Road, San Luis Obispo'),
@@ -165,4 +176,155 @@ test('roster size is a staffing warning and does not by itself change the public
   assert.match(rosterWarning(5, settings) || '', /roster/);
   assert.equal(rosterWarning(2, settings), null);
   assert.equal(addCalendarDays('2026-03-08', 1), '2026-03-09');
+});
+
+function googleBusy(id: string, startIso: string, endIso: string): Occupancy {
+  const occupancy = externalBusyToOccupancy({ id, starts_at: startIso, ends_at: endIso });
+  assert.ok(occupancy);
+  return occupancy;
+}
+
+test('a Google busy window blocks only its own hours, including across daylight saving', () => {
+  const afternoon = googleBusy('busy', '2026-06-06T21:00:00.000Z', '2026-06-06T22:00:00.000Z');
+  assert.equal(afternoon.endMs! - afternoon.startMs!, 60 * 60 * 1000);
+  const later = evaluateAvailability(
+    { date: '2026-06-06', startTime: '16:00', endTime: '17:00', venue: venueRef('400 Higuera Street, San Luis Obispo') },
+    [afternoon],
+    settings,
+    undefined,
+    'fresh',
+  );
+  assert.equal(later.result, 'appears_available');
+
+  const overlap = evaluateAvailability(
+    { date: '2026-06-06', startTime: '14:30', endTime: '15:30' },
+    [afternoon],
+    settings,
+    undefined,
+    'fresh',
+  );
+  assert.equal(overlap.result, 'unavailable');
+  assert.ok(overlap.reasons.includes(GOOGLE_OVERLAP_REASON));
+
+  const touching = evaluateAvailability(
+    { date: '2026-06-06', startTime: '15:40', endTime: '16:30' },
+    [afternoon],
+    settings,
+    undefined,
+    'fresh',
+  );
+  assert.equal(touching.result, 'appears_available');
+
+  const bufferedRequest = evaluateAvailability(
+    { date: '2026-06-06', startTime: '15:20', endTime: '16:00' },
+    [afternoon],
+    settings,
+    undefined,
+    'fresh',
+  );
+  assert.equal(bufferedRequest.result, 'unavailable');
+
+  const nearOtherVenue = evaluateAvailability(
+    { date: '2026-06-06', startTime: '12:30', endTime: '13:30', venue: venueRef('400 Higuera Street, San Luis Obispo') },
+    [googleBusy('morning', '2026-06-06T17:00:00.000Z', '2026-06-06T18:00:00.000Z')],
+    settings,
+    undefined,
+    'fresh',
+  );
+  assert.equal(nearOtherVenue.result, 'appears_available');
+});
+
+test('an all-day Google event blocks that span and not the next day, including the short spring-forward day', () => {
+  const summer = googleBusy('all', '2026-06-06T07:00:00.000Z', '2026-06-07T07:00:00.000Z');
+  assert.equal(summer.allDay, true);
+  assert.equal(
+    evaluateAvailability({ date: '2026-06-06', startTime: '16:00', endTime: '17:00' }, [summer], settings).result,
+    'unavailable',
+  );
+  assert.ok(
+    evaluateAvailability({ date: '2026-06-06', startTime: '16:00', endTime: '17:00' }, [summer], settings).reasons.includes(
+      GOOGLE_ALL_DAY_REASON,
+    ),
+  );
+  assert.equal(
+    evaluateAvailability({ date: '2026-06-07', startTime: '16:00', endTime: '17:00' }, [summer], settings).result,
+    'appears_available',
+  );
+
+  const spring = googleBusy('spring', '2026-03-08T08:00:00.000Z', '2026-03-09T07:00:00.000Z');
+  assert.equal(spring.allDay, true);
+  assert.equal(spring.endMs! - spring.startMs!, 23 * 60 * 60 * 1000);
+  assert.equal(
+    evaluateAvailability({ date: '2026-03-08', startTime: '10:00', endTime: '11:00' }, [spring], settings).result,
+    'unavailable',
+  );
+  assert.equal(
+    evaluateAvailability({ date: '2026-03-09', startTime: '10:00', endTime: '11:00' }, [spring], settings).result,
+    'appears_available',
+  );
+
+  const duringGap = googleBusy('gap', '2026-03-08T09:30:00.000Z', '2026-03-08T10:30:00.000Z');
+  assert.equal(duringGap.allDay, false);
+  assert.equal(
+    evaluateAvailability({ date: '2026-03-08', startTime: '04:00', endTime: '05:00' }, [duringGap], settings).result,
+    'appears_available',
+  );
+  assert.equal(
+    evaluateAvailability({ date: '2026-03-08', startTime: '00:30', endTime: '01:45' }, [duringGap], settings).result,
+    'unavailable',
+  );
+
+  const fall = googleBusy('fall', '2026-11-01T07:00:00.000Z', '2026-11-02T08:00:00.000Z');
+  assert.equal(fall.allDay, true);
+  assert.equal(fall.endMs! - fall.startMs!, 25 * 60 * 60 * 1000);
+  const firstHour = googleBusy('first', '2026-11-01T08:30:00.000Z', '2026-11-01T09:00:00.000Z');
+  assert.equal(
+    evaluateAvailability({ date: '2026-11-01', startTime: '15:00', endTime: '16:00' }, [firstHour], settings).result,
+    'appears_available',
+  );
+  assert.equal(
+    evaluateAvailability({ date: '2026-11-01', startTime: '00:30', endTime: '02:00' }, [firstHour], settings).result,
+    'unavailable',
+  );
+  assert.equal(
+    evaluateAvailability({ date: '2026-11-02', startTime: '10:00', endTime: '11:00' }, [fall], settings).result,
+    'appears_available',
+  );
+});
+
+test('stale or disconnected Google data cannot be called available', () => {
+  const clear = { date: '2026-06-06', startTime: '16:00', endTime: '17:00' };
+  const stale = evaluateAvailability(clear, [], settings, undefined, 'stale');
+  assert.equal(stale.result, 'requires_manual_confirmation');
+  assert.ok(stale.reasons.includes(GOOGLE_STALE_REASON));
+
+  const disconnected = evaluateAvailability(clear, [], settings, undefined, 'disconnected');
+  assert.equal(disconnected.result, 'requires_manual_confirmation');
+  assert.ok(disconnected.reasons.includes(GOOGLE_DISCONNECTED_REASON));
+
+  const staleConflict = evaluateAvailability(
+    { date: '2026-06-06', startTime: '14:30', endTime: '15:00' },
+    [googleBusy('busy', '2026-06-06T21:00:00.000Z', '2026-06-06T22:00:00.000Z')],
+    settings,
+    undefined,
+    'stale',
+  );
+  assert.equal(staleConflict.result, 'unavailable');
+
+  const now = Date.parse('2026-06-06T20:00:00.000Z');
+  assert.equal(externalCalendarState({ status: 'connected', busy_synced_at: new Date(now - BUSY_MAX_AGE_MS).toISOString() }, now), 'fresh');
+  assert.equal(
+    externalCalendarState({ status: 'connected', busy_synced_at: new Date(now - BUSY_MAX_AGE_MS - 1).toISOString() }, now),
+    'stale',
+  );
+  assert.equal(externalCalendarState({ status: 'reconnect_required', busy_synced_at: new Date(now).toISOString() }, now), 'disconnected');
+  assert.equal(externalCalendarState(null, now), 'disconnected');
+  assert.deepEqual(
+    publicExternalOccupancies('disconnected', [{ id: 'x', starts_at: '2026-06-06T21:00:00.000Z', ends_at: '2026-06-06T22:00:00.000Z' }]),
+    [],
+  );
+  assert.equal(
+    publicExternalOccupancies('stale', [{ id: 'x', starts_at: '2026-06-06T21:00:00.000Z', ends_at: '2026-06-06T22:00:00.000Z' }]).length,
+    1,
+  );
 });
