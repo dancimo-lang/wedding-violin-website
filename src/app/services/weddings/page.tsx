@@ -19,6 +19,11 @@ const iconMap = {
   'Outdoor Weddings': CloudSun,
 };
 
+function packageDetail(label: string, value: string | null) {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+  return { label, value };
+}
+
 export default function WeddingsPage() {
   const weddingVideoEmbeds = getWeddingVideoEmbeds();
 
@@ -105,6 +110,11 @@ export default function WeddingsPage() {
                     popular={pkg.popular}
                     ctaText="Request Quote"
                     ctaHref="/booking?service=weddings"
+                    details={[
+                      packageDetail('Duration', pkg.duration),
+                      packageDetail('What raises the price', pkg.priceFactors),
+                      packageDetail('Recommended lead time', pkg.leadTime),
+                    ].filter((item): item is { label: string; value: string } => item !== null)}
                   />
                 ))}
               </div>
