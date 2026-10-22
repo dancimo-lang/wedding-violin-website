@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { Instagram, Youtube, Facebook, Mail, MapPin, Map } from 'lucide-react';
+import { Instagram, Youtube, Facebook, Mail, MapPin, Map, Phone, MessageSquare } from 'lucide-react';
 import site from '@/data/site.json';
 import navigation from '@/data/navigation.json';
+import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -72,6 +73,20 @@ export default function Footer() {
               >
                 <Mail size={16} />
                 <span className="text-sm">{site.email}</span>
+              </a>
+              <a
+                href={phoneTelHref()}
+                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+              >
+                <Phone size={16} />
+                <span className="text-sm">{site.phone}</span>
+              </a>
+              <a
+                href={phoneSmsHref()}
+                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+              >
+                <MessageSquare size={16} />
+                <span className="text-sm">Text</span>
               </a>
 
               <div className="flex items-center gap-4 pt-2">
