@@ -1,10 +1,12 @@
-import { Metadata } from 'next';
+import { createPageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Privacy Policy',
-  description: 'Privacy policy for Daniel Cimo Violin services.',
-  robots: 'noindex, nofollow',
-};
+  description:
+    'Name, email, phone, and event details from the booking form are used only to answer inquiries and share quotes. Daniel Cimo does not sell this information.',
+  path: '/privacy',
+  noIndex: true,
+});
 
 export default function PrivacyPage() {
   return (
