@@ -1,10 +1,12 @@
-import { Metadata } from 'next';
+import { createPageMetadata } from '@/lib/page-metadata';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Terms of Service',
-  description: 'Terms of service for Daniel Cimo Violin services.',
-  robots: 'noindex, nofollow',
-};
+  description:
+    'Terms for violin performance, private lessons, and studio recording from Daniel Cimo. All bookings are subject to availability. Contact dancimo@gmail.com.',
+  path: '/terms',
+  noIndex: true,
+});
 
 export default function TermsPage() {
   return (
