@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart, Clock, Music, CloudSun, MapPin } from 'lucide-react';
+import { Heart, Clock, Music, CloudSun, MapPin, Instagram } from 'lucide-react';
 import Hero from '@/components/Hero';
 import PackageCard from '@/components/PackageCard';
+import SingleVideo from '@/components/SingleVideo';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
+import site from '@/data/site.json';
+import { getWeddingVideoEmbeds } from '@/data/weddingVideos';
 
 const iconMap = {
   'Service Area': MapPin,
@@ -17,6 +20,8 @@ const iconMap = {
 };
 
 export default function WeddingsPage() {
+  const weddingVideoEmbeds = getWeddingVideoEmbeds();
+
   const scrollToSampler = () => {
     document.getElementById('wedding-sampler')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -75,31 +80,87 @@ export default function WeddingsPage() {
         </div>
       </section>
 
-      {/* Packages Section */}
+      {/* Packages and wedding video sit side by side on large screens */}
       <section id="wedding-packages" className="py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-              Wedding Packages
-            </h2>
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Choose the perfect package for your special day. All packages include custom song selection and professional service.
-            </p>
-          </div>
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-10">
+            <div className="min-w-0 flex-1">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+                  Wedding Packages
+                </h2>
+                <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+                  Choose the perfect package for your special day. All packages include custom song selection and professional service.
+                </p>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            {weddings.packages.map((pkg) => (
-              <PackageCard
-                key={pkg.id}
-                id={pkg.id}
-                name={pkg.name}
-                price={pkg.price}
-                features={pkg.features}
-                popular={pkg.popular}
-                ctaText="Request Quote"
-                ctaHref="/booking?service=weddings"
-              />
-            ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {weddings.packages.map((pkg) => (
+                  <PackageCard
+                    key={pkg.id}
+                    id={pkg.id}
+                    name={pkg.name}
+                    price={pkg.price}
+                    features={pkg.features}
+                    popular={pkg.popular}
+                    ctaText="Request Quote"
+                    ctaHref="/booking?service=weddings"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <aside
+              aria-labelledby="see-us-play-heading"
+              className="w-full max-w-xs mx-auto lg:mx-0 lg:w-80 lg:shrink-0"
+            >
+              <h2
+                id="see-us-play-heading"
+                className="text-3xl font-bold text-white mb-6 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
+              >
+                See Us Play
+              </h2>
+
+              {weddingVideoEmbeds.length > 0 ? (
+                <div className="space-y-6">
+                  {weddingVideoEmbeds.map((video) => (
+                    <SingleVideo
+                      key={video.videoId}
+                      videoId={video.videoId}
+                      title={video.title}
+                      orientation={video.orientation}
+                      showTitle={false}
+                    />
+                  ))}
+                  <a
+                    href={site.social.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="See more on Instagram, opens in a new tab"
+                    className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-amber-100 hover:text-white transition-colors"
+                  >
+                    <Instagram size={16} aria-hidden="true" />
+                    See more on Instagram
+                  </a>
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 shadow-lg rounded-2xl p-8 text-center">
+                  <p className="text-gray-600 leading-relaxed">
+                    Watch clips from real weddings on Instagram
+                  </p>
+                  <a
+                    href={site.social.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Watch on Instagram, opens in a new tab"
+                    className="inline-flex w-full items-center justify-center gap-2 mt-6 py-3 px-6 rounded-full font-semibold bg-amber-700 text-white hover:bg-amber-800 transition-colors"
+                  >
+                    <Instagram size={18} aria-hidden="true" />
+                    Watch on Instagram
+                  </a>
+                </div>
+              )}
+            </aside>
           </div>
         </div>
       </section>
@@ -171,7 +232,7 @@ export default function WeddingsPage() {
             </div>
             <div>
               <p className="text-4xl font-bold text-amber-700">10+</p>
-              <p className="text-gray-600 text-sm mt-1">Years Experience</p>
+              <p className="text-gray-600 text-sm mt-1">Years Playing Weddings</p>
             </div>
             <div>
               <p className="text-4xl font-bold text-amber-700">50mi</p>

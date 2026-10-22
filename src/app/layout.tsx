@@ -4,7 +4,12 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { JsonLd, generatePersonSchema, generateLocalBusinessSchema } from "@/components/SEO";
+import { createPageMetadata } from "@/lib/page-metadata";
 import site from "@/data/site.json";
+
+const homeTitle = `${site.name} - ${site.tagline}`;
+const homeDescription =
+  "Elegant live violin music for weddings, private lessons for all ages, and studio recording. Based in San Luis Obispo, serving Paso Robles and the Central Coast.";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,20 +24,20 @@ const monteCarlo = MonteCarlo({
 });
 
 export const metadata: Metadata = {
+  ...createPageMetadata({
+    title: homeTitle,
+    absoluteTitle: true,
+    description: homeDescription,
+    path: "/",
+  }),
   title: {
-    default: `${site.name} - ${site.tagline}`,
+    default: homeTitle,
     template: `%s | ${site.name}`,
   },
-  description: site.description,
   keywords: site.seo.keywords,
   authors: [{ name: site.name }],
   creator: site.name,
   metadataBase: new URL("https://danielcimo.com"),
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    siteName: site.name,
-  },
   robots: {
     index: true,
     follow: true,

@@ -1,15 +1,17 @@
-import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
+import { createPageMetadata } from '@/lib/page-metadata';
 import about from '@/data/about.json';
 
-export const metadata: Metadata = {
-  title: 'About Daniel Cimo',
-  description: 'Learn about Daniel Cimo, a professional violinist based in San Luis Obispo, California. Specializing in wedding performances, private lessons, and studio recording.',
+export const metadata = createPageMetadata({
+  title: 'Violinist, Educator & Recording Artist',
+  description:
+    'A San Luis Obispo violinist blending classical repertoire, gypsy jazz, traditional fiddle, and improvisation. Performer, teacher, and recording artist.',
+  path: '/about',
   keywords: ['San Luis Obispo Violinist', 'Central Coast Musician', 'Violin Teacher SLO'],
-};
+});
 
 export default function AboutPage() {
   return (
