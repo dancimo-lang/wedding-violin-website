@@ -5,6 +5,7 @@ import YouTubePlaylist from '@/components/YouTubePlaylist';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
 import music from '@/data/music.json';
+import { isPublishableCopy } from '@/lib/publicContent';
 
 export default function MusicPage() {
   const scrollToVideo = () => {
@@ -14,6 +15,12 @@ export default function MusicPage() {
   const scrollToAudio = () => {
     document.getElementById('audio-player')?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const showVideo = isPublishableCopy(music.youtube.playlistId);
+  const publishedAudioSamples = music.audioSamples.samples.filter((sample) =>
+    isPublishableCopy(sample),
+  );
+
   return (
     <>
       {/* Hero */}
@@ -21,8 +28,8 @@ export default function MusicPage() {
         title={music.hero.title}
         subtitle={music.hero.subtitle}
         description={music.hero.description}
-        ctaText="Watch"
-        ctaOnClick={scrollToVideo}
+        ctaText={showVideo ? 'Watch' : undefined}
+        ctaOnClick={showVideo ? scrollToVideo : undefined}
         secondaryCtaText="Listen"
         secondaryCtaOnClick={scrollToAudio}
         splitLayout={true}
@@ -32,6 +39,7 @@ export default function MusicPage() {
       />
 
       {/* YouTube Video Section */}
+      {showVideo && (
       <section id="video-player" className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -46,6 +54,7 @@ export default function MusicPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Repertoire Section */}
       <section className="py-20 bg-gray-50">
@@ -95,6 +104,15 @@ export default function MusicPage() {
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
             <SoundCloudPlaylist playlistUrl={music.soundcloud.playlistUrl} />
+            {publishedAudioSamples.length > 0 && (
+              <ul className="mt-8 space-y-2">
+                {publishedAudioSamples.map((sample) => (
+                  <li key={sample} className="text-gray-200 text-center">
+                    {sample}
+                  </li>
+                ))}
+              </ul>
+            )}
             <p className="text-center text-sm text-gray-400 mt-4">
               {music.soundcloud.note}
             </p>

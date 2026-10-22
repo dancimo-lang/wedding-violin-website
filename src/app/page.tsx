@@ -8,8 +8,16 @@ import CTASection from '@/components/CTASection';
 import site from '@/data/site.json';
 import services from '@/data/services.json';
 import testimonials from '@/data/testimonials.json';
+import { GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 
 export default function Home() {
+  const publishedTestimonials = testimonials.testimonials.filter(
+    (testimonial) => testimonial.placeholder !== true,
+  );
+  const googleReviewsUrl = GOOGLE_REVIEWS_URL.trim();
+  const showTestimonials = publishedTestimonials.length > 0;
+  const showGoogleInvite = !showTestimonials && googleReviewsUrl.length > 0;
+
   return (
     <>
       {/* Hero Section */}
@@ -104,7 +112,7 @@ export default function Home() {
               </div>
               <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-blue-500 to-blue-700 text-white p-6 rounded-2xl shadow-[0_0_30px_rgba(0,174,239,0.7)] ring-2 ring-blue-400/50">
                 <p className="text-3xl font-bold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">20+</p>
-                <p className="text-blue-100">Years Experience</p>
+                <p className="text-blue-100">Years Performing</p>
               </div>
             </div>
           </div>
@@ -112,32 +120,47 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
-              What Clients Say
-            </h2>
-            <p className="text-lg text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-              Trusted by couples and students across the Central Coast
+      {(showTestimonials || showGoogleInvite) && (
+        <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
+                What Clients Say
+              </h2>
+              <p className="text-lg text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                Trusted by couples and students across the Central Coast
+              </p>
+            </div>
+            {showTestimonials ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                {publishedTestimonials.map((testimonial) => (
+                  <TestimonialCard
+                    key={testimonial.id}
+                    quote={testimonial.quote}
+                    author={testimonial.author}
+                    event={testimonial.event}
+                    location={testimonial.location}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-lg text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                <a
+                  href={googleReviewsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-white"
+                >
+                  Read what couples say on Google
+                </a>
+              </p>
+            )}
+            <p className="text-center text-sm text-blue-300/60 mt-8">
+              {testimonials.note}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {testimonials.testimonials.map((testimonial) => (
-              <TestimonialCard
-                key={testimonial.id}
-                quote={testimonial.quote}
-                author={testimonial.author}
-                event={testimonial.event}
-                location={testimonial.location}
-              />
-            ))}
-          </div>
-          <p className="text-center text-sm text-blue-300/60 mt-8">
-            {testimonials.note}
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
       <CTASection

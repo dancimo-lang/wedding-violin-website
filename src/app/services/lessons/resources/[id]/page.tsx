@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { ArrowLeft, Download, Youtube, Music, FileText } from 'lucide-react';
+import { isPublishableCopy } from '@/lib/publicContent';
 
 interface Tune {
   id: string;
@@ -66,6 +67,9 @@ export default function TunePage() {
     );
   }
 
+  const hasSheetMusic = isPublishableCopy(tune.sheetMusicPath);
+  const hasVideo = isPublishableCopy(tune.youtubeId);
+
   return (
     <>
       {/* Thin Banner */}
@@ -90,10 +94,12 @@ export default function TunePage() {
       </section>
 
       {/* Sheet Music and Video Section */}
+      {(hasSheetMusic || hasVideo) && (
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`mx-auto grid grid-cols-1 gap-6 ${hasSheetMusic && hasVideo ? 'max-w-6xl lg:grid-cols-2' : 'max-w-3xl'}`}>
             {/* Sheet Music */}
+            {hasSheetMusic && (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -138,39 +144,33 @@ export default function TunePage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Video */}
+            {hasVideo && (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-4 border-b border-gray-200 flex items-center gap-3">
                 <Youtube className="w-5 h-5 text-red-600" />
                 <h2 className="text-xl font-bold text-gray-900">Video Tutorial</h2>
               </div>
               <div className="aspect-video bg-gray-900 flex items-center justify-center">
-                {tune.youtubeId ? (
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src={`https://www.youtube.com/embed/${tune.youtubeId}?rel=0&modestbranding=1&playsinline=1`}
-                    title={`${tune.title} - Video Tutorial`}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
-                ) : (
-                  <div className="text-center p-8">
-                    <Youtube className="w-24 h-24 text-red-400 mx-auto mb-4" />
-                    <p className="text-gray-400 text-lg mb-2">Video Coming Soon</p>
-                    <p className="text-gray-500 text-sm">
-                      Add YouTube video ID to tunes.json for: {tune.id}
-                    </p>
-                  </div>
-                )}
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${tune.youtubeId}?rel=0&modestbranding=1&playsinline=1`}
+                  title={`${tune.title} - Video Tutorial`}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
               </div>
             </div>
+            )}
           </div>
         </div>
       </section>
+      )}
 
       {/* Description Section */}
       <section className="py-8 bg-gray-50">
