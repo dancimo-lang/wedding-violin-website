@@ -68,6 +68,7 @@ export function generatePersonSchema() {
       site.social.instagram,
       site.social.youtube,
       site.social.facebook,
+      site.social.google,
     ],
     address: {
       '@type': 'PostalAddress',
@@ -101,6 +102,7 @@ export function generateLocalBusinessSchema() {
       site.social.instagram,
       site.social.youtube,
       site.social.facebook,
+      site.social.google,
     ],
     priceRange: '$$',
   };

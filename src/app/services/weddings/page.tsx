@@ -220,11 +220,7 @@ export default function WeddingsPage() {
       {/* Trust Indicators */}
       <section className="py-16 border-t border-b border-gray-100">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <p className="text-4xl font-bold text-amber-700">100+</p>
-              <p className="text-gray-600 text-sm mt-1">Weddings Performed</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
             <div>
               <p className="text-4xl font-bold text-amber-700">5★</p>
               <p className="text-gray-600 text-sm mt-1">Average Rating</p>
@@ -233,9 +229,11 @@ export default function WeddingsPage() {
               <p className="text-4xl font-bold text-amber-700">10+</p>
               <p className="text-gray-600 text-sm mt-1">Years Playing Weddings</p>
             </div>
-            <div>
-              <p className="text-4xl font-bold text-amber-700">50mi</p>
-              <p className="text-gray-600 text-sm mt-1">Service Radius</p>
+            <div className="col-span-2 md:col-span-1 min-w-0 px-1">
+              <p className="text-4xl md:text-3xl lg:text-4xl font-bold text-amber-700 leading-tight">
+                Central Coast
+              </p>
+              <p className="text-gray-600 text-sm mt-1">& Beyond — Travel Available</p>
             </div>
           </div>
         </div>
