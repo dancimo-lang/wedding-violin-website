@@ -4,7 +4,15 @@ import { findOpenObligations, generateBookingCode, isBookingCode } from './booki
 import { computeFees, finalPaymentDueDate, formatMoney, parseDollarInput, splitRetainer } from './money';
 import { renderContractPdf } from './pdf';
 import { guessPackageId } from './packages';
-import { placeholdersIn, renderContract, templateSource, type StoredRenderFields, type SignatureOverlay } from './render';
+import {
+  normalizeStoredFields,
+  performanceTimeOrderMessage,
+  placeholdersIn,
+  renderContract,
+  templateSource,
+  type StoredRenderFields,
+  type SignatureOverlay,
+} from './render';
 import { signOnce } from './sign';
 import { validateSignature } from './signers';
 import { generateContractToken, hashContractText, isContractToken, tokensMatch } from './token';
@@ -168,12 +176,88 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   assert.equal(templateSource('full-wedding').includes('$3,000.00'), true);
 });
 
+test('a new agreement prints only the selected package, and an older one keeps every option', () => {
+  const legacy = renderContract({ ...sampleFields, packageId: 'B' }, signedOverlay);
+  assert.match(legacy, /☑ Package B: Solo Violin Ceremony & Cocktail Hour — \$1,000/);
+  assert.match(legacy, /☐ Package A: Solo Violin Ceremony — \$450/);
+  assert.match(legacy, /☐ Package C: Violin & Guitar Duo Ceremony — \$1,000/);
+  assert.match(legacy, /☐ Package D: Violin & Guitar Duo Ceremony & Cocktail Hour — \$1,500/);
+
+  const packageB = renderContract({ ...sampleFields, packageId: 'B', renderEdition: 2 }, signedOverlay);
+  assert.equal(packageB.includes('{{'), false);
+  assert.equal(packageB.includes('☑'), false);
+  assert.equal(packageB.includes('☐ Package'), false);
+  assert.match(packageB, /☐ The Client opts out of promotional use of photographs and video clips from the event\./);
+  assert.doesNotMatch(packageB, /Package A: Solo Violin Ceremony — \$450/);
+  assert.doesNotMatch(packageB, /Package C: Violin & Guitar Duo Ceremony/);
+  assert.doesNotMatch(packageB, /Package D: Violin & Guitar Duo Ceremony & Cocktail Hour/);
+  assert.match(
+    packageB,
+    /1\. Package Selection\nThe Client shall select one of the following packages\. The selected package determines the services provided under this Agreement\.\nPackage B: Solo Violin Ceremony & Cocktail Hour — \$1,000\nIncludes everything in Package A, plus:\nLive solo violin performance during cocktail hour\nCocktail-hour repertoire tailored to the Client's musical preferences\nMusic across styles such as classical, jazz, Celtic, folk, pop, and other selections within the Musician's repertoire\nSelected Package: Package B: Solo Violin Ceremony & Cocktail Hour\nThe standard package prices above apply to the services described in this section\. Any additional fees, discounts, or customized arrangements will be documented below\./,
+  );
+  assert.match(packageB, /Live Duo Performance, \$300 per hour; DJ Services, \$200 per hour\./);
+  assert.match(packageB, /For packages that include cocktail hour, the Client may provide preferred musical styles and specific song requests\./);
+
+  const head = '1. Package Selection\n';
+  const fees = '2. Fee Summary and Payment\n';
+  assert.equal(packageB.slice(0, packageB.indexOf(head)), legacy.slice(0, legacy.indexOf(head)));
+  assert.equal(packageB.slice(packageB.indexOf(fees)), legacy.slice(legacy.indexOf(fees)));
+
+  const packageA = renderContract({ ...sampleFields, renderEdition: 2 }, signedOverlay);
+  assert.match(packageA, /Package A: Solo Violin Ceremony — \$450\nIncludes:\nUp to 30 minutes of pre-ceremony music as guests arrive\n/);
+  assert.doesNotMatch(packageA, /Package B: Solo Violin Ceremony & Cocktail Hour — \$1,000/);
+  assert.equal(packageA.includes('☑'), false);
+
+  const packageD = renderContract({ ...sampleFields, packageId: 'D', renderEdition: 2 }, signedOverlay);
+  assert.match(
+    packageD,
+    /Package D: Violin & Guitar Duo Ceremony & Cocktail Hour — \$1,500\nIncludes everything in Package C, plus:\nLive violin and acoustic guitar duo performance during cocktail hour\n/,
+  );
+  assert.doesNotMatch(packageD, /Package C: Violin & Guitar Duo Ceremony — \$1,000/);
+
+  const storedLegacy = normalizeStoredFields(sampleFields);
+  assert.equal(storedLegacy?.renderEdition, undefined);
+  assert.equal(renderContract(storedLegacy ?? sampleFields, signedOverlay), renderContract(sampleFields, signedOverlay));
+  const storedNext = normalizeStoredFields({ ...sampleFields, packageId: 'B', renderEdition: 2 });
+  assert.equal(storedNext?.renderEdition, 2);
+  assert.equal(renderContract(storedNext ?? sampleFields, signedOverlay), packageB);
+});
+
+test('a backwards ceremony or cocktail time blocks sending', () => {
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '17:00', cocktailEnd: '18:00' }),
+    '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:00', cocktailStart: '', cocktailEnd: '' }),
+    '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '', cocktailStart: '18:00', cocktailEnd: '' }),
+    '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '17:00', cocktailEnd: '18:00' }),
+    'Ceremony end is before ceremony start. Fix the times before sending this agreement.',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '18:00', cocktailEnd: '17:00' }),
+    'Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '18:00', cocktailEnd: '17:00' }),
+    'Ceremony end is before ceremony start. Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
+  );
+});
+
 test('the same agreement text always hashes the same way, and signing locks it', () => {
   assert.equal(hashContractText('a'), 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb');
   const first = renderContract(sampleFields, signedOverlay);
   const second = renderContract(sampleFields, signedOverlay);
   assert.equal(first, second);
   assert.equal(hashContractText(first), hashContractText(second));
+  // Agreements created before package-specific text still hash to this checklist document.
+  assert.equal(hashContractText(first), 'a8c2659bf8dfa7272110624a5a1659c908b5004e5f9c6da6bf0b8c91f10a72a3');
 
   const opted = renderContract(sampleFields, { ...signedOverlay, photoOptOut: true });
   assert.notEqual(hashContractText(first), hashContractText(opted));

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CONTRACT_LIST_COLUMNS, type ContractListRow } from '@/lib/contracts/columns';
 import { computeFees, formatMoney, type FeeSummary } from '@/lib/contracts/money';
 import { guessPackageId, PACKAGES, type PackageId } from '@/lib/contracts/packages';
-import { feeSnapshot, renderContract, UNSIGNED } from '@/lib/contracts/render';
+import { feeSnapshot, performanceTimeOrderMessage, renderContract, UNSIGNED } from '@/lib/contracts/render';
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
@@ -203,9 +203,19 @@ export function ContractPanel({
   ]);
 
   const blocking = contracts.find((row) => row.status === 'sent' || row.status === 'viewed' || row.status === 'signed');
+  const timeOrderMessage = performanceTimeOrderMessage({
+    ceremonyStart,
+    ceremonyEnd,
+    cocktailStart: fullWedding ? '' : cocktailStart,
+    cocktailEnd: fullWedding ? '' : cocktailEnd,
+  });
 
   const send = async () => {
     if (!source) return;
+    if (timeOrderMessage) {
+      setError(timeOrderMessage);
+      return;
+    }
     setBusy(true);
     setError('');
     setNotice('');
@@ -341,8 +351,9 @@ export function ContractPanel({
               {preview}
             </pre>
           )}
+          {timeOrderMessage ? <p className="rounded-lg bg-red-50 px-4 py-3 text-red-700">{timeOrderMessage}</p> : null}
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy || !preview} onClick={() => void send()} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:bg-blue-400">
+            <button type="button" disabled={busy || !preview || Boolean(timeOrderMessage)} onClick={() => void send()} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:bg-blue-400">
               {busy ? 'Sending...' : 'Send for signature'}
             </button>
             <button type="button" onClick={() => setCreating(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-gray-800">
