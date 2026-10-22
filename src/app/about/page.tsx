@@ -1,17 +1,22 @@
-import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
+import { createPageMetadata } from '@/lib/page-metadata';
 import about from '@/data/about.json';
+import { isPublishableCopy } from '@/lib/publicContent';
 
-export const metadata: Metadata = {
-  title: 'About Daniel Cimo',
-  description: 'Learn about Daniel Cimo, a professional violinist based in San Luis Obispo, California. Specializing in wedding performances, private lessons, and studio recording.',
+export const metadata = createPageMetadata({
+  title: 'Violinist, Educator & Recording Artist',
+  description:
+    'A San Luis Obispo violinist blending classical repertoire, gypsy jazz, traditional fiddle, and improvisation. Performer, teacher, and recording artist.',
+  path: '/about',
   keywords: ['San Luis Obispo Violinist', 'Central Coast Musician', 'Violin Teacher SLO'],
-};
+});
 
 export default function AboutPage() {
+  const training = about.credentials.items.filter((item) => isPublishableCopy(item));
+
   return (
     <>
       {/* Hero */}
@@ -21,6 +26,7 @@ export default function AboutPage() {
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/0N1A8246.jpg"
+        rightSideImageAlt="Daniel playing violin on a paved path through a park"
         size="full"
       />
 
@@ -33,9 +39,10 @@ export default function AboutPage() {
               <div className="aspect-[3/4] bg-gray-200 rounded-2xl overflow-hidden">
                 <Image
                   src="/images/daniel-cimo-professional.jpg"
-                  alt="Daniel Cimo - Professional Violinist"
+                  alt="Daniel in a black tuxedo playing violin against a wooden wall"
                   width={600}
                   height={800}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -56,6 +63,26 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      {training.length > 0 && (
+        <section className="py-20 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+                {about.credentials.title}
+              </h2>
+              <ul className="bg-white p-8 rounded-2xl shadow-lg space-y-3">
+                {training.map((item) => (
+                  <li key={item} className="text-gray-600 flex items-start gap-3">
+                    <span className="mt-2 w-1.5 h-1.5 bg-amber-500 rounded-full flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Philosophy Section */}
       <section className="py-20 bg-gray-50">

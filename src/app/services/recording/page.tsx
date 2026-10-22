@@ -1,19 +1,21 @@
-import { Metadata } from 'next';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { Building2, Wifi, MapPin, FileAudio } from 'lucide-react';
+import { createPageMetadata } from '@/lib/page-metadata';
 import recording from '@/data/recording.json';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Studio Recording Services',
-  description: 'Professional violin recording for albums, film scores, and creative projects. In-studio and remote session services with quick turnaround.',
+  description:
+    'Add the warmth and expressiveness of live violin through in-studio, remote, or on-location sessions, with a quick turnaround. Share tracks for a quote.',
+  path: '/services/recording',
   keywords: [
     'Studio Violinist',
     'Session Violin Recording',
     'Remote Violin Recording',
     'Film Score Violin',
   ],
-};
+});
 
 const serviceIcons = {
   'In-Studio Sessions': Building2,
@@ -34,6 +36,7 @@ export default function RecordingPage() {
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/newrecording-hero.jpg"
+        rightSideImageAlt="Daniel seated in a studio playing violin into a microphone"
         size="full"
       />
 

@@ -26,6 +26,19 @@
       "popular": false
     },
     {
+      "id": "ceremony-solo-cocktail",
+      "name": "Solo Violin Ceremony & Cocktail Hour",
+      "price": "Starting at $1000",
+      "features": [
+        "30 minutes of violin mingling music",
+        "3 songs (from list or custom) for bridal party processional, bridal processional, and recessional",
+        "1 hour live solo violin performance during cocktail hour",
+        "Cocktail-hour repertoire tailored to the couple's musical preferences",
+        "Music across styles such as classical, jazz, Celtic, folk, pop, and other selections within the musician's repertoire"
+      ],
+      "popular": false
+    },
+    {
       "id": "ceremony-duo",
       "name": "Full Ceremony (Violin–Guitar Duo)",
       "price": "Starting at $1000",
@@ -86,7 +99,7 @@
     "items": [
       {
         "title": "Service Area",
-        "description": "Proudly serving San Luis Obispo County and the Central Coast. I'm delighted to travel to destination weddings - additional travel fees may apply."
+        "description": "Proudly serving San Luis Obispo County, the Central Coast, and beyond. I'm happy to travel farther for your wedding - travel fees apply outside the local area."
       },
       {
         "title": "Setup & Sound Check",

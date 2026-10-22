@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Image from 'next/image';
 import site from '@/data/site.json';
+import { GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import BookingForm from './booking-form';
 import BookingPrefill from './booking-prefill';
@@ -13,8 +14,9 @@ export default function BookingPage() {
         <div className="absolute inset-0">
           <Image
             src="/images/booking-hero.jpg"
-            alt="Booking Hero"
+            alt="Violin and bow resting on sheet music beside a piano"
             fill
+            sizes="100vw"
             className="object-cover"
             priority
           />
@@ -73,6 +75,16 @@ export default function BookingPage() {
                   className="text-amber-700 font-medium hover:underline"
                 >
                   dancimo@gmail.com
+                </a>
+              </p>
+              <p className="text-gray-600 mt-2">
+                <a
+                  href={GOOGLE_REVIEWS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  Read my reviews on Google
                 </a>
               </p>
             </div>

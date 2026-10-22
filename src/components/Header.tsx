@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, Instagram, Youtube, Facebook, Map } from 'lucide-react';
 import navigation from '@/data/navigation.json';
 import site from '@/data/site.json';
+import { publishedGoogleHref } from '@/lib/publicContent';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -33,6 +34,8 @@ export default function Header() {
       }
     };
   }, []);
+
+  const googleHref = publishedGoogleHref(site.social.google);
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -142,15 +145,17 @@ export default function Header() {
               >
                 <Facebook size={20} />
               </a>
-              <a
-                href={site.social.google}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
-                aria-label="Google Business Profile"
-              >
-                <Map size={20} />
-              </a>
+              {googleHref && (
+                <a
+                  href={googleHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-600 hover:text-gray-900 transition-all"
+                  aria-label="Google Business Profile"
+                >
+                  <Map size={20} />
+                </a>
+              )}
             </div>
 
             {/* Book Now Button */}
@@ -248,15 +253,17 @@ export default function Header() {
               >
                 <Facebook size={24} />
               </a>
-              <a
-                href={site.social.google}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
-                aria-label="Google Business Profile"
-              >
-                <Map size={24} />
-              </a>
+              {googleHref && (
+                <a
+                  href={googleHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-600 hover:text-gray-900 transition-all"
+                  aria-label="Google Business Profile"
+                >
+                  <Map size={24} />
+                </a>
+              )}
             </div>
           </div>
         )}

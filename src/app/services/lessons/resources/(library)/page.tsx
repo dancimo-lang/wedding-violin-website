@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Metadata } from 'next';
 import Link from 'next/link';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
 import { Search, Music, FileText, Youtube, BookOpen } from 'lucide-react';
+import { isPublishableCopy } from '@/lib/publicContent';
 
 interface Tune {
   id: string;
@@ -77,6 +77,7 @@ export default function ResourcesPage() {
         ctaText="Back to Lessons"
         ctaHref="/services/lessons"
         posterSrc="/images/lessons-hero.jpg"
+        posterAlt="Daniel playing violin indoors beside a microphone"
         size="large"
         overlay={false}
       />
@@ -184,8 +185,12 @@ export default function ResourcesPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <FileText className="w-5 h-5 text-amber-600" />
-                        <Youtube className="w-5 h-5 text-red-600" />
+                        {isPublishableCopy(tune.sheetMusicPath) && (
+                          <FileText className="w-5 h-5 text-amber-600" />
+                        )}
+                        {isPublishableCopy(tune.youtubeId) && (
+                          <Youtube className="w-5 h-5 text-red-600" />
+                        )}
                       </div>
                     </div>
                   </Link>
