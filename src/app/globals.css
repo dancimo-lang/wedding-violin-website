@@ -162,3 +162,24 @@ html:focus-within {
   -webkit-text-fill-color: #111827;
   caret-color: #111827;
 }
+
+.contract-sheet,
+.contract-sheet p,
+.contract-sheet h1,
+.contract-sheet h2,
+.contract-sheet label,
+.contract-sheet pre {
+  color: #111827;
+}
+
+.contract-sheet input,
+.contract-sheet textarea,
+.contract-sheet select {
+  color: #111827;
+  background-color: #ffffff;
+  caret-color: #111827;
+}
+
+.contract-sheet button {
+  color: #ffffff;
+}

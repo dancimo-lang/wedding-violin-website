@@ -22,6 +22,7 @@ import {
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
 import { addCalendarDays, venueRef } from '@/lib/schedule/time';
+import { ContractPanel } from '@/components/admin/ContractPanel';
 import { createClient } from '@/lib/supabase/client';
 
 function supabase() {
@@ -358,6 +359,7 @@ export default function LeadDetailPage() {
           Confirming a booking blocks that time and marks this lead Confirmed. Cancelling keeps the timeline, frees the date, and marks the lead Lost unless another booking is still on the calendar. A tentative hold stays visible and makes the public date check ask for a personal confirmation. Times are Pacific Time.
         </p>
       </div>
+      <ContractPanel leadId={leadId} />
       <SubmittedDetails details={details} />
       <Timeline
         events={events}

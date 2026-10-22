@@ -3,6 +3,14 @@ import { DELETE as deleteTune } from './handlers/admin-tune';
 import { POST as postTune } from './handlers/admin-tunes';
 import { GET as getAvailability } from './handlers/availability';
 import { POST as postBookingStatus } from './handlers/booking-status';
+import {
+  getPdf as getContractPdf,
+  POST as postContractSend,
+  postCountersign,
+  postResend,
+  postVoid,
+} from './handlers/contracts-admin';
+import { GET as getContractView, POST as postContractSign } from './handlers/contracts-public';
 import { POST as postContact } from './handlers/contact';
 import { GET as syncFromCron } from './handlers/cron-google-sync';
 import { GET as getGoogleCallback } from './handlers/google-callback';
@@ -32,6 +40,13 @@ export type ApiRoute = ApiRouteSpec & { handle: ApiHandler };
 
 const handlers: Record<string, ApiHandler> = {
   'booking-status': mount(postBookingStatus),
+  'contract-send': mount(postContractSend),
+  'contract-void': ({ request, params }) => postVoid(request, params.id ?? ''),
+  'contract-resend': ({ request, params }) => postResend(request, params.id ?? ''),
+  'contract-countersign': ({ request, params }) => postCountersign(request, params.id ?? ''),
+  'contract-pdf': ({ request, params }) => getContractPdf(request, params.id ?? ''),
+  'contract-view': mount(getContractView),
+  'contract-sign': mount(postContractSign),
   'google-callback': mount(getGoogleCallback),
   'google-connect': mount(getGoogleConnect),
   'google-disconnect': mount(postGoogleDisconnect),
