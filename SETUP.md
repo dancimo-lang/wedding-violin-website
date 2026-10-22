@@ -318,6 +318,8 @@ Environment variables, in addition to the Resend key you already use:
 
 Then sign in, open a lead or a booking, choose **Create contract**, check the preview, and choose **Send for signature**. The couple opens `/contract?t=` plus the token in that email. After they sign, the PDF is stored in the private bucket and emailed. Use **Countersign** on the lead or booking unless Settings is set to record your signature automatically. **Void** and **Resend** apply only before the client signs.
 
+Solo violin for the ceremony, and solo violin for the ceremony and cocktail hour, each state overtime as: Additional performance time requested on the day of the event may be provided at the Musician's discretion, subject to availability, and will be billed at $200 per hour for solo violin, in half-hour increments ($100 per half hour). Those two agreements do not list the duo or DJ overtime rates. Duo packages, and the full-wedding agreement, keep live duo at $300 per hour and DJ at $200 per hour, with partial hours rounded to the nearest half-hour.
+
 ## 12. Take Zelle and card or bank payments
 
 After section 11, open the Supabase **SQL Editor** and run `supabase/migrations/008_payments.sql` once. Do not run it from the app, and do not point it at a database you have not backed up. Running it again replaces the payment function. It does not charge anyone.

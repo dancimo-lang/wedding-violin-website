@@ -3,7 +3,7 @@ import test from 'node:test';
 import { findOpenObligations, generateBookingCode, isBookingCode } from './booking-code';
 import { computeFees, finalPaymentDueDate, formatMoney, parseDollarInput, splitRetainer } from './money';
 import { renderContractPdf } from './pdf';
-import { guessPackageId } from './packages';
+import { DUO_DJ_OVERTIME, guessPackageId, SOLO_VIOLIN_OVERTIME, weddingMusicOvertimeClause } from './packages';
 import {
   normalizeStoredFields,
   performanceTimeOrderMessage,
@@ -138,7 +138,36 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   }
 
   assert.match(master, /The retainer is non-refundable once this Agreement has been signed and the retainer has been received\./);
-  assert.match(master, /Live Duo Performance, \$300 per hour; DJ Services, \$200 per hour\./);
+  assert.equal(
+    SOLO_VIOLIN_OVERTIME,
+    "Additional performance time requested on the day of the event may be provided at the Musician's discretion, subject to availability, and will be billed at $200 per hour for solo violin, in half-hour increments ($100 per half hour).",
+  );
+  assert.equal(
+    DUO_DJ_OVERTIME,
+    "Additional performance time requested on the day of the event may be provided at the Musician's discretion, subject to availability, and will be billed as follows: Live Duo Performance, $300 per hour; DJ Services, $200 per hour. Partial hours will be rounded to the nearest half-hour.",
+  );
+  assert.equal(weddingMusicOvertimeClause('A'), SOLO_VIOLIN_OVERTIME);
+  assert.equal(weddingMusicOvertimeClause('B'), SOLO_VIOLIN_OVERTIME);
+  assert.equal(weddingMusicOvertimeClause('C'), DUO_DJ_OVERTIME);
+  assert.equal(weddingMusicOvertimeClause('D'), DUO_DJ_OVERTIME);
+  assert.ok(master.includes(DUO_DJ_OVERTIME));
+  assert.equal(master.split(DUO_DJ_OVERTIME).length, 2);
+  assert.equal(master.includes(SOLO_VIOLIN_OVERTIME), false);
+
+  const packageB = renderContract({ ...sampleFields, packageId: 'B' }, signedOverlay);
+  assert.match(packageB, /☑ Package B: Solo Violin Ceremony & Cocktail Hour — \$1,000/);
+  assert.match(packageB, /Selected Package: Package B: Solo Violin Ceremony & Cocktail Hour/);
+  assert.ok(packageB.includes(DUO_DJ_OVERTIME));
+  assert.equal(packageB.includes(SOLO_VIOLIN_OVERTIME), false);
+  assert.equal(packageB.includes('{{'), false);
+
+  for (const packageId of ['C', 'D'] as const) {
+    const duo = renderContract({ ...sampleFields, packageId }, signedOverlay);
+    assert.ok(duo.includes(DUO_DJ_OVERTIME));
+    assert.equal(duo.split(DUO_DJ_OVERTIME).length, 2);
+    assert.equal(duo.includes(SOLO_VIOLIN_OVERTIME), false);
+    assert.equal(duo.includes('{{'), false);
+  }
   assert.match(master, /☑ Package A: Solo Violin Ceremony — \$450/);
   assert.match(master, /☐ Package B: Solo Violin Ceremony & Cocktail Hour — \$1,000/);
   assert.match(master, /Selected Package: Package A: Solo Violin Ceremony/);
@@ -161,6 +190,9 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   assert.match(full, /The remaining balance of \$1,500\.00 is due no later than 30 days prior to the wedding date\./);
   assert.match(full, /DJ Services: \$200 per hour/);
   assert.match(full, /Live Duo Performance: \$300 per hour/);
+  assert.equal(full.includes(SOLO_VIOLIN_OVERTIME), false);
+  assert.equal(full.includes('half-hour increments'), false);
+  assert.match(full, /DJ Services: \$200 per hour\nLive Duo Performance: \$300 per hour\nPartial hours will be rounded to the nearest half-hour\./);
   assert.match(
     full,
     /unless the Client provides written notice prior to the event requesting otherwise\./,
@@ -209,18 +241,32 @@ Selected Package: Package B: Solo Violin Ceremony & Cocktail Hour`;
     if (line.startsWith('Selected Package:')) continue;
     assert.equal(templateSource('wedding-music').includes(line), true, line);
   }
-  assert.match(packageB, /Live Duo Performance, \$300 per hour; DJ Services, \$200 per hour\./);
+  assert.ok(packageB.includes(SOLO_VIOLIN_OVERTIME));
+  assert.equal(packageB.split(SOLO_VIOLIN_OVERTIME).length, 2);
+  assert.equal(packageB.includes('Live Duo Performance'), false);
+  assert.equal(packageB.includes('DJ Services'), false);
+  assert.ok(legacy.includes(DUO_DJ_OVERTIME));
   assert.match(packageB, /For packages that include cocktail hour, the Client may provide preferred musical styles and specific song requests\./);
 
   const head = '1. Package Selection\n';
   const fees = '2. Fee Summary and Payment\n';
+  const overtime = 'Additional performance time requested on the day of the event';
   assert.equal(packageB.slice(0, packageB.indexOf(head)), legacy.slice(0, legacy.indexOf(head)));
-  assert.equal(packageB.slice(packageB.indexOf(fees)), legacy.slice(legacy.indexOf(fees)));
+  assert.equal(
+    packageB.slice(packageB.indexOf(fees), packageB.indexOf(overtime)),
+    legacy.slice(legacy.indexOf(fees), legacy.indexOf(overtime)),
+  );
+  assert.equal(packageB.slice(packageB.indexOf('\n\n6. Venue')), legacy.slice(legacy.indexOf('\n\n6. Venue')));
 
   const packageA = renderContract({ ...sampleFields, renderEdition: 2 }, signedOverlay);
   assert.match(packageA, /Package A: Solo Violin Ceremony — \$450\nIncludes:\nUp to 30 minutes of pre-ceremony music as guests arrive\n/);
   assert.doesNotMatch(packageA, /Package B: Solo Violin Ceremony & Cocktail Hour — \$1,000/);
   assert.equal(packageA.includes('☑'), false);
+  assert.ok(packageA.includes(SOLO_VIOLIN_OVERTIME));
+  assert.equal(packageA.split(SOLO_VIOLIN_OVERTIME).length, 2);
+  assert.equal(packageA.includes('Live Duo Performance'), false);
+  assert.equal(packageA.includes('DJ Services'), false);
+  assert.equal(packageA.includes('{{'), false);
 
   const packageD = renderContract({ ...sampleFields, packageId: 'D', renderEdition: 2 }, signedOverlay);
   const packageDServices = `Package D: Violin & Guitar Duo Ceremony & Cocktail Hour — $1,500
@@ -246,6 +292,15 @@ Selected Package: Package D: Violin & Guitar Duo Ceremony & Cocktail Hour`;
   assert.doesNotMatch(packageD, /Package C: Violin & Guitar Duo Ceremony — \$1,000/);
   assert.doesNotMatch(packageD, /Includes everything in Package C/);
   assert.equal(packageD.includes('☑'), false);
+  assert.ok(packageD.includes(DUO_DJ_OVERTIME));
+  assert.equal(packageD.split(DUO_DJ_OVERTIME).length, 2);
+  assert.equal(packageD.includes(SOLO_VIOLIN_OVERTIME), false);
+  assert.equal(packageD.includes('{{'), false);
+  const packageC = renderContract({ ...sampleFields, packageId: 'C', renderEdition: 2 }, signedOverlay);
+  assert.ok(packageC.includes(DUO_DJ_OVERTIME));
+  assert.equal(packageC.split(DUO_DJ_OVERTIME).length, 2);
+  assert.equal(packageC.includes(SOLO_VIOLIN_OVERTIME), false);
+  assert.equal(packageC.includes('{{'), false);
 
   const storedLegacy = normalizeStoredFields(sampleFields);
   assert.equal(storedLegacy?.renderEdition, undefined);

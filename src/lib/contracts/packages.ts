@@ -54,6 +54,20 @@ export function packageDefinition(id: PackageId): PackageDefinition {
 }
 
 /**
+ * Packages A and B state solo violin overtime only.
+ * Packages C and D keep the owner-approved duo and DJ sentence.
+ */
+export const SOLO_VIOLIN_OVERTIME =
+  'Additional performance time requested on the day of the event may be provided at the Musician\'s discretion, subject to availability, and will be billed at $200 per hour for solo violin, in half-hour increments ($100 per half hour).';
+
+export const DUO_DJ_OVERTIME =
+  'Additional performance time requested on the day of the event may be provided at the Musician\'s discretion, subject to availability, and will be billed as follows: Live Duo Performance, $300 per hour; DJ Services, $200 per hour. Partial hours will be rounded to the nearest half-hour.';
+
+export function weddingMusicOvertimeClause(id: PackageId): string {
+  return id === 'A' || id === 'B' ? SOLO_VIOLIN_OVERTIME : DUO_DJ_OVERTIME;
+}
+
+/**
  * Best match from the lead or booking text. The admin still chooses the package
  * before anything is sent.
  */
