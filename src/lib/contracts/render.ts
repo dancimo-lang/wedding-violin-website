@@ -2,7 +2,7 @@ import { fullWeddingTemplate } from '@/data/contracts/full-wedding';
 import { weddingMusicTemplate } from '@/data/contracts/wedding-music';
 import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import { formatLongDate, formatMoney, type FeeSummary } from './money';
-import { packageDefinition, type ContractTemplateId, type PackageId } from './packages';
+import { packageDefinition, soloViolinOvertimeClause, type ContractTemplateId, type PackageId } from './packages';
 
 export const BLANK = '__________________________________';
 
@@ -177,6 +177,7 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
       CLIENT_2_DATE: client2 ? filled(signedOn) : BLANK,
       MUSICIAN_SIGNATURE: filled(musician),
       MUSICIAN_DATE: filled(musicianOn),
+      SOLO_OVERTIME: soloViolinOvertimeClause(fields.packageId),
     });
   }
 

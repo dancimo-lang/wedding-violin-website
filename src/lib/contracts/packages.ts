@@ -54,6 +54,17 @@ export function packageDefinition(id: PackageId): PackageDefinition {
 }
 
 /**
+ * Owner-set overtime for the two solo violin packages (A and B).
+ * Live duo stays $300 per hour and DJ stays $200 per hour, in the agreement text.
+ */
+export const SOLO_VIOLIN_OVERTIME =
+  'Overtime: $200 per hour, billed in half-hour increments ($100 per half hour).';
+
+export function soloViolinOvertimeClause(id: PackageId): string {
+  return id === 'A' || id === 'B' ? `\n${SOLO_VIOLIN_OVERTIME}` : '';
+}
+
+/**
  * Best match from the lead or booking text. The admin still chooses the package
  * before anything is sent.
  */
