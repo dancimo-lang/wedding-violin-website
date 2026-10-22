@@ -19,7 +19,7 @@ export function isPublishableCopy(value: string | null | undefined): boolean {
  */
 export function publishedGoogleHref(
   url: string | undefined,
-  ownerNote: string | undefined,
+  ownerNote?: string,
 ): string | null {
   if (ownerNote && ownerNote.trim()) return null;
   if (!isPublishableCopy(url)) return null;

@@ -11,6 +11,13 @@ const homeTitle = `${site.name} - ${site.tagline}`;
 const homeDescription =
   "Elegant live violin music for weddings, private lessons for all ages, and studio recording. Based in San Luis Obispo, serving Paso Robles and the Central Coast.";
 
+const pageMetadata = createPageMetadata({
+  title: homeTitle,
+  absoluteTitle: true,
+  description: homeDescription,
+  path: "/",
+});
+
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -24,12 +31,7 @@ const monteCarlo = MonteCarlo({
 });
 
 export const metadata: Metadata = {
-  ...createPageMetadata({
-    title: homeTitle,
-    absoluteTitle: true,
-    description: homeDescription,
-    path: "/",
-  }),
+  ...pageMetadata,
   title: {
     default: homeTitle,
     template: `%s | ${site.name}`,
@@ -41,6 +43,10 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  verification: {
+    ...pageMetadata.verification,
+    google: "A_1SkiMWh4hDq4ZK4xaPCClZm-vvNEUgom8jmplkrbY",
   },
 };
 

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import site from '@/data/site.json';
+import { GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 
 const serviceOptions = [
@@ -328,6 +329,16 @@ export default function BookingPage() {
                   className="text-amber-700 font-medium hover:underline"
                 >
                   dancimo@gmail.com
+                </a>
+              </p>
+              <p className="text-gray-600 mt-2">
+                <a
+                  href={GOOGLE_REVIEWS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  Read my reviews on Google
                 </a>
               </p>
             </div>
