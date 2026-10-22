@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { AvailabilityCheck } from '@/components/AvailabilityCheck';
 
 const serviceOptions = [
   { value: 'weddings', label: 'Wedding Performance' },
@@ -22,6 +23,11 @@ function BookingForm() {
     service: '',
     package: '',
     eventDate: '',
+    partnerName: '',
+    venueName: '',
+    eventStart: '',
+    guestCount: '',
+    howFound: '',
     message: '',
     privacy: false,
   });
@@ -196,6 +202,86 @@ function BookingForm() {
         />
       </div>
 
+      <div className="border-t border-gray-200 pt-6">
+        <p className="text-sm font-medium text-gray-700 mb-4">A few more details, if you have them</p>
+        <div className="space-y-6">
+          <div>
+            <label htmlFor="partnerName" className="block text-sm font-medium text-gray-700 mb-2">
+              Partner&apos;s name <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="partnerName"
+              name="partnerName"
+              value={formData.partnerName}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+            />
+          </div>
+          <div>
+            <label htmlFor="venueName" className="block text-sm font-medium text-gray-700 mb-2">
+              Venue <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="venueName"
+              name="venueName"
+              value={formData.venueName}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="eventStart" className="block text-sm font-medium text-gray-700 mb-2">
+                Start time <span className="text-gray-400">(optional)</span>
+              </label>
+              <input
+                type="time"
+                id="eventStart"
+                name="eventStart"
+                value={formData.eventStart}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+              />
+            </div>
+            <div>
+              <label htmlFor="guestCount" className="block text-sm font-medium text-gray-700 mb-2">
+                Guest count <span className="text-gray-400">(optional)</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                id="guestCount"
+                name="guestCount"
+                value={formData.guestCount}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="howFound" className="block text-sm font-medium text-gray-700 mb-2">
+              How did you hear about Daniel? <span className="text-gray-400">(optional)</span>
+            </label>
+            <select
+              id="howFound"
+              name="howFound"
+              value={formData.howFound}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors bg-white text-black"
+            >
+              <option value="">Select if you would like</option>
+              <option>Google</option>
+              <option>Instagram</option>
+              <option>Referral</option>
+              <option>Wedding vendor</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Message */}
       <div>
         <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
@@ -289,6 +375,7 @@ export default function BookingPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
+            <AvailabilityCheck />
             <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
               <Suspense fallback={<div className="text-center py-8">Loading form...</div>}>
                 <BookingForm />

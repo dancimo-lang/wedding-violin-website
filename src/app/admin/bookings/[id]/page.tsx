@@ -5,6 +5,18 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
+import { fieldClass } from '@/lib/leads';
+import {
+  blockToOccupancy,
+  bookingToOccupancy,
+  DEFAULT_SCHEDULE_SETTINGS,
+  evaluateAvailability,
+  rosterWarning,
+  type Occupancy,
+  type ScheduleSettings,
+} from '@/lib/schedule/availability';
+import { addCalendarDays, venueRef } from '@/lib/schedule/time';
 
 const supabase = createClient();
 
@@ -29,6 +41,7 @@ type Booking = {
   retainer_due_date: string | null;
   balance_due_date: string | null;
   special_requests: string | null;
+  performers_needed?: number | null;
 };
 
 function timeValue(value: string | null) {
@@ -45,6 +58,10 @@ export default function BookingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [savedStatus, setSavedStatus] = useState('');
+  const [events, setEvents] = useState<ActivityItem[]>([]);
+  const [occupancies, setOccupancies] = useState<Occupancy[]>([]);
+  const [settings, setSettings] = useState<ScheduleSettings>(DEFAULT_SCHEDULE_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -66,7 +83,14 @@ export default function BookingDetailPage() {
         setError('Failed to load booking');
       } else {
         setBooking(data as Booking);
+        setSavedStatus((data as Booking).status);
       }
+      const { data: activity } = await supabase
+        .from('activity_events')
+        .select('id, event_type, title, body, occurred_at')
+        .eq('booking_id', bookingId)
+        .order('occurred_at', { ascending: false });
+      if (!cancelled) setEvents((activity || []) as ActivityItem[]);
       setLoading(false);
     }
 
@@ -75,6 +99,41 @@ export default function BookingDetailPage() {
       cancelled = true;
     };
   }, [bookingId]);
+
+  useEffect(() => {
+    if (!booking?.event_date) return;
+    let cancelled = false;
+    const eventDate = booking.event_date;
+    async function loadNearby() {
+      const from = addCalendarDays(eventDate, -1);
+      const to = addCalendarDays(eventDate, 1);
+      const [settingsResult, bookingsResult, blocksResult] = await Promise.all([
+        supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
+        supabase.from('bookings').select('id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, performers_needed').gte('event_date', from).lte('event_date', to),
+        supabase.from('availability_blocks').select('id, block_type, start_date, end_date, start_time, end_time, all_day').lte('start_date', to).gte('end_date', from),
+      ]);
+      if (cancelled) return;
+      if (settingsResult.data) {
+        setSettings({
+          setupBufferMinutes: settingsResult.data.setup_buffer_minutes,
+          breakdownBufferMinutes: settingsResult.data.breakdown_buffer_minutes,
+          travelBufferMinutes: settingsResult.data.travel_buffer_minutes,
+          performerCount: settingsResult.data.performer_count,
+        });
+      }
+      setOccupancies([
+        ...(bookingsResult.data || []).flatMap((row) => {
+          const occupancy = bookingToOccupancy(row);
+          return occupancy ? [occupancy] : [];
+        }),
+        ...(blocksResult.data || []).map(blockToOccupancy),
+      ]);
+    }
+    loadNearby();
+    return () => {
+      cancelled = true;
+    };
+  }, [booking?.event_date]);
 
   const handleSave = async () => {
     if (!booking) return;
@@ -99,6 +158,7 @@ export default function BookingDetailPage() {
         retainer_due_date: booking.retainer_due_date || null,
         balance_due_date: booking.balance_due_date || null,
         special_requests: booking.special_requests || null,
+        performers_needed: booking.performers_needed || 1,
         updated_at: new Date().toISOString(),
       })
       .eq('id', booking.id);
@@ -106,6 +166,18 @@ export default function BookingDetailPage() {
     if (error) {
       setError('Failed to save booking');
     } else {
+      if (savedStatus !== booking.status) {
+        await supabase.from('activity_events').insert({
+          booking_id: booking.id,
+          lead_id: booking.lead_id,
+          event_type: booking.status === 'Confirmed' ? 'calendar' : 'status_change',
+          title:
+            booking.status === 'Confirmed'
+              ? 'Booking confirmed. This time now blocks the calendar.'
+              : `Booking status is now ${booking.status}.`,
+          body: booking.event_date,
+        });
+      }
       router.push('/admin/bookings');
     }
     setSaving(false);
@@ -196,6 +268,20 @@ export default function BookingDetailPage() {
               value={booking.event_date}
               onChange={(e) => setBooking({ ...booking, event_date: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Musicians needed
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={booking.performers_needed || 1}
+              onChange={(e) => setBooking({ ...booking, performers_needed: Number(e.target.value) })}
+              className={fieldClass}
             />
           </div>
 
@@ -359,6 +445,56 @@ export default function BookingDetailPage() {
           </div>
         </div>
       </div>
+      <div className="mt-6">
+        <BookingConflicts booking={booking} occupancies={occupancies} settings={settings} />
+        <Timeline
+          events={events}
+          onAdd={async ({ channel, body }) => {
+            const note = channel === 'note';
+            const { error: insertError } = await supabase.from('activity_events').insert({
+              booking_id: booking.id,
+              lead_id: booking.lead_id,
+              event_type: note ? 'note' : 'communication',
+              title: note ? 'Note' : channel.replace('_', ' '),
+              body,
+              metadata: { channel },
+            });
+            if (insertError) return 'Could not add that to the timeline.';
+            const { data } = await supabase
+              .from('activity_events')
+              .select('id, event_type, title, body, occurred_at')
+              .eq('booking_id', booking.id)
+              .order('occurred_at', { ascending: false });
+            setEvents((data || []) as ActivityItem[]);
+            return null;
+          }}
+        />
+      </div>
     </div>
   );
+}
+
+function BookingConflicts({
+  booking,
+  occupancies,
+  settings,
+}: {
+  booking: Booking;
+  occupancies: Occupancy[];
+  settings: ScheduleSettings;
+}) {
+  const assessment = evaluateAvailability(
+    {
+      date: booking.event_date,
+      startTime: booking.performance_start_time,
+      endTime: booking.performance_end_time,
+      venue: venueRef(booking.venue_address, booking.venue_name),
+      excludeId: booking.id,
+    },
+    occupancies,
+    settings,
+  );
+  const roster = rosterWarning(booking.performers_needed || 1, settings);
+  const reasons = roster ? [...assessment.reasons, roster] : assessment.reasons;
+  return <ConflictList reasons={booking.status === 'Cancelled' ? [] : reasons} />;
 }

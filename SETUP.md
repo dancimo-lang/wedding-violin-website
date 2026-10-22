@@ -127,3 +127,20 @@ When you are ready:
 - Do not put the service role key in any variable that starts with `NEXT_PUBLIC_`.
 - Keep public sign-up turned off.
 - Keep only the owner in the `admins` table.
+
+## 8. Lead records and the calendar
+
+After the admin login from the previous section is working, open the Supabase **SQL Editor** and run `supabase/migrations/004_lead_records_and_calendar.sql`. Run it once. It adds the rest of the lead fields, the activity timeline, calendar buffers, and the limit that protects the public date check.
+
+No new secret keys are required. The public date check uses the service role key you already added as `SUPABASE_SERVICE_ROLE_KEY`.
+
+Then:
+
+1. Sign in and open **Settings**. The defaults are 30 minutes to set up, 15 minutes to pack up, and 90 minutes of travel between different street addresses. Change those if your driving is usually longer. The musician count is the largest group you can bring to one event, including yourself.
+2. Open **Calendar**. Confirmed bookings block time. Tentative holds stay on the calendar but the public check will say the date needs you to confirm it. You can also block a date or a time range by hand.
+3. Open **Leads** to search, filter, sort, edit, and archive. Add a lead when someone calls, emails, or messages you on Instagram. On the lead page, use **Confirm and block calendar** when the date is really booked. Archiving hides a lead. It does not free a confirmed date. Cancel the booking for that.
+4. The public booking page has a date check. It can only answer “appears available,” “unavailable,” or “needs you to confirm.” It never shows client names or venues. If the check cannot be sure, it asks you to confirm rather than promising the date. One visitor can check about 30 dates a minute and 40 an hour, so the calendar cannot be copied in bulk.
+
+Times are Pacific Time, for San Luis Obispo, including the spring and fall clock changes.
+
+Google Calendar is not connected. A later step can copy confirmed bookings and manual blocks into Google as a read-only mirror. This website should stay the place that decides whether a date is free, because the travel buffer, tentative holds, and private blocks live here. If Google has an appointment this site does not know about, that appointment should be reviewed by hand. It should not silently become a booking.
