@@ -1,4 +1,5 @@
 {
+  "ownerNote": "Visitors only see a video when youtubeId is a real id, and only see sheet music when the PDF exists under public/ or the path is an http(s) URL. mediaNote on each tune is kept for the owner and is not sent to the browser.",
   "tunes": [
     {
       "id": "ashokan-farewell",
@@ -9,6 +10,7 @@
       "difficulty": "Intermediate",
       "description": "A beautiful and melancholic waltz composed by Jay Ungar, famously used in the Civil War documentary by Ken Burns.",
       "youtubeId": "",
+      "mediaNote": "Owner: add a YouTube video id. Sheet music at public/docs/Ashokan Farewell.pdf is already published.",
       "sheetMusicPath": "/docs/Ashokan Farewell.pdf",
       "tags": ["waltz", "american", "emotional", "intermediate"]
     },
@@ -34,6 +36,7 @@
       "description": "A gentle and flowing waltz perfect for beginners learning 3/4 time signature.",
       "youtubeId": "",
       "sheetMusicPath": "/sheet-music/o-carolyns-waltz.pdf",
+      "mediaNote": "Owner: add the PDF at public/sheet-music/o-carolyns-waltz.pdf and a YouTube video id. Both stay hidden until then.",
       "tags": ["waltz", "traditional", "beginner"]
     },
     {
@@ -46,6 +49,7 @@
       "description": "A classic Irish air that tells the story of meeting a beautiful girl by the road.",
       "youtubeId": "",
       "sheetMusicPath": "/sheet-music/star-of-the-county-down.pdf",
+      "mediaNote": "Owner: add the PDF at public/sheet-music/star-of-the-county-down.pdf and a YouTube video id. Both stay hidden until then.",
       "tags": ["irish", "air", "traditional", "beginner"]
     },
     {
@@ -58,6 +62,7 @@
       "description": "A fast-paced bluegrass classic that challenges your technique and timing.",
       "youtubeId": "",
       "sheetMusicPath": "/sheet-music/dueling-banjos.pdf",
+      "mediaNote": "Owner: add the PDF at public/sheet-music/dueling-banjos.pdf and a YouTube video id. Both stay hidden until then.",
       "tags": ["bluegrass", "american", "advanced", "fast"]
     },
     {
@@ -70,6 +75,7 @@
       "description": "A peaceful hymn perfect for practicing smooth bowing and phrasing.",
       "youtubeId": "",
       "sheetMusicPath": "/sheet-music/morning-has-broken.pdf",
+      "mediaNote": "Owner: add the PDF at public/sheet-music/morning-has-broken.pdf and a YouTube video id. Both stay hidden until then.",
       "tags": ["hymn", "traditional", "beginner", "peaceful"]
     }
   ]

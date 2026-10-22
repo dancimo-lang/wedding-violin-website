@@ -17,6 +17,9 @@
     "facebook": "https://www.facebook.com/profile.php?id=61586308868948",
     "google": "https://g.page/daniel-cimo-violinist"
   },
+  "ownerNotes": {
+    "google": "Do not publish social.google yet. https://g.page/daniel-cimo-violinist does not open a Google Business Profile; it redirects to a Google web search, and no replacement URL exists in this repo. Header and footer hide the map icon while this note is set. Replace social.google with the real profile URL, then delete this note."
+  },
   "seo": {
     "keywords": [
       "Central Coast Wedding Violinist",

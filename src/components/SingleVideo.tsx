@@ -19,24 +19,12 @@ export default function SingleVideo({
   orientation = 'landscape',
   showTitle = true,
 }: SingleVideoProps) {
-  const portrait = orientation === 'portrait';
-
-  if (!videoId) {
-    return (
-      <div
-        className={`bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 ${
-          portrait ? 'aspect-[9/16] w-full max-w-[280px] mx-auto' : 'aspect-video'
-        }`}
-      >
-        <div className="text-center p-8">
-          <p className="text-gray-500 font-medium">YouTube Video</p>
-          <p className="text-sm text-gray-400 mt-2">
-            TODO: Add YouTube video ID to display video
-          </p>
-        </div>
-      </div>
-    );
+  // Owner: a missing id, or one that still starts with TODO, is not shown.
+  if (!videoId || videoId.startsWith('TODO')) {
+    return null;
   }
+
+  const portrait = orientation === 'portrait';
 
   return (
     <div

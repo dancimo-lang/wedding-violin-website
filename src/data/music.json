@@ -40,8 +40,10 @@
   },
   "audioSamples": {
     "title": "Audio Samples",
-    "note": "TODO: Add audio sample files",
-    "samples": []
+    "ownerNote": "Owner: entries in samples that start with TODO are not rendered. The SoundCloud playlist is the audio block visitors hear today.",
+    "samples": [
+      "TODO: Add audio sample files"
+    ]
   },
   "soundcloud": {
     "playlistUrl": "https://soundcloud.com/daniel-francesco-cimo/sets/wedding-violin-sampler",
