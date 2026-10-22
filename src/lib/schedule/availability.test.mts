@@ -28,8 +28,6 @@ function confirmed(partial: Partial<Occupancy> & Pick<Occupancy, 'id'>): Occupan
   return {
     kind: 'confirmed',
     allDay: false,
-    startDate,
-    endDate: startDate,
     startTime: '14:00',
     endTime: '15:00',
     venue: venueRef('100 Madonna Road, San Luis Obispo'),

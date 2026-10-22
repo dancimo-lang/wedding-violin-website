@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { userIsAdmin } from '@/lib/admin';
+import { adminDetailShell } from '@/lib/admin-shell-path';
 import { getSupabasePublicEnv } from './env';
 
 const CACHE_HEADERS = ['cache-control', 'expires', 'pragma'];
@@ -28,6 +29,14 @@ function carrySession(from: NextResponse, to: NextResponse) {
 
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // The sign-out form still posts to /auth/signout. The handler lives on the API catch-all.
+  if (pathname === '/auth/signout') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/api/auth/signout';
+    return NextResponse.rewrite(url);
+  }
+
   const protectedRoute = isAdminPage(pathname) || isAdminApi(pathname);
   const env = getSupabasePublicEnv();
 
@@ -74,7 +83,11 @@ export async function updateSession(request: NextRequest) {
 
   const allowed = Boolean(userId) && (await userIsAdmin(supabase, userId as string));
   if (allowed) {
-    return supabaseResponse;
+    const shell = adminDetailShell(pathname);
+    if (!shell) return supabaseResponse;
+    const url = request.nextUrl.clone();
+    url.pathname = shell;
+    return carrySession(supabaseResponse, NextResponse.rewrite(url));
   }
 
   if (isAdminApi(pathname)) {

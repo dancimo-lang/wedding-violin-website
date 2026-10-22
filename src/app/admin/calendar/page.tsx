@@ -19,7 +19,9 @@ import {
 } from '@/lib/schedule/availability';
 import { addCalendarDays, monthGrid, todayInTimeZone, venueRef } from '@/lib/schedule/time';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type CalendarBooking = {
   id: string;
@@ -69,11 +71,11 @@ export default function CalendarPage() {
     let cancelled = false;
     async function load() {
       const [settingsResult, bookingsResult, blocksResult, googleStatus, busyRows] = await Promise.all([
-        supabase.from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
-        supabase.from('bookings').select('id, status, event_date, venue_name, venue_address, service_type, performance_start_time, performance_end_time, performers_needed, clients(name)').gte('event_date', range.from).lte('event_date', range.to).neq('status', 'Cancelled'),
-        supabase.from('availability_blocks').select('id, start_date, end_date, start_time, end_time, all_day, block_type, reason').lte('start_date', range.to).gte('end_date', range.from),
+        supabase().from('business_settings').select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count').eq('id', 1).maybeSingle(),
+        supabase().from('bookings').select('id, status, event_date, venue_name, venue_address, service_type, performance_start_time, performance_end_time, performers_needed, clients(name)').gte('event_date', range.from).lte('event_date', range.to).neq('status', 'Cancelled'),
+        supabase().from('availability_blocks').select('id, start_date, end_date, start_time, end_time, all_day, block_type, reason').lte('start_date', range.to).gte('end_date', range.from),
         fetchGoogleStatus(),
-        loadGoogleBusy(supabase, range.from, range.to),
+        loadGoogleBusy(supabase(), range.from, range.to),
       ]);
       if (cancelled) return;
       setExternalState(statusToExternalState(googleStatus));
@@ -163,7 +165,7 @@ export default function CalendarPage() {
         <HoldForm selected={selected} settings={settings} bookings={bookings} blocks={blocks} googleBusy={googleBusy} externalState={externalState} onSaved={(booking) => setBookings((current) => [...current, booking])} />
       </div>
       <DayList date={selected} bookings={bookings} blocks={blocks} googleBusy={googleBusy} onDelete={async (id) => {
-        const { error: deleteError } = await supabase.from('availability_blocks').delete().eq('id', id);
+        const { error: deleteError } = await supabase().from('availability_blocks').delete().eq('id', id);
         if (deleteError) setError('Could not remove that block.');
         else {
           setBlocks((current) => current.filter((block) => block.id !== id));
@@ -309,7 +311,7 @@ function BlockForm({ selected, onSaved }: { selected: string; onSaved: (block: C
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage('');
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('availability_blocks')
       .insert({
         start_date: selected,
@@ -417,11 +419,11 @@ function HoldForm({
     const normalizedEmail = email.trim().toLowerCase();
     let clientId: string | null = null;
     if (normalizedEmail) {
-      const { data } = await supabase.from('clients').select('id').eq('email', normalizedEmail).maybeSingle();
+      const { data } = await supabase().from('clients').select('id').eq('email', normalizedEmail).maybeSingle();
       clientId = data?.id || null;
     }
     if (!clientId) {
-      const { data, error } = await supabase.from('clients').insert({ name: name.trim(), email: normalizedEmail || null }).select('id').single();
+      const { data, error } = await supabase().from('clients').insert({ name: name.trim(), email: normalizedEmail || null }).select('id').single();
       if (error || !data) {
         setMessage('Could not save the client.');
         return;

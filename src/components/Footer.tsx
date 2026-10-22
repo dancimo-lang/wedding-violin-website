@@ -1,10 +1,13 @@
 import Link from 'next/link';
-import { Instagram, Youtube, Facebook, Mail, MapPin, Map } from 'lucide-react';
+import { Instagram, Youtube, Facebook, Mail, MapPin, Map, Phone, MessageSquare } from 'lucide-react';
 import site from '@/data/site.json';
 import navigation from '@/data/navigation.json';
+import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
+import { publishedGoogleHref } from '@/lib/publicContent';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const googleHref = publishedGoogleHref(site.social.google, site.ownerNotes?.google);
 
   return (
     <footer className="bg-gradient-to-br from-blue-950 to-blue-900 text-blue-200 border-t border-blue-500/30">
@@ -73,6 +76,20 @@ export default function Footer() {
                 <Mail size={16} />
                 <span className="text-sm">{site.email}</span>
               </a>
+              <a
+                href={phoneTelHref()}
+                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+              >
+                <Phone size={16} />
+                <span className="text-sm">{site.phone}</span>
+              </a>
+              <a
+                href={phoneSmsHref()}
+                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+              >
+                <MessageSquare size={16} />
+                <span className="text-sm">Text</span>
+              </a>
 
               <div className="flex items-center gap-4 pt-2">
                 <a
@@ -102,15 +119,17 @@ export default function Footer() {
                 >
                   <Facebook size={24} />
                 </a>
-                <a
-                  href={site.social.google}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_15px_rgba(0,174,239,0.7)]"
-                  aria-label="Google Business Profile"
-                >
-                  <Map size={24} />
-                </a>
+                {googleHref && (
+                  <a
+                    href={googleHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_15px_rgba(0,174,239,0.7)]"
+                    aria-label="Google Business Profile"
+                  >
+                    <Map size={24} />
+                  </a>
+                )}
               </div>
 
               <Link

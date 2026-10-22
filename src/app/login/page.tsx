@@ -1,39 +1,8 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { safeAdminPath, userIsAdmin } from '@/lib/admin';
-import { getSupabasePublicEnv } from '@/lib/supabase/env';
-import { createClient } from '@/lib/supabase/server';
+import { Suspense } from 'react';
 import { LoginForm } from './login-form';
 
-export const dynamic = 'force-dynamic';
-
-export default async function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; next?: string }>;
-}) {
-  const params = await searchParams;
-  const nextPath = safeAdminPath(params.next);
-  const notice =
-    params.error === 'unauthorized'
-      ? 'That account is not allowed to open the admin area.'
-      : params.error === 'config'
-        ? 'Sign-in is not configured yet.'
-        : '';
-
-  if (getSupabasePublicEnv()) {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getClaims();
-      const userId = data?.claims?.sub;
-      if (userId && (await userIsAdmin(supabase, userId))) {
-        redirect(nextPath);
-      }
-    } catch {
-      // Show the form when the session cannot be read.
-    }
-  }
-
+export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -43,7 +12,9 @@ export default async function AdminLoginPage({
             <p className="text-gray-600">Daniel Cimo Violin - Booking Management</p>
           </div>
 
-          <LoginForm nextPath={nextPath} notice={notice} />
+          <Suspense fallback={<p className="text-gray-600">Loading...</p>}>
+            <LoginForm />
+          </Suspense>
 
           <div className="mt-6 text-center">
             <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm">

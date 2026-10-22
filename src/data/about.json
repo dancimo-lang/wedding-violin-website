@@ -13,6 +13,7 @@
   },
   "credentials": {
     "title": "Education & Training",
+    "ownerNote": "Owner: these lines stay in this file and are not shown on the About page. Replace each TODO with a real credential. The Education & Training heading appears only after at least one line no longer starts with TODO.",
     "items": [
       "TODO: Add degree/institution",
       "TODO: Add additional training",

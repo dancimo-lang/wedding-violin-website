@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type DashboardLead = {
   id: string;
@@ -38,8 +40,8 @@ export default function AdminDashboard() {
         { data: leadsData },
         { data: bookingsData },
       ] = await Promise.all([
-        supabase.from('leads').select('id, service_type, requested_services, event_date, status, created_at, clients(name)').is('archived_at', null).order('created_at', { ascending: false }),
-        supabase.from('bookings').select('*').order('event_date', { ascending: true }),
+        supabase().from('leads').select('id, service_type, requested_services, event_date, status, created_at, clients(name)').is('archived_at', null).order('created_at', { ascending: false }),
+        supabase().from('bookings').select('*').order('event_date', { ascending: true }),
       ]);
       if (cancelled) return;
       setLeads((leadsData || []) as unknown as DashboardLead[]);

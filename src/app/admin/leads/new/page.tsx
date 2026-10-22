@@ -9,7 +9,9 @@ import { postBookingStatus } from '@/lib/booking-status-client';
 import { emptyLeadDraft, leadWritePayload, type LeadDraft } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 export default function NewLeadPage() {
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function NewLeadPage() {
 
     let clientId: string | null = null;
     if (payload.client.email) {
-      const { data: existing, error: lookupError } = await supabase
+      const { data: existing, error: lookupError } = await supabase()
         .from('clients')
         .select('id')
         .eq('email', payload.client.email)
@@ -44,7 +46,7 @@ export default function NewLeadPage() {
     }
 
     if (!clientId) {
-      const { data: created, error: clientError } = await supabase
+      const { data: created, error: clientError } = await supabase()
         .from('clients')
         .insert(payload.client)
         .select('id')
@@ -56,7 +58,7 @@ export default function NewLeadPage() {
       }
       clientId = created.id;
     } else {
-      const { error: updateError } = await supabase.from('clients').update(payload.client).eq('id', clientId);
+      const { error: updateError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
       if (updateError) {
         setError('Could not update the client.');
         setSaving(false);
@@ -65,7 +67,7 @@ export default function NewLeadPage() {
     }
 
     const booked = payload.lead.status === 'Confirmed' || payload.lead.status === 'Completed';
-    const { data: lead, error: leadError } = await supabase
+    const { data: lead, error: leadError } = await supabase()
       .from('leads')
       .insert({
         ...payload.lead,
@@ -91,7 +93,7 @@ export default function NewLeadPage() {
       return;
     }
 
-    await supabase.from('activity_events').insert({
+    await supabase().from('activity_events').insert({
       lead_id: lead.id,
       event_type: 'inquiry',
       title: `Lead added by ${payload.lead.inquiry_source || 'hand'}`,

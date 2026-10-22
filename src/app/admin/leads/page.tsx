@@ -6,7 +6,9 @@ import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { fieldClass, LEAD_STATUSES, sourceLabel, statusClass } from '@/lib/leads';
 
-const supabase = createClient();
+function supabase() {
+  return createClient();
+}
 
 type LeadRow = {
   id: string;
@@ -38,7 +40,7 @@ export default function LeadsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const { data, error } = await supabase
+      const { data, error } = await supabase()
         .from('leads')
         .select('id, status, event_date, venue_name, requested_services, service_type, inquiry_source, next_follow_up_date, created_at, archived_at, message, clients(name, email, phone, partner_name)')
         .order('created_at', { ascending: false });

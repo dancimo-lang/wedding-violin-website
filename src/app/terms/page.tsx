@@ -1,18 +1,48 @@
-import { Metadata } from 'next';
+import { Fragment } from 'react';
+import { createPageMetadata } from '@/lib/page-metadata';
+import { isPublishableCopy } from '@/lib/publicContent';
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: 'Terms of Service',
-  description: 'Terms of service for Daniel Cimo Violin services.',
-  robots: 'noindex, nofollow',
+  description:
+    'Terms for violin performance, private lessons, and studio recording from Daniel Cimo. All bookings are subject to availability. Contact dancimo@gmail.com.',
+  path: '/terms',
+  noIndex: true,
+});
+
+// Owner: a section whose text starts with TODO is omitted, including its heading.
+const ownerDraft = {
+  note: 'Owner: sections whose text starts with TODO are omitted, including their headings. Replace the text to publish that section. Have a lawyer review the terms before you rely on them.',
+  lastUpdated: '[TODO: Add date]',
+  disclaimer:
+    'TODO: This is a placeholder terms of service. Please consult with a legal professional to create comprehensive terms that protect your business.',
+  sections: [
+    {
+      heading: 'Booking & Payment',
+      body: '[TODO: Add booking terms, deposit requirements, payment schedules, etc.]',
+    },
+    {
+      heading: 'Cancellation Policy',
+      body: '[TODO: Add cancellation and refund policies]',
+    },
+    {
+      heading: 'Liability',
+      body: '[TODO: Add liability limitations and disclaimers]',
+    },
+  ],
 };
 
 export default function TermsPage() {
+  const lastUpdated = isPublishableCopy(ownerDraft.lastUpdated) ? ownerDraft.lastUpdated : null;
+  const disclaimer = isPublishableCopy(ownerDraft.disclaimer) ? ownerDraft.disclaimer : null;
+  const publishedSections = ownerDraft.sections.filter((section) => isPublishableCopy(section.body));
+
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto prose prose-lg">
           <h1>Terms of Service</h1>
-          <p className="text-gray-500">Last updated: [TODO: Add date]</p>
+          {lastUpdated && <p className="text-gray-500">Last updated: {lastUpdated}</p>}
           
           <h2>Services</h2>
           <p>
@@ -20,20 +50,12 @@ export default function TermsPage() {
             and studio recording services. All bookings are subject to availability.
           </p>
 
-          <h2>Booking & Payment</h2>
-          <p>
-            [TODO: Add booking terms, deposit requirements, payment schedules, etc.]
-          </p>
-
-          <h2>Cancellation Policy</h2>
-          <p>
-            [TODO: Add cancellation and refund policies]
-          </p>
-
-          <h2>Liability</h2>
-          <p>
-            [TODO: Add liability limitations and disclaimers]
-          </p>
+          {publishedSections.map((section) => (
+            <Fragment key={section.heading}>
+              <h2>{section.heading}</h2>
+              <p>{section.body}</p>
+            </Fragment>
+          ))}
 
           <h2>Contact</h2>
           <p>
@@ -41,10 +63,9 @@ export default function TermsPage() {
             <a href="mailto:dancimo@gmail.com">dancimo@gmail.com</a>.
           </p>
 
-          <p className="text-sm text-gray-400 mt-8">
-            TODO: This is a placeholder terms of service. Please consult with a legal professional
-            to create comprehensive terms that protect your business.
-          </p>
+          {disclaimer && (
+            <p className="text-sm text-gray-400 mt-8">{disclaimer}</p>
+          )}
         </div>
       </div>
     </section>

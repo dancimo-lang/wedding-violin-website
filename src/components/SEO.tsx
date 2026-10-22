@@ -1,4 +1,5 @@
 import site from '@/data/site.json';
+import { phoneSchemaTelephone } from '@/lib/phone';
 
 interface SEOProps {
   title?: string;
@@ -84,7 +85,7 @@ export function generateLocalBusinessSchema() {
     name: site.name,
     description: site.description,
     url: 'https://danielcimo.com',
-    telephone: site.phone,
+    telephone: phoneSchemaTelephone(),
     email: site.email,
     address: {
       '@type': 'PostalAddress',
@@ -131,6 +132,22 @@ interface JsonLdProps {
   data: object | object[];
 }
 
+/** Stable key order without dropping nested fields (an array replacer would). */
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortJsonValue);
+  }
+  if (value && typeof value === 'object') {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((sorted, key) => {
+        sorted[key] = sortJsonValue((value as Record<string, unknown>)[key]);
+        return sorted;
+      }, {});
+  }
+  return value;
+}
+
 export function JsonLd({ data }: JsonLdProps) {
   const schemas = Array.isArray(data) ? data : [data];
   
@@ -141,7 +158,7 @@ export function JsonLd({ data }: JsonLdProps) {
           key={index}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ 
-            __html: JSON.stringify(schema, Object.keys(schema).sort()) 
+            __html: JSON.stringify(sortJsonValue(schema)) 
           }}
         />
       ))}
