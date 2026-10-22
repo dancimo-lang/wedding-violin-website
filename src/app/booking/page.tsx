@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import site from '@/data/site.json';
+import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 
 const serviceOptions = [
   { value: 'weddings', label: 'Wedding Performance' },
@@ -297,6 +299,28 @@ export default function BookingPage() {
 
             {/* Contact Info */}
             <div className="mt-12 text-center">
+              <p className="text-gray-600 mb-2">
+                Prefer to talk?{' '}
+                <a
+                  href={phoneTelHref()}
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  Call
+                </a>
+                {' or '}
+                <a
+                  href={phoneSmsHref()}
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  text
+                </a>{' '}
+                <a
+                  href={phoneTelHref()}
+                  className="text-amber-700 font-medium hover:underline"
+                >
+                  {site.phone}
+                </a>
+              </p>
               <p className="text-gray-600">
                 Prefer email?{' '}
                 <a
