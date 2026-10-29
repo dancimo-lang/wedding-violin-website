@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CONTRACT_LIST_COLUMNS, type ContractListRow } from '@/lib/contracts/columns';
 import { computeFees, formatMoney, type FeeSummary } from '@/lib/contracts/money';
 import { guessPackageId, PACKAGES, type PackageId } from '@/lib/contracts/packages';
-import { feeSnapshot, performanceTimeOrderMessage, renderContract, UNSIGNED } from '@/lib/contracts/render';
+import { coupleSuppliedSummary, missingCoupleDetailMessage } from '@/lib/contracts/event-details';
+import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, UNSIGNED } from '@/lib/contracts/render';
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
@@ -203,6 +204,14 @@ export function ContractPanel({
   ]);
 
   const blocking = contracts.find((row) => row.status === 'sent' || row.status === 'viewed' || row.status === 'signed');
+  const missingDetailMessage = missingCoupleDetailMessage({
+    packageId,
+    venueName,
+    venueAddress,
+    ceremonyStart,
+    cocktailStart,
+    cocktailEnd,
+  });
   const timeOrderMessage = performanceTimeOrderMessage({
     ceremonyStart,
     ceremonyEnd,
@@ -351,6 +360,7 @@ export function ContractPanel({
               {preview}
             </pre>
           )}
+          {missingDetailMessage ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-900">{missingDetailMessage}</p> : null}
           {timeOrderMessage ? <p className="rounded-lg bg-red-50 px-4 py-3 text-red-700">{timeOrderMessage}</p> : null}
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={busy || !preview || Boolean(timeOrderMessage)} onClick={() => void send()} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:bg-blue-400">
@@ -444,11 +454,16 @@ function ContractStatus({
   onAction: (path: string, body?: unknown) => Promise<void>;
 }) {
   const open = row.status === 'sent' || row.status === 'viewed';
+  const stored = normalizeStoredFields(row.render_fields);
+  const waitingMessage = open && stored ? missingCoupleDetailMessage(stored) : '';
+  const suppliedMessage = row.status === 'signed' ? coupleSuppliedSummary(stored) : '';
   return (
     <div className="mt-4 space-y-3 text-sm text-gray-800">
       <p>
         Status: {row.status}. {row.package_id ? PACKAGES[row.package_id as PackageId]?.title : ''} Booking code {row.booking_code || 'not assigned'}.
       </p>
+      {waitingMessage ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-900">{waitingMessage}</p> : null}
+      {suppliedMessage ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-900">{suppliedMessage}</p> : null}
       {row.total_cents != null && row.retainer_cents != null && row.balance_cents != null && (
         <p>
           Total ${formatMoney(row.total_cents)}. Retainer ${formatMoney(row.retainer_cents)}. Balance ${formatMoney(row.balance_cents)}

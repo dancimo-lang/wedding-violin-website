@@ -2,12 +2,22 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { PaymentOptions } from '@/components/payments/PaymentOptions';
+import {
+  applyCoupleEventDetails,
+  coupleDetailPayload,
+  coupleEventTimeMessage,
+  coupleFillableDetails,
+  emptyCoupleDetailDraft,
+  previewCoupleEventDetails,
+  type CoupleDetailField,
+} from '@/lib/contracts/event-details';
 import { formatMoney } from '@/lib/contracts/money';
 import {
   normalizeStoredFields,
   renderContract,
   signatureDateLabel,
   UNSIGNED,
+  type CoupleDetailKey,
   type StoredRenderFields,
 } from '@/lib/contracts/render';
 import { validateSignature } from '@/lib/contracts/signers';
@@ -30,6 +40,46 @@ type ViewResponse = {
   error?: string;
 };
 
+function EventDetailFields({
+  fields,
+  values,
+  timeMessage,
+  onChange,
+}: {
+  fields: CoupleDetailField[];
+  values: Record<CoupleDetailKey, string>;
+  timeMessage: string;
+  onChange: (key: CoupleDetailKey, value: string) => void;
+}) {
+  return (
+    <fieldset className="space-y-4" aria-describedby={timeMessage ? 'event-time-error' : undefined}>
+      <legend className="text-base font-semibold">Event details</legend>
+      <p className="text-sm">
+        These details were left blank. Fill them in before you sign. The agreement above updates to include what you enter.
+      </p>
+      {fields.map((field) => (
+        <label key={field.key} className="block text-sm" htmlFor={`event-${field.key}`}>
+          {field.label}
+          <input
+            id={`event-${field.key}`}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            type={field.kind === 'time' ? 'time' : 'text'}
+            required
+            value={values[field.key]}
+            onChange={(event) => onChange(field.key, event.target.value)}
+            autoComplete={field.key === 'venueName' ? 'organization' : field.key === 'venueAddress' ? 'street-address' : 'off'}
+          />
+        </label>
+      ))}
+      {timeMessage ? (
+        <p id="event-time-error" className="text-sm text-red-700">
+          {timeMessage}
+        </p>
+      ) : null}
+    </fieldset>
+  );
+}
+
 function useSigningToken(): string | null {
   return useSyncExternalStore(
     (onStoreChange) => {
@@ -47,6 +97,7 @@ export function SignContract() {
   const [loadError, setLoadError] = useState('');
   const [client1Name, setClient1Name] = useState('');
   const [client2Name, setClient2Name] = useState('');
+  const [eventDetails, setEventDetails] = useState(() => emptyCoupleDetailDraft());
   const [photoOptOut, setPhotoOptOut] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
@@ -69,6 +120,7 @@ export function SignContract() {
       }
       setView(payload);
       setPhotoOptOut(payload.photoOptOut);
+      setEventDetails(emptyCoupleDetailDraft());
       setClient1Name(payload.canSign ? '' : payload.client1Name || '');
       setClient2Name(payload.canSign ? '' : payload.client2Name || '');
     }
@@ -80,11 +132,20 @@ export function SignContract() {
     };
   }, [token]);
 
-  const fields = view?.renderFields ? normalizeStoredFields(view.renderFields) : null;
+  const fields = useMemo(
+    () => (view?.renderFields ? normalizeStoredFields(view.renderFields) : null),
+    [view],
+  );
+  const fillable = useMemo(() => (fields ? coupleFillableDetails(fields) : []), [fields]);
+  const previewFields = useMemo(
+    () => (fields ? previewCoupleEventDetails(fields, eventDetails) : null),
+    [eventDetails, fields],
+  );
+  const timeMessage = fields ? coupleEventTimeMessage(fields, eventDetails) : '';
   const liveText = useMemo(() => {
-    if (!fields || !view?.canSign) return view?.text ?? '';
+    if (!previewFields || !view?.canSign) return view?.text ?? '';
     try {
-      return renderContract(fields, {
+      return renderContract(previewFields, {
         ...UNSIGNED,
         client1SignedName: client1Name.trim(),
         client2SignedName: client2Name.trim(),
@@ -94,7 +155,7 @@ export function SignContract() {
     } catch {
       return view.text;
     }
-  }, [client1Name, client2Name, fields, photoOptOut, view]);
+  }, [client1Name, client2Name, photoOptOut, previewFields, view]);
 
   const finished = signedFacts ?? (view && !view.canSign ? view : null);
   const documentText = signedText || (finished ? finished.text || view?.text || '' : liveText);
@@ -105,6 +166,14 @@ export function SignContract() {
     if (problem) {
       setSignError(problem);
       return;
+    }
+    const detailPayload = fields ? coupleDetailPayload(fields, eventDetails) : {};
+    if (fields) {
+      const details = applyCoupleEventDetails(fields, detailPayload);
+      if (!details.ok) {
+        setSignError(details.error);
+        return;
+      }
     }
     setSigning(true);
     setSignError('');
@@ -118,6 +187,7 @@ export function SignContract() {
           client2Name,
           photoOptOut,
           agreed,
+          eventDetails: detailPayload,
         }),
       });
       const payload = (await response.json()) as ViewResponse & { text?: string };
@@ -179,6 +249,14 @@ export function SignContract() {
                     void sign();
                   }}
                 >
+                  {fillable.length > 0 && (
+                    <EventDetailFields
+                      fields={fillable}
+                      values={eventDetails}
+                      timeMessage={timeMessage}
+                      onChange={(key, value) => setEventDetails((current) => ({ ...current, [key]: value }))}
+                    />
+                  )}
                   <label className="flex items-start gap-3 text-sm">
                     <input
                       type="checkbox"
@@ -218,7 +296,7 @@ export function SignContract() {
                   {signError && <p className="text-sm text-red-700">{signError}</p>}
                   <button
                     type="submit"
-                    disabled={signing}
+                    disabled={signing || Boolean(timeMessage)}
                     className="rounded-lg bg-blue-700 px-4 py-2 text-white disabled:bg-blue-400"
                   >
                     {signing ? 'Signing...' : 'Sign'}
