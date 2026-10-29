@@ -1,6 +1,7 @@
 /**
  * Pure Chase Zelle alert parser. Google Apps Script pastes this file at the
  * top of Code.gs. Node tests import it. Keep the two copies identical.
+ * Labels may omit the colon, and values may be on the next line or table cell.
  */
 function parseZelleAlert(input) {
   var source = input || {};
@@ -36,10 +37,10 @@ function normalizeZelleText(value) {
 }
 
 function parseZelleNormalized(text) {
-  var amountMatch = /Amount\s*:\s*\$?\s*([0-9][0-9,]*\.\d{2})/i.exec(text);
-  var sentMatch = /Sent on\s*:\s*([A-Za-z]{3,9}\.?\s+[0-9]{1,2},\s+[0-9]{4})/i.exec(text);
-  var txnMatch = /Transaction number\s*:\s*([0-9]{6,22})/i.exec(text);
-  var memoMatch = /Memo\s*:\s*([^\n]*)/i.exec(text);
+  var amountMatch = /\bAmount\b\s*:?\s*\$?\s*([0-9][0-9,]*\.\d{2})/i.exec(text);
+  var sentMatch = /\bSent on\b\s*:?\s*([A-Za-z]{3,9}\.?\s+[0-9]{1,2},\s+[0-9]{4})/i.exec(text);
+  var txnMatch = /\bTransaction number\b\s*:?\s*([0-9]{6,22})/i.exec(text);
+  var memoMatch = /\bMemo\b\s*:?\s*([^\n]*)/i.exec(text);
   var sender = zelleSenderName(text);
   if (!amountMatch || !sentMatch || !txnMatch || !sender) {
     return { ok: false, error: 'The Chase alert is missing the sender, amount, date, or transaction number.' };
@@ -49,7 +50,7 @@ function parseZelleNormalized(text) {
   if (amountCents == null || !sentOn) {
     return { ok: false, error: 'The amount or sent-on date could not be read.' };
   }
-  var memo = memoMatch ? cleanZelleMemo(memoMatch[1]) : '';
+  var memo = memoMatch ? cleanZelleMemo(memoMatch[1], sender) : '';
   return {
     ok: true,
     senderName: sender,
@@ -82,10 +83,22 @@ function zelleSenderName(text) {
   return name.join(' ');
 }
 
-function cleanZelleMemo(value) {
+function escapeZelleRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function cleanZelleMemo(value, sender) {
   var memo = String(value || '').replace(/\s+/g, ' ').trim();
-  memo = memo.replace(/\s+is registered\b[\s\S]*$/i, '').trim();
+  var registeredAt = memo.search(/\bis registered\b/i);
+  if (registeredAt >= 0) {
+    memo = memo.slice(0, registeredAt).trim();
+    if (sender) {
+      var nameTail = new RegExp('(?:^|\\s)' + escapeZelleRegExp(sender) + '\\s*$', 'i');
+      memo = memo.replace(nameTail, '').trim();
+    }
+  }
   memo = memo.replace(/\s+questions\?[\s\S]*$/i, '').trim();
+  if (/^n\/a$/i.test(memo)) return '';
   return memo;
 }
 
