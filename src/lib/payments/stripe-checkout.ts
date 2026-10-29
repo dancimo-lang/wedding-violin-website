@@ -3,6 +3,7 @@ import { contractOwnerEmail } from '@/lib/contracts/mail';
 import { sendContractMail } from '@/lib/contracts/delivery';
 import { isContractToken } from '@/lib/contracts/token';
 import { readFeeSettings, processingFeeCents } from './fees';
+import { checkoutReturnUrls, checkoutSessionId, type CheckoutSessionRef } from './checkout-notice';
 import { buildPaymentView } from './view';
 import type { ObligationRef } from './match';
 import { verifyStripeWebhook } from './stripe-signature';
@@ -14,6 +15,7 @@ import {
   checkoutPaymentMethod,
   checkoutSessionAcceptsMethod,
   checkoutSessionFields,
+  decideCheckoutReuse,
   offeredPaymentMethodTypes,
   stripeCheckoutErrorDetails,
 } from './stripe-session';
@@ -53,7 +55,10 @@ function stripeReady(): boolean {
   return isStripeSecretKey(process.env.STRIPE_SECRET_KEY);
 }
 
-export async function paymentView(token: string): Promise<{ status: number; body: Record<string, unknown> }> {
+export async function paymentView(
+  token: string,
+  options?: { sessionId?: string | null; returnHint?: 'paid' | 'canceled' | null },
+): Promise<{ status: number; body: Record<string, unknown> }> {
   if (!isContractToken(token)) return { status: 404, body: { error: 'This payment link is not valid.' } };
   const admin = adminOrNull();
   if (!admin) return { status: 500, body: { error: 'Payments are not available.' } };
@@ -61,11 +66,20 @@ export async function paymentView(token: string): Promise<{ status: number; body
   if (!contract || !contract.booking_id || !contract.booking_code) {
     return { status: 404, body: { error: 'This payment link is not valid.' } };
   }
-  const { data, error } = await admin
-    .from('payment_obligations')
-    .select('id, booking_id, booking_code, kind, amount_cents, status, due_on')
-    .eq('booking_id', contract.booking_id)
-    .neq('status', 'void');
+  const [{ data, error }, { data: sessionRows }, { data: processingRows }] = await Promise.all([
+    admin
+      .from('payment_obligations')
+      .select('id, booking_id, booking_code, kind, amount_cents, status, due_on')
+      .eq('booking_id', contract.booking_id)
+      .neq('status', 'void'),
+    admin
+      .from('stripe_checkout_sessions')
+      .select('id, obligation_id, status, updated_at')
+      .eq('booking_id', contract.booking_id)
+      .order('updated_at', { ascending: false })
+      .limit(20),
+    admin.from('payments').select('obligation_id').eq('booking_id', contract.booking_id).eq('status', 'Processing'),
+  ]);
   if (error) return { status: 500, body: { error: 'Payments are not available.' } };
   const fees = readFeeSettings();
   if ('error' in fees) return { status: 500, body: { error: fees.error } };
@@ -80,6 +94,20 @@ export async function paymentView(token: string): Promise<{ status: number; body
       status: row.status === 'paid' || row.status === 'open' ? row.status : 'void',
       dueOn: typeof row.due_on === 'string' ? row.due_on : null,
     }));
+  const sessions: CheckoutSessionRef[] = [];
+  for (const row of sessionRows ?? []) {
+    const status = row.status;
+    if (status !== 'open' && status !== 'processing' && status !== 'paid' && status !== 'failed') continue;
+    sessions.push({
+      id: String(row.id),
+      obligationId: String(row.obligation_id),
+      status,
+      updatedAt: typeof row.updated_at === 'string' ? row.updated_at : '',
+    });
+  }
+  const processingObligationIds = (processingRows ?? [])
+    .map((row) => (typeof row.obligation_id === 'string' ? row.obligation_id : ''))
+    .filter((id) => id.length > 0);
   const qr = zelleQrSources();
   return {
     status: 200,
@@ -91,6 +119,10 @@ export async function paymentView(token: string): Promise<{ status: number; body
       qrUrl: qr.pageUrl,
       stripeReady: stripeReady(),
       fees,
+      sessions,
+      processingObligationIds,
+      sessionId: checkoutSessionId(options?.sessionId),
+      returnHint: options?.returnHint ?? null,
     }),
   };
 }
@@ -138,27 +170,56 @@ export async function startCheckout(input: {
   const method = input.method === 'ach' ? 'stripe_ach' : 'stripe_card';
   const feeCents = processingFeeCents(Number(obligation.amount_cents), input.method === 'ach' ? fees.ach : fees.card);
   const totalCents = Number(obligation.amount_cents) + feeCents;
-  const since = new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString();
-  const { data: reusable } = await admin
+  const secretKey = process.env.STRIPE_SECRET_KEY?.trim() ?? '';
+  const { data: stored } = await admin
     .from('stripe_checkout_sessions')
-    .select('url')
+    .select('id, url, status')
     .eq('obligation_id', input.obligationId)
     .eq('method', method)
     .eq('fee_cents', feeCents)
-    .eq('status', 'open')
-    .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (typeof reusable?.url === 'string' && reusable.url.startsWith('https://')) {
-    return { status: 200, body: { url: reusable.url } };
+  const storedSession = stored
+    ? {
+        id: String(stored.id),
+        status: typeof stored.status === 'string' ? stored.status : '',
+        url: typeof stored.url === 'string' ? stored.url : null,
+      }
+    : null;
+  let live: { status: string; url: string | null; paymentStatus: string | null } | null = null;
+  if (storedSession?.status === 'open') {
+    const read = await readStripeCheckout(secretKey, storedSession.id);
+    if (!read.ok) return { status: 502, body: { error: 'The payment page could not be opened. You can still pay by Zelle.' } };
+    live = read.session;
+  }
+  const decision = decideCheckoutReuse({ stored: storedSession, live });
+  if (decision.action === 'blocked' && decision.recordStatus && storedSession) {
+    await admin
+      .from('stripe_checkout_sessions')
+      .update({ status: decision.recordStatus, updated_at: new Date().toISOString() })
+      .eq('id', storedSession.id)
+      .eq('status', 'open');
+  }
+  if (decision.action === 'create' && decision.recordStatus && storedSession) {
+    await admin
+      .from('stripe_checkout_sessions')
+      .update({ status: decision.recordStatus, updated_at: new Date().toISOString() })
+      .eq('id', storedSession.id)
+      .eq('status', 'open');
+  }
+  if (decision.action === 'reuse') return { status: 200, body: { url: decision.url } };
+  if (decision.action === 'blocked') return { status: 409, body: { error: decision.message } };
+  if (decision.action === 'unverified') {
+    return { status: 502, body: { error: 'The payment page could not be opened. You can still pay by Zelle.' } };
   }
 
   const origin = siteOrigin(input.request);
   const payUrl = paymentPageUrl(origin, input.token);
+  const returnUrls = checkoutReturnUrls(payUrl);
   const kind = obligation.kind === 'balance' ? 'balance' : 'retainer';
   const created = await createStripeCheckout({
-    secretKey: process.env.STRIPE_SECRET_KEY?.trim() ?? '',
+    secretKey,
     method,
     amountCents: Number(obligation.amount_cents),
     feeCents,
@@ -166,13 +227,14 @@ export async function startCheckout(input: {
     kind,
     obligationId: input.obligationId,
     bookingId: contract.booking_id,
-    successUrl: `${payUrl}&paid=1`,
-    cancelUrl: `${payUrl}&canceled=1`,
+    successUrl: returnUrls.successUrl,
+    cancelUrl: returnUrls.cancelUrl,
     idempotencyKey: checkoutIdempotencyKey({
       obligationId: input.obligationId,
       method,
       feeCents,
       day: new Date().toISOString().slice(0, 10),
+      replacesSessionId: decision.replacesSessionId,
     }),
   });
   if ('error' in created) return { status: 502, body: { error: 'The payment page could not be opened. You can still pay by Zelle.' } };
@@ -188,8 +250,52 @@ export async function startCheckout(input: {
     status: 'open',
     url: created.url,
   });
-  if (error && error.code !== '23505') return { status: 500, body: { error: 'The payment page could not be opened.' } };
+  if (error?.code === '23505') {
+    const { data: existing } = await admin.from('stripe_checkout_sessions').select('status, url').eq('id', created.id).maybeSingle();
+    if (existing?.status === 'open') {
+      const read = await readStripeCheckout(secretKey, created.id);
+      if (read.ok && read.session.status === 'open' && read.session.url?.startsWith('https://')) {
+        return { status: 200, body: { url: read.session.url } };
+      }
+    }
+    return { status: 502, body: { error: 'The payment page could not be opened. You can still pay by Zelle.' } };
+  }
+  if (error) return { status: 500, body: { error: 'The payment page could not be opened.' } };
   return { status: 200, body: { url: created.url } };
+}
+
+async function readStripeCheckout(
+  secretKey: string,
+  sessionId: string,
+): Promise<{ ok: true; session: { status: string; url: string | null; paymentStatus: string | null } } | { ok: false }> {
+  let response: Response;
+  try {
+    response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        'Stripe-Version': STRIPE_CHECKOUT_API_VERSION,
+      },
+    });
+  } catch {
+    return { ok: false };
+  }
+  const payload = (await response.json().catch(() => null)) as { status?: unknown; url?: unknown; payment_status?: unknown } | null;
+  if (!response.ok || !payload) {
+    console.error(
+      'Stripe Checkout could not be read',
+      stripeCheckoutErrorDetails({ status: response.status, requestId: response.headers.get('request-id'), payload }),
+    );
+    return { ok: false };
+  }
+  return {
+    ok: true,
+    session: {
+      status: typeof payload.status === 'string' ? payload.status : '',
+      url: typeof payload.url === 'string' ? payload.url : null,
+      paymentStatus: typeof payload.payment_status === 'string' ? payload.payment_status : null,
+    },
+  };
 }
 
 async function createStripeCheckout(input: {

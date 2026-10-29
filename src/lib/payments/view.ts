@@ -1,4 +1,5 @@
 import { formatLongDate, formatMoney } from '@/lib/contracts/money';
+import { checkoutBanner, type CheckoutBanner, type CheckoutSessionRef } from './checkout-notice';
 import { processingFeeCents, type FeeSettings } from './fees';
 import type { ObligationKind, ObligationRef } from './match';
 import { ZELLE_QR_ALT, ZELLE_QR_CAPTION, zelleInstructionLine } from './zelle-config';
@@ -30,6 +31,9 @@ export type PublicPaymentView = {
   cardButton: string | null;
   paid: { kind: ObligationKind; amountLabel: string }[];
   paidInFull: boolean;
+  checkout: CheckoutBanner | null;
+  /** Hide Stripe and Zelle actions for the amount that is already paid or still clearing. */
+  blockPay: boolean;
 };
 
 function label(cents: number): string {
@@ -72,6 +76,10 @@ export function buildPaymentView(input: {
   qrUrl: string | null;
   stripeReady: boolean;
   fees: FeeSettings;
+  sessions?: readonly CheckoutSessionRef[];
+  processingObligationIds?: readonly string[];
+  sessionId?: string | null;
+  returnHint?: 'paid' | 'canceled' | null;
 }): PublicPaymentView {
   const open = input.obligations.filter((row) => row.status === 'open');
   const retainer = open.find((row) => row.kind === 'retainer') ?? null;
@@ -93,6 +101,13 @@ export function buildPaymentView(input: {
       ? `The remaining balance of ${label(balance.amountCents)} is due ${balance.dueOn ? formatLongDate(balance.dueOn) : 'later'}.`
       : null;
   const fees = due ? feeLabels(due.amountCents, input.fees, input.stripeReady) : feeLabels(0, input.fees, false);
+  const notice = checkoutBanner({
+    obligations: input.obligations,
+    sessions: input.sessions ?? [],
+    processingObligationIds: input.processingObligationIds,
+    sessionId: input.sessionId,
+    hint: input.returnHint,
+  });
   return {
     bookingCode: input.bookingCode,
     recipientName: input.recipientName,
@@ -115,5 +130,7 @@ export function buildPaymentView(input: {
     ...fees,
     paid,
     paidInFull: input.obligations.length > 0 && open.length === 0,
+    checkout: notice.checkout,
+    blockPay: notice.blockPay,
   };
 }

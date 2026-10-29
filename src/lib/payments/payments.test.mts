@@ -10,10 +10,19 @@ import { confirmationEmail, THANK_YOU_EMAIL_TODO } from './messages';
 import { planStripeEvent, verifyStripeSignatureHeader } from './stripe-event';
 import { isStripeSecretKey } from './stripe-key';
 import {
+  CANCELED_NOTICE,
+  CONFIRMING_NOTICE,
+  FAILED_NOTICE,
+  PROCESSING_NOTICE,
+  checkoutBanner,
+  checkoutReturnUrls,
+} from './checkout-notice';
+import {
   STRIPE_CHECKOUT_API_VERSION,
   checkoutIdempotencyKey,
   checkoutSessionAcceptsMethod,
   checkoutSessionFields,
+  decideCheckoutReuse,
   stripeCheckoutErrorDetails,
 } from './stripe-session';
 import { buildPaymentView } from './view';
@@ -339,6 +348,15 @@ test('Checkout sessions allow one method on the 2026-09-30 API and log Stripe er
   const key = checkoutIdempotencyKey({ obligationId: shared.obligationId, method: 'stripe_card', feeCents: 1524, day });
   assert.equal(key, `ob_${shared.obligationId}_stripe_card_1524_${day}_e`);
   assert.notEqual(key, `ob_${shared.obligationId}_stripe_card_1524_${day}`);
+  const retryKey = checkoutIdempotencyKey({
+    obligationId: shared.obligationId,
+    method: 'stripe_ach',
+    feeCents: 0,
+    day,
+    replacesSessionId: 'cs_test_a10UjJXeFailed',
+  });
+  assert.equal(retryKey, `ob_${shared.obligationId}_stripe_ach_0_${day}_e_cs_test_a10UjJXeFailed`);
+  assert.notEqual(retryKey, checkoutIdempotencyKey({ obligationId: shared.obligationId, method: 'stripe_ach', feeCents: 0, day }));
 
   const details = stripeCheckoutErrorDetails({
     status: 400,
@@ -378,6 +396,114 @@ test('Checkout sessions allow one method on the 2026-09-30 API and log Stripe er
   assert.match(sheet, /\.pay-sheet h1,[\s\S]*\.pay-sheet li,[\s\S]*color:\s*#111827/);
   assert.match(sheet, /\.contract-sheet li,/);
   assert.match(sheet, /\.pay-sheet \[role='alert'\][\s\S]*color:\s*#b91c1c/);
+  assert.match(payPage, /returnHint/);
+});
+
+test('a return from Checkout follows the stored session, and a failed session is not reused', () => {
+  const retainerId = '0b7f3c2a-1111-4222-8333-444455556666';
+  const balanceId = '1c8e4d3b-2222-4333-8444-555566667777';
+  const obligations = [
+    { id: retainerId, kind: 'retainer' as const, status: 'open' as const },
+    { id: balanceId, kind: 'balance' as const, status: 'open' as const },
+  ];
+  const failed = checkoutBanner({
+    obligations,
+    sessions: [{ id: 'cs_test_failed', obligationId: retainerId, status: 'failed', updatedAt: '2026-10-29T15:00:00Z' }],
+    hint: 'paid',
+    sessionId: 'cs_test_failed',
+  });
+  assert.equal(failed.checkout?.message, FAILED_NOTICE);
+  assert.equal(failed.blockPay, false);
+
+  const waiting = checkoutBanner({
+    obligations,
+    sessions: [{ id: 'cs_test_open', obligationId: retainerId, status: 'open', updatedAt: '2026-10-29T15:00:00Z' }],
+    hint: 'paid',
+  });
+  assert.equal(waiting.checkout?.message, CONFIRMING_NOTICE);
+  assert.equal(waiting.checkout?.pendingConfirmation, true);
+  assert.equal(waiting.blockPay, true);
+
+  const processing = checkoutBanner({
+    obligations,
+    sessions: [{ id: 'cs_test_ach', obligationId: retainerId, status: 'processing', updatedAt: '2026-10-29T15:01:00Z' }],
+  });
+  assert.equal(processing.checkout?.message, PROCESSING_NOTICE);
+  assert.equal(processing.blockPay, true);
+
+  const paid = checkoutBanner({
+    obligations: [
+      { id: retainerId, kind: 'retainer', status: 'paid' },
+      { id: balanceId, kind: 'balance', status: 'open' },
+    ],
+    sessions: [{ id: 'cs_test_paid', obligationId: retainerId, status: 'paid', updatedAt: '2026-10-29T15:02:00Z' }],
+    hint: 'paid',
+  });
+  assert.equal(paid.checkout?.message, 'Your retainer is paid. Thank you!');
+  assert.equal(paid.blockPay, false);
+
+  const balancePaid = checkoutBanner({
+    obligations: [{ id: balanceId, kind: 'balance', status: 'paid' }],
+    sessions: [{ id: 'cs_test_balance', obligationId: balanceId, status: 'paid', updatedAt: '2026-10-29T15:03:00Z' }],
+  });
+  assert.equal(balancePaid.checkout?.message, 'Your balance is paid. Thank you!');
+
+  const canceled = checkoutBanner({
+    obligations,
+    sessions: [{ id: 'cs_test_open', obligationId: retainerId, status: 'open', updatedAt: '2026-10-29T15:00:00Z' }],
+    hint: 'canceled',
+  });
+  assert.equal(canceled.checkout?.message, CANCELED_NOTICE);
+  assert.equal(canceled.blockPay, false);
+
+  const failedStored = { id: 'cs_test_a10UjJXeFailed', status: 'failed', url: 'https://checkout.stripe.com/c/pay/cs_test_a10UjJXeFailed' };
+  assert.deepEqual(decideCheckoutReuse({ stored: failedStored }), {
+    action: 'create',
+    replacesSessionId: failedStored.id,
+    recordStatus: null,
+  });
+  assert.deepEqual(
+    decideCheckoutReuse({
+      stored: { id: 'cs_test_open', status: 'open', url: 'https://checkout.stripe.com/c/pay/cs_test_open' },
+      live: { status: 'open', url: 'https://checkout.stripe.com/c/pay/cs_test_open', paymentStatus: 'unpaid' },
+    }),
+    { action: 'reuse', url: 'https://checkout.stripe.com/c/pay/cs_test_open' },
+  );
+  assert.equal(
+    decideCheckoutReuse({
+      stored: { id: 'cs_test_open', status: 'open', url: 'https://checkout.stripe.com/c/pay/cs_test_open' },
+      live: { status: 'expired', url: null, paymentStatus: 'unpaid' },
+    }).action,
+    'create',
+  );
+  assert.equal(
+    decideCheckoutReuse({
+      stored: { id: 'cs_test_done', status: 'open', url: 'https://checkout.stripe.com/c/pay/cs_test_done' },
+      live: { status: 'complete', url: null, paymentStatus: 'unpaid' },
+    }).action,
+    'blocked',
+  );
+  assert.equal(decideCheckoutReuse({ stored: { id: 'cs_test_open', status: 'open', url: 'https://checkout.stripe.com/c/pay/old' } }).action, 'unverified');
+
+  const urls = checkoutReturnUrls('https://preview.example/pay?t=token');
+  const params = new URLSearchParams();
+  params.set('success_url', urls.successUrl);
+  assert.match(params.get('success_url') ?? '', /\{CHECKOUT_SESSION_ID\}/);
+
+  const view = buildPaymentView({
+    bookingCode: 'DC-4910',
+    obligations: [retainer(22500, 'DC-4910', retainerId)],
+    recipientName: 'Daniel Cimo',
+    recipientContact: '(224) 678-2799',
+    qrUrl: null,
+    stripeReady: true,
+    fees: readFeeSettings({}) as Exclude<ReturnType<typeof readFeeSettings>, { error: string }>,
+    sessions: [{ id: 'cs_test_failed', obligationId: retainerId, status: 'failed', updatedAt: '2026-10-29T15:00:00Z' }],
+    returnHint: 'paid',
+  });
+  assert.equal(view.checkout?.tone, 'failed');
+  assert.equal(view.blockPay, false);
+  assert.equal(view.achButton, 'Pay $225.00 by bank account');
 });
 
 test('card and ACH fees use the published defaults and can be turned on or off', () => {
