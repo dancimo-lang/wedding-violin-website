@@ -100,6 +100,41 @@ test('Chase alert parser reads the sample, including an HTML fallback', () => {
   assert.equal(sandbox.parseZelleAlert?.({ plain: SAMPLE }).senderName, 'DOUGLAS SLOCUM');
 });
 
+test('Chase alert parser reads the real label layout, including a booking code and N/A', () => {
+  const fixtureDir = new URL('../../../scripts/gmail-zelle-forwarder/fixtures/', import.meta.url);
+  const plain = fs.readFileSync(new URL('chase-zelle-alert.txt', fixtureDir), 'utf8');
+  const html = fs.readFileSync(new URL('chase-zelle-alert.html', fixtureDir), 'utf8');
+  const expectAlert = (parsed: ReturnType<typeof parseZelleAlert>, memo = 'Kai violin lesson - October 21') => {
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.senderName, 'CASEY MORGAN');
+    assert.equal(parsed.amountCents, 8000);
+    assert.equal(parsed.sentOn, '2026-10-21');
+    assert.equal(parsed.transactionNumber, '42424242424');
+    assert.equal(parsed.memo, memo);
+  };
+
+  expectAlert(parseZelleAlert({ plain }));
+  expectAlert(parseZelleAlert({ plain: 'not an alert', html }));
+  expectAlert(parseZelleAlert({ plain: plain.replace(/\s+/g, ' ') }));
+
+  const naPlain = plain.replace('Kai violin lesson - October 21', 'N/A');
+  const naHtml = html.replace('Kai violin lesson - October 21', 'N/A');
+  expectAlert(parseZelleAlert({ plain: naPlain }), '');
+  expectAlert(parseZelleAlert({ plain: 'not an alert', html: naHtml }), '');
+  expectAlert(parseZelleAlert({ plain: naPlain.replace(/\s+/g, ' ') }), '');
+
+  const codedPlain = plain.replace('Kai violin lesson - October 21', 'retainer DC-4827');
+  const codedHtml = html.replace('Kai violin lesson - October 21', 'retainer DC-4827');
+  const coded = parseZelleAlert({ plain: codedPlain });
+  expectAlert(coded, 'retainer DC-4827');
+  expectAlert(parseZelleAlert({ plain: 'not an alert', html: codedHtml }), 'retainer DC-4827');
+  expectAlert(parseZelleAlert({ plain: codedPlain.replace(/\s+/g, ' ') }), 'retainer DC-4827');
+  assert.deepEqual(extractBookingCodes(coded.memo ?? ''), ['DC-4827']);
+  const plan = planZelleIngest(coded.memo ?? '', coded.amountCents ?? 0, [retainer(8000)]);
+  assert.equal(plan.outcome, 'matched');
+  if (plan.outcome === 'matched') assert.equal(plan.code, 'DC-4827');
+});
+
 test('booking codes tolerate case, spacing, and a missing dash', () => {
   assert.deepEqual(extractBookingCodes('DC-4827'), ['DC-4827']);
   assert.deepEqual(extractBookingCodes('please pay dc4827 thanks'), ['DC-4827']);
