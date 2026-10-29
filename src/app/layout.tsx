@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, MonteCarlo } from "next/font/google";
+import { Dancing_Script, Inter, MonteCarlo } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -21,6 +21,13 @@ const monteCarlo = MonteCarlo({
   weight: "400",
   display: "swap",
   variable: "--font-monte-carlo",
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-signature",
 });
 
 export const metadata: Metadata = {
@@ -54,7 +61,7 @@ export default function RootLayout({
       <head>
         <JsonLd data={[generatePersonSchema(), generateLocalBusinessSchema()]} />
       </head>
-      <body className={`${inter.className} ${monteCarlo.variable} antialiased bg-white text-gray-900`}>
+      <body className={`${inter.className} ${monteCarlo.variable} ${dancingScript.variable} antialiased bg-white text-gray-900`}>
         <Header />
         <main className="pt-[64px]">{children}</main>
         <Footer />

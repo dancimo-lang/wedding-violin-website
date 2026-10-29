@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { inflateSync } from 'node:zlib';
 import test from 'node:test';
 import { findOpenObligations, generateBookingCode, isBookingCode } from './booking-code';
 import { computeFees, finalPaymentDueDate, formatMoney, parseDollarInput, splitRetainer } from './money';
 import { renderContractPdf } from './pdf';
+import { contractSourceText, formatElectronicSignature, presentSignedContract } from './signature-style';
 import {
   applyCoupleEventDetails,
   coupleCocktailRecordLine,
@@ -643,9 +645,141 @@ test('contract mail uses the contract sender, then the existing Resend sender', 
   assert.equal(contractReplyTo({ CONTRACT_REPLY_TO: 'office@example.com' }), 'office@example.com');
 });
 
+function pdfDrawnText(pdf: Uint8Array): string {
+  const raw = Buffer.from(pdf).toString('latin1');
+  const parts: string[] = [];
+  const streams = /stream\r?\n([\s\S]*?)endstream/g;
+  let match: RegExpExecArray | null;
+  while ((match = streams.exec(raw))) {
+    const data = Buffer.from(match[1].replace(/^\r?\n/, '').replace(/\r?\n$/, ''), 'latin1');
+    let decoded = '';
+    try {
+      decoded = inflateSync(data).toString('latin1');
+    } catch {
+      decoded = data.toString('latin1');
+    }
+    parts.push(decoded);
+    for (const hex of decoded.matchAll(/<([0-9A-Fa-f]+)>/g)) {
+      const bytes = Buffer.from(hex[1], 'hex');
+      if (!bytes.includes(0)) parts.push(bytes.toString('latin1'));
+    }
+  }
+  return parts.join('\n');
+}
+
 test('a signed agreement can be turned into a PDF', async () => {
-  const text = renderContract(sampleFields, signedOverlay);
-  const pdf = await renderContractPdf(text);
+  const text = renderContract(sampleFields, {
+    ...signedOverlay,
+    musicianSignedName: 'Daniel Cimo',
+    musicianSignedOn: 'October 29, 2026',
+  });
+  const before = hashContractText(text);
+  const pdf = await renderContractPdf(text, {
+    clientSignedAt: '2026-10-29T16:22:00.000Z',
+    musicianSignedAt: '2026-10-29T16:30:00.000Z',
+  });
+  assert.equal(hashContractText(text), before);
   assert.equal(Buffer.from(pdf.subarray(0, 5)).toString('utf8'), '%PDF-');
   assert.ok(pdf.byteLength > 1000);
+  const drawn = pdfDrawnText(pdf);
+  assert.equal(drawn.includes('DancingScript'), true);
+  assert.equal(drawn.includes('Signed electronically Oct 29, 2026, 9:22 AM PT'), true);
+  assert.equal(drawn.includes('Signed electronically Oct 29, 2026, 9:30 AM PT'), true);
+  assert.equal(drawn.includes('Signature: Alex Rivera'), false);
+});
+
+test('signature styling is drawn from the locked text and does not change it', () => {
+  assert.equal(formatElectronicSignature('2026-10-29T16:22:00.000Z'), 'Signed electronically Oct 29, 2026, 9:22 AM PT');
+  assert.equal(formatElectronicSignature('2026-01-15T17:22:00.000Z'), 'Signed electronically Jan 15, 2026, 9:22 AM PT');
+  assert.equal(formatElectronicSignature('2026-06-02T17:05:00.000Z'), 'Signed electronically Jun 2, 2026, 10:05 AM PT');
+  assert.equal(formatElectronicSignature(null), '');
+  assert.equal(formatElectronicSignature('not-a-time'), '');
+
+  const clientSigned = renderContract(sampleFields, signedOverlay);
+  const before = hashContractText(clientSigned);
+  const clientSegments = presentSignedContract(clientSigned, { clientSignedAt: '2026-10-29T16:22:00.000Z' });
+  assert.equal(hashContractText(clientSigned), before);
+  assert.equal(contractSourceText(clientSegments), clientSigned);
+  const clientSignatures = clientSegments.filter((segment) => segment.type === 'signature');
+  assert.deepEqual(
+    clientSignatures.map((segment) => (segment.type === 'signature' ? [segment.role, segment.name, segment.caption] : [])),
+    [
+      ['client', 'Alex Rivera', 'Signed electronically Oct 29, 2026, 9:22 AM PT'],
+      ['client', 'Jordan Lee', 'Signed electronically Oct 29, 2026, 9:22 AM PT'],
+    ],
+  );
+  assert.match(clientSigned, /Signature: __________________________________/);
+
+  const oneClient = renderContract(sampleFields, { ...signedOverlay, client2SignedName: '' });
+  const oneSegments = presentSignedContract(oneClient, {
+    clientSignedAt: '2026-10-29T16:22:00.000Z',
+    musicianSignedAt: '2026-10-29T16:22:00.000Z',
+  });
+  const oneSignatures = oneSegments.filter((segment) => segment.type === 'signature');
+  assert.equal(oneSignatures.length, 1);
+  assert.equal(oneSignatures[0]?.type === 'signature' ? oneSignatures[0].name : '', 'Alex Rivera');
+
+  const executed = renderContract(sampleFields, {
+    ...signedOverlay,
+    musicianSignedName: 'Daniel Cimo',
+    musicianSignedOn: 'June 2, 2026',
+  });
+  const executedSegments = presentSignedContract(executed, {
+    clientSignedAt: '2026-06-01T16:22:00.000Z',
+    musicianSignedAt: '2026-06-02T17:05:00.000Z',
+  });
+  assert.equal(contractSourceText(executedSegments), executed);
+  assert.equal(hashContractText(executed), hashContractText(renderContract(sampleFields, {
+    ...signedOverlay,
+    musicianSignedName: 'Daniel Cimo',
+    musicianSignedOn: 'June 2, 2026',
+  })));
+  const executedSignatures = executedSegments.filter((segment) => segment.type === 'signature');
+  assert.deepEqual(
+    executedSignatures.map((segment) => (segment.type === 'signature' ? [segment.role, segment.name, segment.caption] : [])),
+    [
+      ['client', 'Alex Rivera', 'Signed electronically Jun 1, 2026, 9:22 AM PT'],
+      ['client', 'Jordan Lee', 'Signed electronically Jun 1, 2026, 9:22 AM PT'],
+      ['musician', 'Daniel Cimo', 'Signed electronically Jun 2, 2026, 10:05 AM PT'],
+    ],
+  );
+
+  const full = renderContract(
+    {
+      ...sampleFields,
+      templateId: 'full-wedding',
+      packageId: 'FULL',
+      packageFeeCents: 300000,
+      travelFeeCents: 0,
+      additionalFeesCents: 0,
+      discountCents: 0,
+      totalCents: 300000,
+      retainerCents: 150000,
+      balanceCents: 150000,
+    },
+    {
+      ...signedOverlay,
+      musicianSignedName: 'Daniel Cimo',
+      musicianSignedOn: 'June 2, 2026',
+    },
+  );
+  const fullSegments = presentSignedContract(full, {
+    clientSignedAt: '2026-10-29T16:22:00.000Z',
+    musicianSignedAt: '2026-10-29T18:00:00.000Z',
+  });
+  assert.equal(contractSourceText(fullSegments), full);
+  const fullSignatures = fullSegments.filter((segment) => segment.type === 'signature');
+  assert.deepEqual(
+    fullSignatures.map((segment) => (segment.type === 'signature' ? [segment.role, segment.name] : [])),
+    [
+      ['client', 'Alex Rivera'],
+      ['musician', 'Daniel Cimo'],
+    ],
+  );
+
+  const unsigned = presentSignedContract(clientSigned, {});
+  assert.equal(
+    unsigned.filter((segment) => segment.type === 'signature').every((segment) => segment.type === 'signature' && segment.caption === ''),
+    true,
+  );
 });
