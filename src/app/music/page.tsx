@@ -35,6 +35,7 @@ export default function MusicPage() {
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/music-hero.jpg"
+        rightSideImageAlt="Close-up of a hand on a violin fingerboard in warm light"
         size="full"
       />
 

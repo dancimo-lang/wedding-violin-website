@@ -19,6 +19,7 @@ export default function ServicesPage() {
       <Hero
         title=""
         posterSrc="/images/serveces-heroedited.jpg"
+        posterAlt="Daniel playing violin on a dirt path under a canopy of trees"
         backgroundPosition="center top 20%"
         size="medium"
       />

@@ -10,6 +10,7 @@ interface PackageCardProps {
   ctaText?: string;
   ctaHref?: string;
   duration?: string;
+  details?: { label: string; value: string }[];
 }
 
 export default function PackageCard({
@@ -21,7 +22,9 @@ export default function PackageCard({
   ctaText = 'Request Quote',
   ctaHref = '/booking',
   duration,
+  details = [],
 }: PackageCardProps) {
+  const detailItems = details.filter((item) => item.value.trim() !== '');
   const href = ctaHref.includes('?')
     ? `${ctaHref}&package=${id}`
     : `${ctaHref}?package=${id}`;
@@ -68,7 +71,7 @@ export default function PackageCard({
         )}
       </div>
 
-      <ul className="space-y-3 mb-8">
+      <ul className={`space-y-3 ${detailItems.length > 0 ? 'mb-4' : 'mb-8'}`}>
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-3">
             <Check
@@ -86,6 +89,30 @@ export default function PackageCard({
           </li>
         ))}
       </ul>
+
+      {detailItems.length > 0 && (
+        <ul className="space-y-2 mb-8">
+          {detailItems.map((item) => (
+            <li key={item.label} className="flex items-start gap-3">
+              <Check
+                className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                  popular ? 'text-amber-200' : 'text-amber-600'
+                }`}
+              />
+              <span
+                className={`text-sm ${
+                  popular ? 'text-amber-50' : 'text-gray-600'
+                }`}
+              >
+                <span className={`font-medium ${popular ? 'text-white' : 'text-gray-900'}`}>
+                  {item.label}:{' '}
+                </span>
+                {item.value}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <Link
         href={href}

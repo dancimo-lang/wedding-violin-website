@@ -36,6 +36,7 @@ export default function RecordingPage() {
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/newrecording-hero.jpg"
+        rightSideImageAlt="Daniel seated in a studio playing violin into a microphone"
         size="full"
       />
 

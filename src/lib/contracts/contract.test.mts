@@ -783,3 +783,11 @@ test('signature styling is drawn from the locked text and does not change it', (
     true,
   );
 });
+
+test('public package ids from the booking form map to contract packages', () => {
+  assert.equal(guessPackageId({ packageInterest: 'ceremony-solo', service: 'weddings' }), 'A');
+  assert.equal(guessPackageId({ packageInterest: 'ceremony-solo-cocktail', service: 'weddings' }), 'B');
+  assert.equal(guessPackageId({ packageInterest: 'ceremony-duo', service: 'weddings' }), 'C');
+  assert.equal(guessPackageId({ packageInterest: 'ceremony-cocktail', service: 'weddings' }), 'D');
+  assert.equal(guessPackageId({ packageInterest: 'full-wedding-dj', service: 'weddings' }), 'FULL');
+});
