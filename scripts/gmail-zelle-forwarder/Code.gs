@@ -166,13 +166,15 @@ function processZelleAlerts() {
   if (!secret || !url) {
     throw new Error('Set Script Properties ZELLE_INGEST_SECRET and ZELLE_INGEST_URL, then run setup.');
   }
+  var onlyAfter = zelleOnlyAfterCutoff_(props.getProperty('ZELLE_ONLY_AFTER'));
+  var bypassSecret = props.getProperty('VERCEL_BYPASS_SECRET');
   var threads = GmailApp.search(ZELLE_QUERY, 0, 10);
   for (var i = 0; i < threads.length; i += 1) {
-    processThread_(threads[i], secret, url);
+    processThread_(threads[i], secret, url, bypassSecret, onlyAfter);
   }
 }
 
-function processThread_(thread, secret, url) {
+function processThread_(thread, secret, url, bypassSecret, onlyAfter) {
   var messages = thread.getMessages();
   var message = messages[messages.length - 1];
   var parsed = parseZelleAlert({
@@ -184,6 +186,7 @@ function processThread_(thread, secret, url) {
     ensureLabel_('Zelle/unmatched').addToThread(thread);
     return;
   }
+  if (zelleAlertBeforeCutoff_(parsed.sentOn, onlyAfter)) return;
   var body = JSON.stringify({
     senderName: parsed.senderName,
     amountCents: parsed.amountCents,
@@ -192,6 +195,12 @@ function processThread_(thread, secret, url) {
     memo: parsed.memo,
   });
   var timestamp = String(new Date().getTime());
+  var headers = {
+    'X-Zelle-Timestamp': timestamp,
+    'X-Zelle-Signature': signZelle_(secret, timestamp, body),
+  };
+  var bypass = zelleBypassHeaders_(bypassSecret)['x-vercel-protection-bypass'];
+  if (bypass) headers['x-vercel-protection-bypass'] = bypass;
   var response;
   try {
     response = UrlFetchApp.fetch(url, {
@@ -199,31 +208,60 @@ function processThread_(thread, secret, url) {
       contentType: 'application/json',
       payload: body,
       muteHttpExceptions: true,
-      headers: {
-        'X-Zelle-Timestamp': timestamp,
-        'X-Zelle-Signature': signZelle_(secret, timestamp, body),
-      },
+      headers: headers,
     });
   } catch (error) {
     return;
   }
+  var outcome = '';
   var code = response.getResponseCode();
   if (code >= 200 && code < 300) {
-    var outcome = '';
     try {
       outcome = JSON.parse(response.getContentText() || '{}').outcome || '';
     } catch (error) {
       outcome = '';
     }
-    if (outcome === 'unmatched' || outcome === 'ambiguous') {
-      ensureLabel_('Zelle/unmatched').addToThread(thread);
-    } else {
-      ensureLabel_('Zelle/processed').addToThread(thread);
-    }
-    return;
   }
-  if (code >= 500 || code === 408 || code === 429 || code === 401 || code === 403) return;
-  ensureLabel_('Zelle/unmatched').addToThread(thread);
+  var label = zelleForwardLabel_(code, outcome);
+  if (label) ensureLabel_(label).addToThread(thread);
+}
+
+function zelleBypassHeaders_(bypassSecret) {
+  var bypass = String(bypassSecret || '').trim();
+  if (!bypass) return {};
+  return { 'x-vercel-protection-bypass': bypass };
+}
+
+function zelleForwardLabel_(statusCode, outcome) {
+  if (!(statusCode >= 200 && statusCode < 300)) return '';
+  if (outcome === 'unmatched' || outcome === 'ambiguous') return 'Zelle/unmatched';
+  return 'Zelle/processed';
+}
+
+function zelleOnlyAfterCutoff_(raw) {
+  if (raw == null) return '';
+  var cutoff = String(raw).trim();
+  if (!cutoff) return '';
+  if (!zelleIsoDateOk_(cutoff)) {
+    throw new Error('ZELLE_ONLY_AFTER must be an ISO date, YYYY-MM-DD.');
+  }
+  return cutoff;
+}
+
+function zelleAlertBeforeCutoff_(sentOn, cutoff) {
+  if (!cutoff) return false;
+  return String(sentOn || '') < cutoff;
+}
+
+function zelleIsoDateOk_(value) {
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  var year = Number(match[1]);
+  var month = Number(match[2]);
+  var day = Number(match[3]);
+  if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+  var utc = new Date(Date.UTC(year, month - 1, day));
+  return utc.getUTCFullYear() === year && utc.getUTCMonth() === month - 1 && utc.getUTCDate() === day;
 }
 
 function signZelle_(secret, timestamp, body) {
