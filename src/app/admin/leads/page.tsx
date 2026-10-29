@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { DeleteLeadButton } from '@/components/admin/DeleteLeadButton';
 import { fieldClass, LEAD_STATUSES, sourceLabel, statusClass } from '@/lib/leads';
 
 function supabase() {
@@ -153,6 +154,7 @@ export default function LeadsPage() {
                   <SortHeader label="Status" active={sortKey === 'status'} onClick={() => sortBy('status')} />
                   <SortHeader label="Follow-up" active={sortKey === 'follow_up'} onClick={() => sortBy('follow_up')} />
                   <th className="text-left py-4 px-4 text-sm font-medium text-gray-600">Source</th>
+                  <th className="py-4 px-4"><span className="sr-only">Delete</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -172,6 +174,14 @@ export default function LeadsPage() {
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-700">{lead.next_follow_up_date || '—'}</td>
                     <td className="py-4 px-4 text-sm text-gray-700">{sourceLabel(lead.inquiry_source)}</td>
+                    <td className="py-4 px-4 text-right">
+                      <DeleteLeadButton
+                        leadId={lead.id}
+                        clientName={lead.clients?.name || 'Unnamed client'}
+                        placement="row"
+                        onDeleted={() => setLeads((current) => current.filter((row) => row.id !== lead.id))}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>

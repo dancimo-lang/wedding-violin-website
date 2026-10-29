@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAdminRecordId } from '@/lib/admin-record';
 import { ArrowLeft } from 'lucide-react';
 import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Timeline';
@@ -23,6 +24,7 @@ import {
 } from '@/lib/schedule/availability';
 import { addCalendarDays, venueRef } from '@/lib/schedule/time';
 import { ContractPanel } from '@/components/admin/ContractPanel';
+import { DeleteLeadButton } from '@/components/admin/DeleteLeadButton';
 import { createClient } from '@/lib/supabase/client';
 
 function supabase() {
@@ -36,6 +38,7 @@ type LinkedBooking = {
 };
 
 export default function LeadDetailPage() {
+  const router = useRouter();
   const recordId = useAdminRecordId('leads');
   const leadId = recordId ?? '';
   const [draft, setDraft] = useState<LeadDraft | null>(null);
@@ -377,6 +380,12 @@ export default function LeadDetailPage() {
           await refreshEvents();
           return null;
         }}
+      />
+      <DeleteLeadButton
+        leadId={leadId}
+        clientName={draft.clientName}
+        placement="section"
+        onDeleted={() => router.push('/admin/leads')}
       />
     </div>
   );
