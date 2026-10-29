@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { userIsAdmin } from '@/lib/admin';
 import { adminDetailShell } from '@/lib/admin-shell-path';
+import { PASSWORD_RESET_API_PATH, PASSWORD_RESET_CALLBACK_PATH } from '@/lib/auth/password-reset';
 import { getSupabasePublicEnv } from './env';
 
 const CACHE_HEADERS = ['cache-control', 'expires', 'pragma'];
@@ -30,10 +31,11 @@ function carrySession(from: NextResponse, to: NextResponse) {
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // The sign-out form still posts to /auth/signout. The handler lives on the API catch-all.
-  if (pathname === '/auth/signout') {
+  // Sign-out and the password-recovery email both use public paths. The handlers
+  // live on the API catch-all so they do not add another Vercel function.
+  if (pathname === '/auth/signout' || pathname === PASSWORD_RESET_CALLBACK_PATH) {
     const url = request.nextUrl.clone();
-    url.pathname = '/api/auth/signout';
+    url.pathname = pathname === '/auth/signout' ? '/api/auth/signout' : PASSWORD_RESET_API_PATH;
     return NextResponse.rewrite(url);
   }
 

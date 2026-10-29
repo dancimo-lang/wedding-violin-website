@@ -23,6 +23,7 @@ import { getPaymentView, postCheckout, postStripeWebhook } from './handlers/paym
 import { postZelle } from './handlers/payments-zelle';
 import { GET as getPdf } from './handlers/pdf';
 import { POST as restoreTunes } from './handlers/restore-tunes';
+import { GET as getPasswordRecovery } from './handlers/password-recovery';
 import { POST as postSignOut } from './handlers/signout';
 import { GET as getTunes } from './handlers/tunes';
 import { apiRouteCatalog, type ApiRouteSpec } from './route-table';
@@ -70,6 +71,7 @@ const handlers: Record<string, ApiHandler> = {
   'admin-payments-assign': ({ request }) => postAssign(request),
   pdf: ({ request, params }) => getPdf(request, { params: Promise.resolve({ id: params.id ?? '' }) }),
   tunes: mount(getTunes),
+  'password-recovery': mount(getPasswordRecovery),
   signout: mount(postSignOut),
 };
 

@@ -49,5 +49,6 @@ export const apiRouteCatalog: readonly ApiRouteSpec[] = [
   { id: 'admin-payments-assign', methods: ['POST'], segments: ['admin', 'payments', 'assign'] },
   { id: 'pdf', methods: ['GET'], segments: ['pdf', param('id')] },
   { id: 'tunes', methods: ['GET'], segments: ['tunes'] },
+  { id: 'password-recovery', methods: ['GET'], segments: ['auth', 'callback'] },
   { id: 'signout', methods: ['POST'], segments: ['auth', 'signout'] },
 ];
