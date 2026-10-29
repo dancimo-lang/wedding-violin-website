@@ -370,9 +370,14 @@ test('Checkout sessions allow one method on the 2026-09-30 API and log Stripe er
 
   const sheet = fs.readFileSync(new URL('../../app/globals.css', import.meta.url), 'utf8');
   const button = fs.readFileSync(new URL('../../components/payments/PaymentDetails.tsx', import.meta.url), 'utf8');
+  const payPage = fs.readFileSync(new URL('../../app/pay/pay-client.tsx', import.meta.url), 'utf8');
   assert.match(button, /pay-card-button/);
   assert.match(button, /view\.cardButton/);
   assert.match(sheet, /button\.pay-card-button[\s\S]*color:\s*#111827/);
+  assert.match(payPage, /pay-sheet/);
+  assert.match(sheet, /\.pay-sheet h1,[\s\S]*\.pay-sheet li,[\s\S]*color:\s*#111827/);
+  assert.match(sheet, /\.contract-sheet li,/);
+  assert.match(sheet, /\.pay-sheet \[role='alert'\][\s\S]*color:\s*#b91c1c/);
 });
 
 test('card and ACH fees use the published defaults and can be turned on or off', () => {

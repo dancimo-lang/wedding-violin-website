@@ -38,7 +38,7 @@ export function PayClient() {
   return (
     <section className="py-10">
       <div className="container mx-auto px-4">
-        <article className="mx-auto max-w-3xl rounded-xl bg-white p-6 shadow md:p-10">
+        <article className="pay-sheet mx-auto max-w-3xl rounded-xl bg-white p-6 shadow md:p-10">
           <h1 className="text-3xl font-bold">Pay Daniel Cimo</h1>
           {token == null ? <p className="mt-6">Loading payment details...</p> : null}
           {token === '' ? <p className="mt-6">This payment link is missing.</p> : null}
