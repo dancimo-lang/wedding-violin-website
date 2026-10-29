@@ -346,7 +346,7 @@ Send `checkout.session.completed`, `checkout.session.async_payment_succeeded`, a
 
 The Zelle QR used on the payment page and in payment email is `public/images/zelle-qr.png`. Replace that file with a new export from Chase if the code changes, and redeploy. Do not substitute a generated code.
 
-The Apps Script that reads Chase alerts is `scripts/gmail-zelle-forwarder/`. Its README is the two-minute setup: paste `Code.gs`, set the two script properties, run `setup` once.
+The Apps Script that reads Chase alerts is `scripts/gmail-zelle-forwarder/`. Its README covers production and a protected Vercel preview: paste `Code.gs`, set the script properties, and run `setup` once.
 
 A thank-you email after the wedding is not sent. The daily cron is already used for Google Calendar, and this plan does not add another one.
 
