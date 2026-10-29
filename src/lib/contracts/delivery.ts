@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { contractFromAddress, contractReplyTo } from './mail';
 import { renderContractPdf } from './pdf';
+import type { SignatureTimes } from './signature-style';
 
 export function publicOrigin(request: Request): string {
   const configured = process.env.CONTRACT_PUBLIC_ORIGIN?.trim();
@@ -62,9 +63,9 @@ export async function sendContractMail(input: {
   }
 }
 
-export async function storeContractPdf(contractId: string, text: string): Promise<Uint8Array | null> {
+export async function storeContractPdf(contractId: string, text: string, times: SignatureTimes = {}): Promise<Uint8Array | null> {
   try {
-    const bytes = await renderContractPdf(text);
+    const bytes = await renderContractPdf(text, times);
     const path = `${contractId}.pdf`;
     const admin = createAdminClient();
     const { error } = await admin.storage.from('contracts').upload(path, Buffer.from(bytes), {

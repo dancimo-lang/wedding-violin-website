@@ -6,6 +6,7 @@ import { contractOwnerEmail } from '@/lib/contracts/mail';
 import { centsToDollarString, computeFees, formatLongDate, formatMoney, parseDollarInput } from '@/lib/contracts/money';
 import { isPackageId, packageDefinition } from '@/lib/contracts/packages';
 import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
+import { renderContractPdf } from '@/lib/contracts/pdf';
 import { validateTypedName } from '@/lib/contracts/signers';
 import { generateContractToken, isContractToken } from '@/lib/contracts/token';
 import { runGoogleSync } from '@/lib/google/run';
@@ -662,7 +663,10 @@ export async function postCountersign(request: Request, id: string) {
     .maybeSingle();
   if (!updated) return json({ error: 'This agreement is already countersigned.' }, 409);
 
-  const pdfBytes = await storeContractPdf(row.id, executed);
+  const pdfBytes = await storeContractPdf(row.id, executed, {
+    clientSignedAt: row.signed_at,
+    musicianSignedAt: now,
+  });
   const client = await clientForContract(auth.admin, row);
   const attachment = pdfBytes
     ? [{ filename: 'wedding-agreement.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
@@ -695,8 +699,17 @@ export async function getPdf(_request: Request, id: string) {
   const text = row.executed_text || row.signed_text;
   if (!text) return json({ error: 'The signed PDF is not ready yet.' }, 404);
 
-  let bytes = row.pdf_storage_path ? await readContractPdf(row.pdf_storage_path) : null;
-  if (!bytes) bytes = await storeContractPdf(row.id, text);
+  let bytes: Uint8Array | null = null;
+  try {
+    bytes = await renderContractPdf(text, {
+      clientSignedAt: row.signed_at,
+      musicianSignedAt: row.musician_signed_at,
+    });
+  } catch (error) {
+    console.error('Contract PDF failed', error instanceof Error ? error.name : 'unknown');
+    bytes = null;
+  }
+  if (!bytes && row.pdf_storage_path) bytes = await readContractPdf(row.pdf_storage_path);
   if (!bytes) return json({ error: 'The PDF could not be prepared.' }, 500);
 
   return new NextResponse(Buffer.from(bytes), {

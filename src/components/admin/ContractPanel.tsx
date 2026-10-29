@@ -6,6 +6,7 @@ import { computeFees, formatMoney, type FeeSummary } from '@/lib/contracts/money
 import { guessPackageId, PACKAGES, type PackageId } from '@/lib/contracts/packages';
 import { coupleSuppliedSummary, missingCoupleDetailMessage } from '@/lib/contracts/event-details';
 import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, UNSIGNED } from '@/lib/contracts/render';
+import { ContractText } from '@/components/contracts/ContractText';
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
@@ -477,6 +478,13 @@ function ContractStatus({
           {row.photo_opt_out ? ' Promotional photo opt-out is checked.' : ''}
           {row.musician_signed_at ? ` Musician signature: ${row.musician_signed_name}.` : ' Musician signature is not recorded yet.'}
         </p>
+      )}
+      {row.status === 'signed' && (row.executed_text || row.signed_text) && (
+        <ContractText
+          text={row.executed_text || row.signed_text || ''}
+          clientSignedAt={row.signed_at}
+          musicianSignedAt={row.musician_signed_at}
+        />
       )}
       <div className="flex flex-wrap gap-2">
         {open && (

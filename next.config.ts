@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./src/lib/contracts/fonts/DancingScript-Variable.ttf'],
+  },
 };
 
 export default nextConfig;

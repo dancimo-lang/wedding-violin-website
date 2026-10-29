@@ -15,6 +15,8 @@ export const CONTRACT_LIST_COLUMNS = [
   'photo_opt_out',
   'client1_name',
   'client2_name',
+  'signed_text',
+  'executed_text',
   'signed_at',
   'musician_signed_name',
   'musician_signed_at',
@@ -40,6 +42,8 @@ export type ContractListRow = {
   photo_opt_out: boolean;
   client1_name: string | null;
   client2_name: string | null;
+  signed_text: string | null;
+  executed_text: string | null;
   signed_at: string | null;
   musician_signed_name: string | null;
   musician_signed_at: string | null;

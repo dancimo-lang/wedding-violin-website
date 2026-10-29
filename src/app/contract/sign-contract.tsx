@@ -21,6 +21,7 @@ import {
   type StoredRenderFields,
 } from '@/lib/contracts/render';
 import { validateSignature } from '@/lib/contracts/signers';
+import { ContractText } from '@/components/contracts/ContractText';
 
 type ViewResponse = {
   status: string;
@@ -29,6 +30,8 @@ type ViewResponse = {
   renderFields: StoredRenderFields | null;
   photoOptOut: boolean;
   musicianSigned?: boolean;
+  clientSignedAt?: string | null;
+  musicianSignedAt?: string | null;
   client1Name?: string | null;
   client2Name?: string | null;
   bookingCode: string | null;
@@ -159,6 +162,8 @@ export function SignContract() {
 
   const finished = signedFacts ?? (view && !view.canSign ? view : null);
   const documentText = signedText || (finished ? finished.text || view?.text || '' : liveText);
+  const clientSignedAt = finished?.clientSignedAt ?? null;
+  const musicianSignedAt = finished?.musicianSignedAt ?? null;
 
   const sign = async () => {
     if (!token) return;
@@ -204,6 +209,8 @@ export function SignContract() {
         renderFields: null,
         photoOptOut,
         musicianSigned: Boolean(payload.musicianSigned),
+        clientSignedAt: payload.clientSignedAt ?? null,
+        musicianSignedAt: payload.musicianSignedAt ?? null,
         bookingCode: payload.bookingCode ?? null,
         retainerCents: payload.retainerCents ?? null,
         balanceCents: payload.balanceCents ?? null,
@@ -237,9 +244,12 @@ export function SignContract() {
                   This agreement is signed{finished.musicianSigned ? ' by both parties' : ''}.
                 </p>
               )}
-              <pre className="mt-6 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 font-serif text-sm leading-6">
-                {documentText}
-              </pre>
+              <ContractText
+                className="mt-6"
+                text={documentText}
+                clientSignedAt={clientSignedAt}
+                musicianSignedAt={musicianSignedAt}
+              />
 
               {view?.canSign && !signedFacts && (
                 <form

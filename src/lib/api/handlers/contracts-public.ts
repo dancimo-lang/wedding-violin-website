@@ -93,6 +93,8 @@ function viewPayload(row: ContractRecord, text: string) {
     client1Name: row.client1_name,
     client2Name: row.client2_name,
     musicianSigned: Boolean(row.musician_signed_at),
+    clientSignedAt: row.signed_at,
+    musicianSignedAt: row.musician_signed_at,
     ...paymentPayload(row),
   };
 }
@@ -370,7 +372,10 @@ export async function POST(request: Request) {
 
   const signedRow = { ...row, ...(updated as Partial<ContractRecord>), status: 'signed' } as ContractRecord;
   const pdfText = executed ?? decision.signedText;
-  const pdfBytes = await storeContractPdf(row.id, pdfText);
+  const pdfBytes = await storeContractPdf(row.id, pdfText, {
+    clientSignedAt: nowIso,
+    musicianSignedAt: musicianAt,
+  });
 
   const facts = paymentPayload(signedRow);
   const qr = zelleQrSources();
@@ -448,6 +453,8 @@ export async function POST(request: Request) {
     text: pdfText,
     signedOn,
     musicianSigned: Boolean(musicianAt),
+    clientSignedAt: nowIso,
+    musicianSignedAt: musicianAt,
     ...facts,
   });
 }
