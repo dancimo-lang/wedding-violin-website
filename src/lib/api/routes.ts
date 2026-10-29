@@ -3,6 +3,7 @@ import { DELETE as deleteTune } from './handlers/admin-tune';
 import { POST as postTune } from './handlers/admin-tunes';
 import { GET as getAvailability } from './handlers/availability';
 import { POST as postBookingStatus } from './handlers/booking-status';
+import { DELETE as deleteLead } from './handlers/delete-lead';
 import {
   getPdf as getContractPdf,
   POST as postContractSend,
@@ -44,6 +45,7 @@ export type ApiRoute = ApiRouteSpec & { handle: ApiHandler };
 
 const handlers: Record<string, ApiHandler> = {
   'booking-status': mount(postBookingStatus),
+  'delete-lead': ({ request, params }) => deleteLead(request, params.id ?? ''),
   'contract-send': mount(postContractSend),
   'contract-void': ({ request, params }) => postVoid(request, params.id ?? ''),
   'contract-resend': ({ request, params }) => postResend(request, params.id ?? ''),
