@@ -67,13 +67,42 @@ test('a rejected refresh token asks for reconnect and does not mark busy times f
   assert.equal(google.events.size, 0);
 });
 
-test('a failed busy read leaves the previous cache alone', async () => {
+test('an empty free/busy result still records a sync', async () => {
+  const google = fakeGoogle();
+  const store = memoryStore();
+  const result = await syncGoogleCalendar(store, google, new Date('2026-06-06T18:00:00.000Z'));
+  assert.equal(result.ok, true);
+  assert.equal(result.busy, 0);
+  assert.deepEqual(store.savedBusy, []);
+  assert.deepEqual(store.failures, []);
+});
+
+test('a failed busy read leaves the previous cache alone and records the Google error', async () => {
   const google = fakeGoogle();
   google.failBusy = true;
   const store = memoryStore();
-  const result = await syncGoogleCalendar(store, google, new Date('2026-06-06T18:00:00.000Z'));
-  assert.equal(result.ok, false);
-  assert.equal(store.savedBusy, null);
+  const lines: unknown[][] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args);
+  };
+  try {
+    const result = await syncGoogleCalendar(store, google, new Date('2026-06-06T18:00:00.000Z'));
+    assert.equal(result.ok, false);
+    assert.match(result.message || '', /timeRangeTooLong/);
+    assert.equal((result.message || '').includes('ya29'), false);
+    assert.equal(store.savedBusy, null);
+    assert.equal(store.failures.length, 1);
+    assert.match(store.failures[0], /HTTP 400/);
+    assert.match(store.failures[0], /timeRangeTooLong/);
+    assert.equal(store.failures[0].includes('ya29'), false);
+    const logged = JSON.stringify(lines);
+    assert.match(logged, /timeRangeTooLong/);
+    assert.match(logged, /400/);
+    assert.equal(logged.includes('ya29'), false);
+  } finally {
+    console.error = original;
+  }
 });
 
 test('the newest outbox row wins and the first connection queues existing rows', async () => {
@@ -160,7 +189,9 @@ function fakeGoogle(): GoogleCalendarGateway & {
       google.events.delete(`${calendarId}/${eventId}`);
     },
     async freeBusy() {
-      if (google.failBusy) throw new GoogleApiError(503, 'Google busy times could not be read.');
+      if (google.failBusy) {
+        throw new GoogleApiError(400, 'Google busy times could not be read. ya29.secret-access-token', 'timeRangeTooLong');
+      }
       return google.busy;
     },
     async listWebsiteEventIntervals(_access: string, calendarId: string) {
@@ -192,6 +223,7 @@ function memoryStore(overrides: Partial<StoredConnection> = {}) {
     links: new Map<string, EventLink>(),
     savedBusy: null as Interval[] | null,
     reconnects: [] as string[],
+    failures: [] as string[],
     queued: false,
     async getConnection() {
       return store.connection;
@@ -199,6 +231,9 @@ function memoryStore(overrides: Partial<StoredConnection> = {}) {
     async markReconnect(message: string) {
       store.reconnects.push(message);
       store.connection = { ...store.connection, status: 'reconnect_required' };
+    },
+    async recordFailure(message: string) {
+      store.failures.push(message);
     },
     async saveCalendar(calendar: { id: string; summary: string; mode: 'dedicated' | 'primary' }) {
       store.connection = {

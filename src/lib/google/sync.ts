@@ -8,7 +8,13 @@ import {
   type BookingSyncRow,
   type Interval,
 } from './events';
-import { GoogleReconnectError, safeGoogleMessage, type CalendarRef, type GoogleCalendarGateway } from './gateway';
+import {
+  GoogleReconnectError,
+  logGoogleSyncFailure,
+  safeGoogleMessage,
+  type CalendarRef,
+  type GoogleCalendarGateway,
+} from './gateway';
 
 export type StoredConnection = {
   status: 'disconnected' | 'connected' | 'reconnect_required';
@@ -36,6 +42,7 @@ export type EventLink = {
 export type SyncStore = {
   getConnection(): Promise<StoredConnection | null>;
   markReconnect(message: string): Promise<void>;
+  recordFailure(message: string): Promise<void>;
   saveCalendar(calendar: CalendarRef & { mode: 'dedicated' | 'primary' }): Promise<void>;
   listOutbox(limit: number): Promise<OutboxItem[]>;
   finishOutbox(sourceTable: string, sourceId: string, throughCreatedAt: string): Promise<void>;
@@ -61,49 +68,53 @@ export type SyncResult = {
 };
 
 const EMPTY: SyncResult = { ok: true, pushed: 0, removed: 0, failed: 0, busy: 0 };
+const RECONNECT_MESSAGE = 'Google rejected the saved connection. Use Reconnect Google.';
 
 export async function syncGoogleCalendar(
   store: SyncStore,
   google: GoogleCalendarGateway,
   now = new Date(),
 ): Promise<SyncResult> {
+  try {
+    return await syncConnected(store, google, now);
+  } catch (error) {
+    return recordedFailure(store, error);
+  }
+}
+
+async function syncConnected(
+  store: SyncStore,
+  google: GoogleCalendarGateway,
+  now: Date,
+): Promise<SyncResult> {
   const connection = await store.getConnection();
   if (!connection || connection.status === 'disconnected') return { ...EMPTY, skipped: true };
   if (!connection.refreshToken) {
-    await store.markReconnect('The saved Google connection could not be read. Use Reconnect Google.');
-    return { ...EMPTY, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
+    return recordedReconnect(store, 'The saved Google connection could not be read. Use Reconnect Google.');
   }
 
   let accessToken: string;
   try {
     accessToken = await google.refreshAccessToken(connection.refreshToken);
   } catch (error) {
-    if (error instanceof GoogleReconnectError) {
-      await store.markReconnect('Google rejected the saved connection. Use Reconnect Google.');
-      return { ...EMPTY, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
-    }
-    return { ...EMPTY, ok: false, message: safeGoogleMessage(error) };
+    if (error instanceof GoogleReconnectError) return recordedReconnect(store, RECONNECT_MESSAGE);
+    return recordedFailure(store, error);
   }
 
   let calendar: CalendarRef & { mode: 'dedicated' | 'primary' };
   try {
     calendar = await ensureCalendar(google, accessToken, connection);
   } catch (error) {
-    if (error instanceof GoogleReconnectError) {
-      await store.markReconnect('Google rejected the saved connection. Use Reconnect Google.');
-      return { ...EMPTY, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
-    }
-    return { ...EMPTY, ok: false, message: safeGoogleMessage(error) };
+    if (error instanceof GoogleReconnectError) return recordedReconnect(store, RECONNECT_MESSAGE);
+    return recordedFailure(store, error);
   }
 
   if (connection.calendarId && connection.calendarId !== calendar.id) {
     try {
       await google.deleteWebsiteEvents(accessToken, connection.calendarId);
     } catch (error) {
-      if (error instanceof GoogleReconnectError) {
-        await store.markReconnect('Google rejected the saved connection. Use Reconnect Google.');
-        return { ...EMPTY, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
-      }
+      if (error instanceof GoogleReconnectError) return recordedReconnect(store, RECONNECT_MESSAGE);
+      logGoogleSyncFailure(error);
     }
   }
   await store.saveCalendar(calendar);
@@ -120,14 +131,35 @@ export async function syncGoogleCalendar(
       intervals = subtractIntervals(intervals, own);
     }
     await store.replaceBusy(intervals, now.toISOString());
+    if (result.failed > 0) {
+      await store.recordFailure(result.message || 'Some calendar updates could not be pushed to Google.');
+    }
     return { ...result, ok: result.failed === 0, busy: intervals.length };
   } catch (error) {
-    if (error instanceof GoogleReconnectError) {
-      await store.markReconnect('Google rejected the saved connection. Use Reconnect Google.');
-      return { ...result, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
-    }
-    return { ...result, ok: false, message: safeGoogleMessage(error) };
+    if (error instanceof GoogleReconnectError) return recordedReconnect(store, RECONNECT_MESSAGE, result);
+    return recordedFailure(store, error, result);
   }
+}
+
+async function recordedFailure(store: SyncStore, error: unknown, partial: SyncResult = EMPTY): Promise<SyncResult> {
+  const message = safeGoogleMessage(error);
+  logGoogleSyncFailure(error);
+  try {
+    await store.recordFailure(message);
+  } catch (recordError) {
+    logGoogleSyncFailure(recordError);
+  }
+  return { ...partial, ok: false, message };
+}
+
+async function recordedReconnect(store: SyncStore, message: string, partial: SyncResult = EMPTY): Promise<SyncResult> {
+  logGoogleSyncFailure(new GoogleReconnectError());
+  try {
+    await store.markReconnect(message);
+  } catch (error) {
+    logGoogleSyncFailure(error);
+  }
+  return { ...partial, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
 }
 
 async function ensureCalendar(
@@ -160,13 +192,13 @@ async function pushOutbox(
       else result.pushed += 1;
       await store.finishOutbox(group.item.sourceTable, group.item.sourceId, group.item.createdAt);
     } catch (error) {
-      if (error instanceof GoogleReconnectError) {
-        await store.markReconnect('Google rejected the saved connection. Use Reconnect Google.');
-        return { ...result, ok: false, needsReconnect: true, message: 'Reconnect Google.' };
-      }
+      if (error instanceof GoogleReconnectError) return recordedReconnect(store, RECONNECT_MESSAGE, result);
       result.failed += 1;
       result.ok = false;
-      await store.failOutbox(group.ids, group.item.attempts + 1, safeGoogleMessage(error));
+      const message = safeGoogleMessage(error);
+      if (!result.message) result.message = message;
+      logGoogleSyncFailure(error);
+      await store.failOutbox(group.ids, group.item.attempts + 1, message);
     }
   }
   return result;

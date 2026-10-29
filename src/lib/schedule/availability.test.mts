@@ -6,6 +6,7 @@ import {
   GOOGLE_DISCONNECTED_REASON,
   GOOGLE_OVERLAP_REASON,
   GOOGLE_STALE_REASON,
+  GOOGLE_UNSYNCED_REASON,
   evaluateAvailability,
   externalBusyToOccupancy,
   externalCalendarState,
@@ -317,6 +318,11 @@ test('stale or disconnected Google data cannot be called available', () => {
     externalCalendarState({ status: 'connected', busy_synced_at: new Date(now - BUSY_MAX_AGE_MS - 1).toISOString() }, now),
     'stale',
   );
+  assert.equal(externalCalendarState({ status: 'connected', busy_synced_at: null }, now), 'unsynced');
+  const neverRead = evaluateAvailability(clear, [], settings, undefined, 'unsynced');
+  assert.equal(neverRead.result, 'requires_manual_confirmation');
+  assert.ok(neverRead.reasons.includes(GOOGLE_UNSYNCED_REASON));
+  assert.equal(neverRead.reasons.includes(GOOGLE_STALE_REASON), false);
   assert.equal(externalCalendarState({ status: 'reconnect_required', busy_synced_at: new Date(now).toISOString() }, now), 'disconnected');
   assert.equal(externalCalendarState(null, now), 'disconnected');
   assert.deepEqual(

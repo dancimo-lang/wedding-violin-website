@@ -26,12 +26,14 @@ export const DEFAULT_SCHEDULE_SETTINGS: ScheduleSettings = {
 
 export type OccupancyKind = 'confirmed' | 'tentative' | 'block' | 'external';
 
-export type ExternalCalendarState = 'fresh' | 'stale' | 'disconnected';
+export type ExternalCalendarState = 'fresh' | 'stale' | 'unsynced' | 'disconnected';
 
 export const BUSY_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 export const GOOGLE_STALE_REASON =
   'Google Calendar busy times are more than two hours old, so this needs you to confirm.';
+export const GOOGLE_UNSYNCED_REASON =
+  'Google Calendar busy times have not been read yet, so this needs you to confirm.';
 export const GOOGLE_DISCONNECTED_REASON =
   'Google Calendar is not connected, so this needs you to confirm.';
 export const GOOGLE_OVERLAP_REASON = 'This overlaps a busy time on Google Calendar.';
@@ -170,7 +172,8 @@ export function externalCalendarState(
 ): ExternalCalendarState {
   if (!connection || connection.status !== 'connected') return 'disconnected';
   const synced = connection.busy_synced_at ? Date.parse(connection.busy_synced_at) : Number.NaN;
-  if (!Number.isFinite(synced) || now - synced > BUSY_MAX_AGE_MS) return 'stale';
+  if (!Number.isFinite(synced)) return 'unsynced';
+  if (now - synced > BUSY_MAX_AGE_MS) return 'stale';
   return 'fresh';
 }
 
@@ -200,6 +203,7 @@ export function evaluateAvailability(
   }
 
   if (externalCalendar === 'stale') mark('soft', GOOGLE_STALE_REASON);
+  if (externalCalendar === 'unsynced') mark('soft', GOOGLE_UNSYNCED_REASON);
   if (externalCalendar === 'disconnected') mark('soft', GOOGLE_DISCONNECTED_REASON);
 
   const others = occupancies.filter((occupancy) => occupancy.id !== request.excludeId);

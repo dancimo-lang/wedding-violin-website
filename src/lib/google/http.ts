@@ -3,12 +3,20 @@ import type { GoogleEnv } from './env';
 import {
   WEDDINGS_CALENDAR_SUMMARY,
   WEBSITE_EVENT_SOURCE,
+  chunkTimeRange,
   eventToInterval,
+  FreeBusyReadError,
   parseFreeBusy,
   type GoogleEventPayload,
   type Interval,
 } from './events';
-import { GoogleApiError, GoogleReconnectError, type CalendarRef, type GoogleCalendarGateway } from './gateway';
+import {
+  GoogleApiError,
+  GoogleReconnectError,
+  googleErrorReason,
+  type CalendarRef,
+  type GoogleCalendarGateway,
+} from './gateway';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
@@ -69,7 +77,7 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
       `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}`,
     );
     if (response.status === 404) return null;
-    if (!response.ok) throw new GoogleApiError(response.status, 'Google Calendar could not be opened.');
+    if (!response.ok) throw await this.googleApiError(response, 'Google Calendar could not be opened.');
     const body = (await response.json()) as { id?: string; summary?: string };
     if (!body.id) return null;
     return { id: body.id, summary: body.summary || WEDDINGS_CALENDAR_SUMMARY };
@@ -85,7 +93,7 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
       }),
     });
     if (response.status === 403 || response.status === 404) return null;
-    if (!response.ok) throw new GoogleApiError(response.status, 'The Weddings calendar could not be created.');
+    if (!response.ok) throw await this.googleApiError(response, 'The Weddings calendar could not be created.');
     const body = (await response.json()) as { id?: string; summary?: string };
     if (!body.id) return null;
     return { id: body.id, summary: body.summary || WEDDINGS_CALENDAR_SUMMARY };
@@ -102,10 +110,10 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
         method: 'PUT',
         body: JSON.stringify(event),
       });
-      if (!update.ok) throw new GoogleApiError(update.status, 'The Google event could not be updated.');
+      if (!update.ok) throw await this.googleApiError(update, 'The Google event could not be updated.');
       return;
     }
-    if (!insert.ok) throw new GoogleApiError(insert.status, 'The Google event could not be created.');
+    if (!insert.ok) throw await this.googleApiError(insert, 'The Google event could not be created.');
   }
 
   async deleteEvent(accessToken: string, calendarId: string, eventId: string): Promise<void> {
@@ -115,10 +123,27 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
       { method: 'DELETE' },
     );
     if (response.ok || response.status === 404 || response.status === 410) return;
-    throw new GoogleApiError(response.status, 'The Google event could not be removed.');
+    throw await this.googleApiError(response, 'The Google event could not be removed.');
   }
 
   async freeBusy(accessToken: string, timeMin: string, timeMax: string): Promise<Interval[]> {
+    let chunks: { timeMin: string; timeMax: string }[];
+    try {
+      chunks = chunkTimeRange(timeMin, timeMax);
+    } catch (error) {
+      if (error instanceof FreeBusyReadError) {
+        throw new GoogleApiError(400, error.message, error.reason);
+      }
+      throw error;
+    }
+    const intervals: Interval[] = [];
+    for (const chunk of chunks) {
+      intervals.push(...(await this.queryFreeBusy(accessToken, chunk.timeMin, chunk.timeMax)));
+    }
+    return intervals;
+  }
+
+  private async queryFreeBusy(accessToken: string, timeMin: string, timeMax: string): Promise<Interval[]> {
     const response = await this.request(accessToken, `${CALENDAR_API}/freeBusy`, {
       method: 'POST',
       body: JSON.stringify({
@@ -128,9 +153,16 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
         items: [{ id: 'primary' }],
       }),
     });
-    if (!response.ok) throw new GoogleApiError(response.status, 'Google busy times could not be read.');
+    if (!response.ok) throw await this.googleApiError(response, 'Google busy times could not be read.');
     const body = await response.json().catch(() => null);
-    return parseFreeBusy(body);
+    try {
+      return parseFreeBusy(body);
+    } catch (error) {
+      if (error instanceof FreeBusyReadError) {
+        throw new GoogleApiError(response.status, error.message, error.reason);
+      }
+      throw error;
+    }
   }
 
   async listWebsiteEventIntervals(
@@ -173,7 +205,7 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
       if (pageToken) url.searchParams.set('pageToken', pageToken);
       const response = await this.request(accessToken, url.toString());
       if (response.status === 404) return found;
-      if (!response.ok) throw new GoogleApiError(response.status, 'Website events on Google could not be listed.');
+      if (!response.ok) throw await this.googleApiError(response, 'Website events on Google could not be listed.');
       const body = (await response.json()) as { items?: typeof found; nextPageToken?: string };
       found.push(...(body.items || []));
       pageToken = body.nextPageToken || '';
@@ -193,7 +225,9 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
     });
     const body = (await response.json().catch(() => null)) as TokenResponse | null;
     if (body?.error === 'invalid_grant') throw new GoogleReconnectError();
-    if (!response.ok || !body) throw new GoogleApiError(response.status, 'Google sign-in could not be completed.');
+    if (!response.ok || !body) {
+      throw new GoogleApiError(response.status, 'Google sign-in could not be completed.', googleErrorReason(body));
+    }
     return body;
   }
 
@@ -204,5 +238,10 @@ export class GoogleCalendarClient implements GoogleCalendarGateway {
     const response = await this.fetchImpl(url, { ...init, headers });
     if (response.status === 401) throw new GoogleReconnectError();
     return response;
+  }
+
+  private async googleApiError(response: Response, fallback: string): Promise<GoogleApiError> {
+    const body = await response.json().catch(() => null);
+    return new GoogleApiError(response.status, fallback, googleErrorReason(body));
   }
 }

@@ -139,21 +139,40 @@ export function subtractIntervals(busy: Interval[], remove: Interval[]): Interva
 
 type FreeBusyCalendar = {
   busy?: { start?: string; end?: string }[];
-  errors?: unknown[];
+  errors?: { reason?: string }[];
 };
+
+export class FreeBusyReadError extends Error {
+  readonly reason: string | null;
+
+  constructor(message: string, reason: string | null = null) {
+    super(message);
+    this.name = 'FreeBusyReadError';
+    this.reason = reason;
+  }
+}
+
+function calendarErrorReason(error: { reason?: string } | undefined): string | null {
+  const reason = error?.reason;
+  if (!reason || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(reason)) return null;
+  return reason;
+}
 
 export function parseFreeBusy(body: unknown): Interval[] {
   if (!body || typeof body !== 'object' || !('calendars' in body)) {
-    throw new Error('Google busy times were not readable.');
+    throw new FreeBusyReadError('Google busy times were not readable.');
   }
   const calendars = (body as { calendars?: unknown }).calendars;
-  if (!calendars || typeof calendars !== 'object') throw new Error('Google busy times were not readable.');
+  if (!calendars || typeof calendars !== 'object') throw new FreeBusyReadError('Google busy times were not readable.');
   const entries = Object.values(calendars as Record<string, FreeBusyCalendar>);
-  if (entries.length === 0) throw new Error('Google busy times were not readable.');
+  if (entries.length === 0) throw new FreeBusyReadError('Google busy times were not readable.');
   const intervals: Interval[] = [];
   for (const calendar of entries) {
     if (calendar?.errors && calendar.errors.length > 0) {
-      throw new Error('Google could not read busy times for a calendar.');
+      throw new FreeBusyReadError(
+        'Google could not read busy times for a calendar.',
+        calendarErrorReason(calendar.errors[0]),
+      );
     }
     for (const busy of calendar?.busy || []) {
       const startMs = Date.parse(busy.start || '');
@@ -190,6 +209,31 @@ export function busyPullWindow(now: Date): { timeMin: string; timeMax: string } 
   const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const end = new Date(now.getTime() + 730 * 24 * 60 * 60 * 1000);
   return { timeMin: start.toISOString(), timeMax: end.toISOString() };
+}
+
+/**
+ * Google's freeBusy method rejects a single query longer than about 90 days
+ * with HTTP 400 timeRangeTooLong. Stay under that limit.
+ */
+export const FREEBUSY_MAX_RANGE_MS = 89 * 24 * 60 * 60 * 1000;
+
+export function chunkTimeRange(
+  timeMin: string,
+  timeMax: string,
+  maxSpanMs = FREEBUSY_MAX_RANGE_MS,
+): { timeMin: string; timeMax: string }[] {
+  const start = Date.parse(timeMin);
+  const end = Date.parse(timeMax);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || maxSpanMs <= 0) {
+    throw new FreeBusyReadError('Google busy times were not readable.');
+  }
+  const chunks: { timeMin: string; timeMax: string }[] = [];
+  for (let cursor = start; cursor < end; ) {
+    const chunkEnd = Math.min(cursor + maxSpanMs, end);
+    chunks.push({ timeMin: new Date(cursor).toISOString(), timeMax: new Date(chunkEnd).toISOString() });
+    cursor = chunkEnd;
+  }
+  return chunks;
 }
 
 function clip(value: string, max: number): string {
