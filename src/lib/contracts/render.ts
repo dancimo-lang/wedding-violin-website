@@ -6,6 +6,11 @@ import { DUO_DJ_OVERTIME, packageDefinition, weddingMusicOvertimeClause, type Co
 
 export const BLANK = '__________________________________';
 
+/** Event details the couple may fill when the admin left them blank. Rendering ignores this list. */
+export const COUPLE_DETAIL_KEYS = ['venueName', 'venueAddress', 'ceremonyStart', 'cocktailStart', 'cocktailEnd'] as const;
+
+export type CoupleDetailKey = (typeof COUPLE_DETAIL_KEYS)[number];
+
 const PHOTO_SENTENCE = 'The Client opts out of promotional use of photographs and video clips from the event.';
 
 export type StoredRenderFields = {
@@ -36,6 +41,11 @@ export type StoredRenderFields = {
   retainerCents: number;
   balanceCents: number;
   finalPaymentDueDate: string;
+  /**
+   * Keys the couple filled in at signing. Absent when they added nothing.
+   * Older agreements omit it, and the rendered text does not read it.
+   */
+  coupleSupplied?: CoupleDetailKey[];
 };
 
 export type SignatureOverlay = {
@@ -103,13 +113,19 @@ function clockMinutes(value: string): number | null {
   return hour * 60 + minute;
 }
 
-/** A message when an entered end is earlier than its start. A blank side is not a range. */
-export function performanceTimeOrderMessage(input: {
-  ceremonyStart: string;
-  ceremonyEnd: string;
-  cocktailStart: string;
-  cocktailEnd: string;
-}): string {
+/**
+ * A message when an entered end is earlier than its start. A blank side is not a range.
+ * The closing sentence stays the send wording unless the caller is the signing page.
+ */
+export function performanceTimeOrderMessage(
+  input: {
+    ceremonyStart: string;
+    ceremonyEnd: string;
+    cocktailStart: string;
+    cocktailEnd: string;
+  },
+  closing = 'Fix the times before sending this agreement.',
+): string {
   const lines: string[] = [];
   const ceremonyStart = clockMinutes(input.ceremonyStart);
   const ceremonyEnd = clockMinutes(input.ceremonyEnd);
@@ -122,7 +138,7 @@ export function performanceTimeOrderMessage(input: {
     lines.push('Cocktail hour end is before cocktail hour start.');
   }
   if (lines.length === 0) return '';
-  return `${lines.join(' ')} Fix the times before sending this agreement.`;
+  return `${lines.join(' ')} ${closing}`;
 }
 
 function eventTime(start: string, end: string): string {
@@ -337,7 +353,7 @@ export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields
 export function normalizeStoredFields(value: unknown): StoredRenderFields | null {
   if (!isStoredRenderFields(value)) return null;
   const row = value as StoredRenderFields;
-  return {
+  const normalized: StoredRenderFields = {
     ...row,
     renderEdition: row.renderEdition === 2 ? 2 : undefined,
     client1Name: row.client1Name ?? '',
@@ -352,6 +368,16 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
     otherDetails: row.otherDetails ?? '',
     finalPaymentDueDate: row.finalPaymentDueDate ?? '',
   };
+  const supplied = readCoupleSupplied(row.coupleSupplied, normalized);
+  if (supplied) normalized.coupleSupplied = supplied;
+  else delete normalized.coupleSupplied;
+  return normalized;
+}
+
+function readCoupleSupplied(value: unknown, fields: StoredRenderFields): CoupleDetailKey[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const supplied = COUPLE_DETAIL_KEYS.filter((key) => value.includes(key) && fields[key].trim());
+  return supplied.length > 0 ? supplied : undefined;
 }
 
 export function isStoredRenderFields(value: unknown): value is StoredRenderFields {

@@ -53,6 +53,11 @@ export function packageDefinition(id: PackageId): PackageDefinition {
   return PACKAGES[id];
 }
 
+/** Packages B and D print cocktail-hour start and end on the agreement. */
+export function packageIncludesCocktailHour(id: PackageId): boolean {
+  return id === 'B' || id === 'D';
+}
+
 /**
  * Packages A and B state solo violin overtime only.
  * Packages C and D keep the owner-approved duo and DJ sentence.

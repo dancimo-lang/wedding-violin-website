@@ -6,6 +6,7 @@ export const CONTRACT_LIST_COLUMNS = [
   'status',
   'template_id',
   'package_id',
+  'render_fields',
   'booking_code',
   'total_cents',
   'retainer_cents',
@@ -30,6 +31,7 @@ export type ContractListRow = {
   status: string;
   template_id: string | null;
   package_id: string | null;
+  render_fields: unknown;
   booking_code: string | null;
   total_cents: number | null;
   retainer_cents: number | null;

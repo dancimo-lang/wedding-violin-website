@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { applyCoupleEventDetails, coupleCocktailRecordLine, coupleSuppliedSummary } from '@/lib/contracts/event-details';
 import { contractOwnerEmail } from '@/lib/contracts/mail';
 import { formatLongDate, formatMoney } from '@/lib/contracts/money';
 import {
   normalizeStoredFields,
   renderContract,
   signatureDateLabel,
+  type CoupleDetailKey,
   type SignatureOverlay,
+  type StoredRenderFields,
 } from '@/lib/contracts/render';
+import { runGoogleSync } from '@/lib/google/run';
 import { signOnce } from '@/lib/contracts/sign';
 import { validateSignature } from '@/lib/contracts/signers';
 import { isContractToken } from '@/lib/contracts/token';
@@ -129,6 +133,68 @@ export async function GET(request: Request) {
   return noStore(viewPayload(row, text));
 }
 
+function shortRecordError(message: string): string {
+  const line = message.split('\n')[0]?.replace(/^ERROR:\s*/i, '').trim() ?? '';
+  if (!line || line.length > 240) return 'The lead or booking could not be updated with those details.';
+  return `The lead or booking could not be updated with those details. ${line}`;
+}
+
+async function appendRecordLine(
+  admin: ReturnType<typeof createAdminClient>,
+  table: 'leads' | 'bookings',
+  id: string,
+  column: 'message' | 'special_requests',
+  line: string,
+): Promise<string> {
+  const { data, error } = await admin.from(table).select(column).eq('id', id).maybeSingle();
+  if (error || !data) return 'The lead or booking could not be updated with those details.';
+  const raw = (data as Record<string, unknown>)[column];
+  const current = typeof raw === 'string' ? raw.trim() : '';
+  if (current.includes(line)) return '';
+  const next = current ? `${current}\n${line}` : line;
+  const { error: updateError } = await admin
+    .from(table)
+    .update({ [column]: next, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (updateError) return shortRecordError(updateError.message);
+  return '';
+}
+
+/** Writes couple-entered details onto the lead and booking. Cocktail times have no column, so they are appended as one sentence. */
+async function copyCoupleDetailsToRecords(
+  admin: ReturnType<typeof createAdminClient>,
+  row: ContractRecord,
+  fields: StoredRenderFields,
+  supplied: CoupleDetailKey[],
+): Promise<string> {
+  const patch: { venue_name?: string; venue_address?: string; performance_start_time?: string; updated_at: string } = {
+    updated_at: new Date().toISOString(),
+  };
+  if (supplied.includes('venueName')) patch.venue_name = fields.venueName;
+  if (supplied.includes('venueAddress')) patch.venue_address = fields.venueAddress;
+  if (supplied.includes('ceremonyStart')) patch.performance_start_time = fields.ceremonyStart;
+  const cocktailLine = coupleCocktailRecordLine(fields, supplied);
+  const hasColumns = Object.keys(patch).length > 1;
+  if (!hasColumns && !cocktailLine) return '';
+
+  const warnings: string[] = [];
+  if (hasColumns && row.booking_id && UUID.test(row.booking_id)) {
+    const { error } = await admin.from('bookings').update(patch).eq('id', row.booking_id);
+    if (error) warnings.push(shortRecordError(error.message));
+  }
+  if (hasColumns && row.lead_id && UUID.test(row.lead_id)) {
+    const { error } = await admin.from('leads').update(patch).eq('id', row.lead_id);
+    if (error) warnings.push(shortRecordError(error.message));
+  }
+  if (cocktailLine && row.booking_id && UUID.test(row.booking_id)) {
+    warnings.push(await appendRecordLine(admin, 'bookings', row.booking_id, 'special_requests', cocktailLine));
+  }
+  if (cocktailLine && row.lead_id && UUID.test(row.lead_id)) {
+    warnings.push(await appendRecordLine(admin, 'leads', row.lead_id, 'message', cocktailLine));
+  }
+  return warnings.find(Boolean) ?? '';
+}
+
 async function clientEmail(leadId: string | null, bookingId: string | null): Promise<{ email: string | null; name: string | null }> {
   const admin = createAdminClient();
   let clientId: string | null = null;
@@ -217,6 +283,10 @@ export async function POST(request: Request) {
   const fields = normalizeStoredFields(row.render_fields);
   if (!fields) return noStore({ error: 'This agreement could not be signed.' }, 500);
 
+  const applied = applyCoupleEventDetails(fields, body.eventDetails === undefined ? {} : body.eventDetails);
+  if (!applied.ok) return noStore({ error: applied.error }, 400);
+  const signedFields = applied.fields;
+
   const client1Name = (typeof body.client1Name === 'string' ? body.client1Name : '').trim();
   const client2Name = (typeof body.client2Name === 'string' ? body.client2Name : '').trim();
   const photoOptOut = body.photoOptOut === true;
@@ -231,7 +301,7 @@ export async function POST(request: Request) {
   };
   let rendered = '';
   try {
-    rendered = renderContract(fields, overlay);
+    rendered = renderContract(signedFields, overlay);
   } catch {
     return noStore({ error: 'This agreement could not be signed.' }, 500);
   }
@@ -263,7 +333,7 @@ export async function POST(request: Request) {
   if (auto) {
     musicianName = 'Daniel Cimo';
     musicianAt = nowIso;
-    executed = renderContract(fields, {
+    executed = renderContract(signedFields, {
       ...overlay,
       musicianSignedName: musicianName,
       musicianSignedOn: signedOn,
@@ -275,6 +345,7 @@ export async function POST(request: Request) {
     .from('contracts')
     .update({
       status: 'signed',
+      render_fields: signedFields,
       signed_text: decision.signedText,
       content_sha256: decision.contentSha256,
       executed_text: executed,
@@ -339,18 +410,34 @@ export async function POST(request: Request) {
     });
   }
 
+  let recordWarning = '';
   try {
+    recordWarning = await copyCoupleDetailsToRecords(admin, signedRow, signedFields, applied.supplied);
+  } catch {
+    recordWarning = 'The lead or booking could not be updated with those details.';
+  }
+
+  try {
+    const suppliedNote = coupleSuppliedSummary(signedFields);
+    const signedLine = photoOptOut
+      ? 'The client signed and opted out of promotional photographs and video.'
+      : 'The client signed the agreement.';
     await admin.from('activity_events').insert({
       lead_id: row.lead_id,
       booking_id: row.booking_id,
       event_type: 'contract',
       title: 'Agreement signed',
-      body: photoOptOut
-        ? 'The client signed and opted out of promotional photographs and video.'
-        : 'The client signed the agreement.',
-      metadata: { contract_id: row.id, photo_opt_out: photoOptOut },
+      body: [signedLine, suppliedNote, recordWarning].filter(Boolean).join(' '),
+      metadata: {
+        contract_id: row.id,
+        photo_opt_out: photoOptOut,
+        couple_supplied: Object.fromEntries(applied.supplied.map((key) => [key, signedFields[key]])),
+      },
     });
     await noteSigned(signedRow);
+    if (applied.supplied.some((key) => key === 'venueName' || key === 'venueAddress' || key === 'ceremonyStart')) {
+      await runGoogleSync();
+    }
   } catch {
     // The signature is already stored.
   }
