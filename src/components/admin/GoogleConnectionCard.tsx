@@ -42,11 +42,17 @@ export function GoogleConnectionCard({
             {view.calendarMode === 'primary' ? ' (using your primary calendar)' : ''}.
           </p>
           <p>{checked ? `Busy times last read ${checked} PT.` : 'Busy times have not been read yet.'}</p>
-          {!view.busyFresh && (
+          {view.busySyncedAt && !view.busyFresh && (
             <p className="text-amber-900">
               Those busy times are more than two hours old, so the public date check will ask you to confirm a date instead of saying it appears available.
             </p>
           )}
+          {!view.busySyncedAt && (
+            <p className="text-amber-900">
+              Until a sync finishes, the public date check will ask you to confirm a date instead of saying it appears available.
+            </p>
+          )}
+          {view.lastError && <p className="text-amber-900">{view.lastError}</p>}
         </div>
       )}
       {!view.connected && view.configured && !view.needsReconnect && (

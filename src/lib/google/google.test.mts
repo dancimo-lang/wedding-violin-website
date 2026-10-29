@@ -1,9 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { decryptToken, encryptToken } from './crypto';
-import { blockEventPayload, bookingEventPayload, googleEventId, parseFreeBusy, subtractIntervals } from './events';
+import {
+  FREEBUSY_MAX_RANGE_MS,
+  FreeBusyReadError,
+  blockEventPayload,
+  bookingEventPayload,
+  busyPullWindow,
+  chunkTimeRange,
+  googleEventId,
+  parseFreeBusy,
+  subtractIntervals,
+} from './events';
 import { GoogleCalendarClient } from './http';
-import { GoogleReconnectError } from './gateway';
+import { GoogleApiError, GoogleReconnectError, logGoogleSyncFailure, safeGoogleMessage } from './gateway';
+import { statusViewFromRow } from './status';
+import { googleSyncNotice, statusToExternalState } from './browser';
 import { bearerAuthorized, buildAuthorizationUrl, secretsMatch } from './oauth';
 
 const KEY = Buffer.alloc(32, 7).toString('base64');
@@ -104,14 +116,139 @@ test('subtracts only this website’s own busy intervals', () => {
   assert.deepEqual(subtractIntervals(busy, [{ startMs: 100, endMs: 140 }]), [{ startMs: 0, endMs: 50 }]);
 });
 
-test('reads freebusy and treats a calendar error as unreadable', () => {
+test('reads freebusy, treats an empty calendar as success, and keeps a calendar error reason', () => {
   assert.deepEqual(
     parseFreeBusy({
       calendars: { primary: { busy: [{ start: '2026-06-06T21:00:00.000Z', end: '2026-06-06T22:00:00.000Z' }] } },
     }),
     [{ startMs: Date.parse('2026-06-06T21:00:00.000Z'), endMs: Date.parse('2026-06-06T22:00:00.000Z') }],
   );
-  assert.throws(() => parseFreeBusy({ calendars: { primary: { errors: [{ reason: 'notFound' }], busy: [] } } }));
+  assert.deepEqual(parseFreeBusy({ calendars: { primary: { busy: [] } } }), []);
+  assert.throws(
+    () => parseFreeBusy({ calendars: { primary: { errors: [{ reason: 'notFound' }], busy: [] } } }),
+    (error: unknown) => {
+      assert.ok(error instanceof FreeBusyReadError);
+      assert.equal(error.reason, 'notFound');
+      return true;
+    },
+  );
+});
+
+test('busy pulls are split under Google’s freebusy range limit', () => {
+  const window = busyPullWindow(new Date('2026-10-29T16:13:58.000Z'));
+  const span = Date.parse(window.timeMax) - Date.parse(window.timeMin);
+  assert.ok(span > FREEBUSY_MAX_RANGE_MS);
+  const chunks = chunkTimeRange(window.timeMin, window.timeMax);
+  assert.ok(chunks.length > 1);
+  assert.equal(chunks[0].timeMin, window.timeMin);
+  assert.equal(chunks[chunks.length - 1].timeMax, window.timeMax);
+  for (const chunk of chunks) {
+    const width = Date.parse(chunk.timeMax) - Date.parse(chunk.timeMin);
+    assert.ok(width > 0);
+    assert.ok(width <= FREEBUSY_MAX_RANGE_MS);
+  }
+});
+
+test('freebusy failures keep Google status and reason and omit tokens', async () => {
+  const fetchImpl: typeof fetch = async (_input, init) => {
+    const headers = new Headers(init?.headers);
+    assert.match(headers.get('authorization') || '', /^Bearer ya29\./);
+    return jsonResponse(400, {
+      error: {
+        errors: [
+          {
+            domain: 'calendar',
+            reason: 'timeRangeTooLong',
+            message: 'The requested time range is too long. ya29.secret-access-token',
+          },
+        ],
+        code: 400,
+        message: 'The requested time range is too long.',
+      },
+    });
+  };
+  const client = new GoogleCalendarClient(ENV, fetchImpl);
+  const error = await client
+    .freeBusy('ya29.secret-access-token', '2026-06-01T00:00:00.000Z', '2026-06-02T00:00:00.000Z')
+    .then(() => null)
+    .catch((caught: unknown) => caught);
+  assert.ok(error instanceof GoogleApiError);
+  assert.equal(error.status, 400);
+  assert.equal(error.reason, 'timeRangeTooLong');
+  assert.equal(JSON.stringify(error).includes('ya29'), false);
+  const message = safeGoogleMessage(error);
+  assert.match(message, /HTTP 400/);
+  assert.match(message, /timeRangeTooLong/);
+  assert.equal(message.includes('ya29'), false);
+
+  const lines: unknown[][] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    lines.push(args);
+  };
+  try {
+    logGoogleSyncFailure(error);
+    logGoogleSyncFailure(new Error('refresh failed ya29.secret-access-token'));
+  } finally {
+    console.error = original;
+  }
+  const logged = JSON.stringify(lines);
+  assert.match(logged, /timeRangeTooLong/);
+  assert.match(logged, /400/);
+  assert.equal(logged.includes('ya29'), false);
+});
+
+test('an empty freebusy response across the full window is a successful read', async () => {
+  const bodies: { timeMin: string; timeMax: string; authorization: string }[] = [];
+  const fetchImpl: typeof fetch = async (_input, init) => {
+    const headers = new Headers(init?.headers);
+    const body = JSON.parse(String(init?.body)) as { timeMin: string; timeMax: string };
+    bodies.push({ ...body, authorization: headers.get('authorization') || '' });
+    return jsonResponse(200, { calendars: { primary: { busy: [] } } });
+  };
+  const client = new GoogleCalendarClient(ENV, fetchImpl);
+  const window = busyPullWindow(new Date('2026-10-29T16:13:58.000Z'));
+  const intervals = await client.freeBusy('ya29.secret-access-token', window.timeMin, window.timeMax);
+  assert.deepEqual(intervals, []);
+  assert.ok(bodies.length > 1);
+  for (const body of bodies) {
+    assert.ok(Date.parse(body.timeMax) - Date.parse(body.timeMin) <= FREEBUSY_MAX_RANGE_MS);
+    assert.match(body.authorization, /^Bearer ya29\./);
+  }
+});
+
+test('settings status distinguishes a never-read calendar from a stale one', () => {
+  const never = statusViewFromRow(true, {
+    status: 'connected',
+    google_email: 'owner@example.com',
+    calendar_summary: 'Weddings (website)',
+    calendar_mode: 'dedicated',
+    busy_synced_at: null,
+    last_error: 'Google busy times could not be read. · HTTP 400 · timeRangeTooLong',
+  });
+  assert.equal(never.busyFresh, false);
+  assert.equal(never.busySyncedAt, null);
+  assert.match(never.lastError || '', /timeRangeTooLong/);
+  assert.equal(statusToExternalState(never), 'unsynced');
+
+  const fresh = statusViewFromRow(
+    true,
+    {
+      status: 'connected',
+      busy_synced_at: '2026-10-29T16:13:58.000Z',
+      last_error: null,
+    },
+    Date.parse('2026-10-29T17:00:00.000Z'),
+  );
+  assert.equal(fresh.busyFresh, true);
+  assert.equal(fresh.lastError, null);
+  assert.equal(statusToExternalState(fresh), 'fresh');
+  assert.equal(
+    googleSyncNotice({ ok: false, message: 'Google busy times could not be read. · HTTP 400 · timeRangeTooLong' }, never),
+    'Google busy times could not be read. · HTTP 400 · timeRangeTooLong',
+  );
+  assert.equal(googleSyncNotice({ ok: true }, fresh), 'Sync finished. Busy times are up to date.');
+  assert.match(googleSyncNotice({ ok: true }, never), /still needs attention|timeRangeTooLong/);
 });
 
 test('refresh failure and an existing event id are handled without echoing secrets', async () => {

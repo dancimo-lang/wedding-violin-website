@@ -45,6 +45,17 @@ export function createSupabaseSyncStore(encryptionKey: string): SyncStore {
       if (error) throw new Error('The Google connection could not be updated.');
     },
 
+    async recordFailure(message) {
+      const { error } = await admin
+        .from('google_calendar_connection')
+        .update({
+          last_error: message.slice(0, 300),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
+      if (error) throw new Error('The Google connection could not be updated.');
+    },
+
     async saveCalendar(calendar) {
       const { error } = await admin
         .from('google_calendar_connection')
@@ -281,7 +292,7 @@ export async function readConnectionRow() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('google_calendar_connection')
-    .select('status, google_email, calendar_summary, calendar_mode, busy_synced_at')
+    .select('status, google_email, calendar_summary, calendar_mode, busy_synced_at, last_error')
     .eq('id', 1)
     .maybeSingle();
   if (error) return { error: true as const, row: null };

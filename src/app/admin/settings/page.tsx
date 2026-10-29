@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { GoogleConnectionCard } from '@/components/admin/GoogleConnectionCard';
-import { fetchGoogleStatus, requestGoogleSync } from '@/lib/google/browser';
+import { fetchGoogleStatus, googleSyncNotice, requestGoogleSync } from '@/lib/google/browser';
 import { DISCONNECTED_GOOGLE_STATUS, type GoogleStatusView } from '@/lib/google/status';
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
@@ -115,9 +115,10 @@ export default function SettingsPage() {
       onSync={async () => {
         setGooglePending(true);
         setGoogleNotice('');
-        await requestGoogleSync();
-        setGoogle(await fetchGoogleStatus());
-        setGoogleNotice('Sync finished. If Google still needs attention, the status above will say so.');
+        const result = await requestGoogleSync();
+        const status = await fetchGoogleStatus();
+        setGoogle(status);
+        setGoogleNotice(googleSyncNotice(result, status));
         setGooglePending(false);
       }}
       onDisconnect={async () => {

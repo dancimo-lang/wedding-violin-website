@@ -9,6 +9,7 @@ export type GoogleStatusView = {
   calendarMode: 'dedicated' | 'primary' | null;
   busySyncedAt: string | null;
   busyFresh: boolean;
+  lastError: string | null;
 };
 
 export const DISCONNECTED_GOOGLE_STATUS: GoogleStatusView = {
@@ -20,6 +21,7 @@ export const DISCONNECTED_GOOGLE_STATUS: GoogleStatusView = {
   calendarMode: null,
   busySyncedAt: null,
   busyFresh: false,
+  lastError: null,
 };
 
 type StatusRow = {
@@ -28,6 +30,7 @@ type StatusRow = {
   calendar_summary?: string | null;
   calendar_mode?: string | null;
   busy_synced_at?: string | null;
+  last_error?: string | null;
 } | null;
 
 export function statusViewFromRow(configured: boolean, row: StatusRow, now = Date.now()): GoogleStatusView {
@@ -45,5 +48,6 @@ export function statusViewFromRow(configured: boolean, row: StatusRow, now = Dat
     calendarMode: mode,
     busySyncedAt: row?.busy_synced_at ?? null,
     busyFresh: state === 'fresh',
+    lastError: row?.last_error ?? null,
   };
 }
