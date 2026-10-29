@@ -20,8 +20,55 @@ export function checkoutIdempotencyKey(input: {
   method: CheckoutMethod;
   feeCents: number;
   day: string;
+  /** A prior session that must not be replayed. Stripe caches the first response for a key. */
+  replacesSessionId?: string | null;
 }): string {
-  return `ob_${input.obligationId}_${input.method}_${input.feeCents}_${input.day}_e`;
+  const base = `ob_${input.obligationId}_${input.method}_${input.feeCents}_${input.day}_e`;
+  const previous = input.replacesSessionId?.replace(/[^A-Za-z0-9_]/g, '') ?? '';
+  if (!previous) return base;
+  return `${base}_${previous}`.slice(0, 255);
+}
+
+export type CheckoutReuse =
+  | { action: 'reuse'; url: string }
+  | { action: 'create'; replacesSessionId: string | null; recordStatus: 'failed' | null }
+  | { action: 'blocked'; message: string; recordStatus: 'processing' | 'paid' | null }
+  | { action: 'unverified' };
+
+/**
+ * Reuse a stored Checkout URL only when Stripe still reports that session open.
+ * Failed, expired, and completed sessions get a new create, with a new idempotency
+ * key, except a completed charge that is still processing or paid.
+ */
+export function decideCheckoutReuse(input: {
+  stored: { id: string; status: string; url: string | null } | null;
+  live?: { status: string; url: string | null; paymentStatus: string | null } | null;
+}): CheckoutReuse {
+  const stored = input.stored;
+  if (!stored) return { action: 'create', replacesSessionId: null, recordStatus: null };
+  if (stored.status === 'processing') {
+    return { action: 'blocked', message: 'A bank payment for this amount is already processing.', recordStatus: null };
+  }
+  if (stored.status === 'paid') {
+    return { action: 'blocked', message: 'That payment is not open.', recordStatus: null };
+  }
+  if (stored.status !== 'open') {
+    return { action: 'create', replacesSessionId: stored.id, recordStatus: null };
+  }
+  const live = input.live;
+  if (!live) return { action: 'unverified' };
+  const liveUrl = live.url?.startsWith('https://') ? live.url : null;
+  const storedUrl = stored.url?.startsWith('https://') ? stored.url : null;
+  if (live.status === 'open' && (liveUrl || storedUrl)) {
+    return { action: 'reuse', url: liveUrl ?? storedUrl ?? '' };
+  }
+  if (live.status === 'complete') {
+    if (live.paymentStatus === 'paid') {
+      return { action: 'blocked', message: 'That payment is not open.', recordStatus: 'paid' };
+    }
+    return { action: 'blocked', message: 'A bank payment for this amount is already processing.', recordStatus: 'processing' };
+  }
+  return { action: 'create', replacesSessionId: stored.id, recordStatus: 'failed' };
 }
 
 export function checkoutPaymentMethod(method: CheckoutMethod): 'us_bank_account' | 'card' {

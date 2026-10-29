@@ -167,8 +167,17 @@ html:focus-within {
 .contract-sheet p,
 .contract-sheet h1,
 .contract-sheet h2,
+.contract-sheet li,
+.contract-sheet figcaption,
 .contract-sheet label,
-.contract-sheet pre {
+.contract-sheet pre,
+.pay-sheet,
+.pay-sheet p,
+.pay-sheet h1,
+.pay-sheet h2,
+.pay-sheet li,
+.pay-sheet figcaption,
+.pay-sheet label {
   color: #111827;
 }
 
@@ -180,14 +189,21 @@ html:focus-within {
   caret-color: #111827;
 }
 
-.contract-sheet button {
+.contract-sheet button,
+.pay-sheet button {
   color: #ffffff;
+}
+
+.contract-sheet [role='alert'],
+.pay-sheet [role='alert'] {
+  color: #b91c1c;
 }
 
 /* Filled buttons stay white. This outlined card button sits on the white
    sheet, so its label has to stay dark. The rule is unlayered because a
-   Tailwind text color loses to the rule above and to the light body color. */
+   Tailwind text color loses to the rules above and to the light body color. */
 .contract-sheet button.pay-card-button,
+.pay-sheet button.pay-card-button,
 button.pay-card-button {
   color: #111827;
   background-color: #ffffff;

@@ -17,8 +17,13 @@ export async function postStripeWebhook(request: Request, rawBody: string) {
 }
 
 export async function getPaymentView(request: Request) {
-  const token = new URL(request.url).searchParams.get('t')?.trim() ?? '';
-  const result = await paymentView(token);
+  const url = new URL(request.url);
+  const token = url.searchParams.get('t')?.trim() ?? '';
+  const hint = url.searchParams.get('return');
+  const result = await paymentView(token, {
+    sessionId: url.searchParams.get('session_id'),
+    returnHint: hint === 'paid' || hint === 'canceled' ? hint : null,
+  });
   return noStore(result.body, result.status);
 }
 

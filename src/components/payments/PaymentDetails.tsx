@@ -23,9 +23,23 @@ export type PaymentView = {
   cardButton: string | null;
   paid: { kind: 'retainer' | 'balance'; amountLabel: string }[];
   paidInFull: boolean;
+  checkout: {
+    tone: 'success' | 'pending' | 'failed' | 'neutral' | 'waiting';
+    message: string;
+    pendingConfirmation: boolean;
+  } | null;
+  blockPay: boolean;
 };
 
 const KIND_LABEL = { retainer: 'Retainer', balance: 'Balance' } as const;
+
+const BANNER_BACKGROUND = {
+  success: 'bg-green-50',
+  pending: 'bg-blue-50',
+  waiting: 'bg-blue-50',
+  failed: 'bg-red-50',
+  neutral: 'bg-gray-100',
+} as const;
 
 export function PaymentDetails({
   view,
@@ -53,9 +67,22 @@ export function PaymentDetails({
     setBusy(null);
   };
 
+  const showPayActions = !view.blockPay;
+
   return (
     <section className="mt-8 rounded-lg border border-gray-200 p-4">
-      <h2 className="text-xl font-bold">{view.due ? `Pay your ${view.due.kind}` : 'Payments'}</h2>
+      {view.checkout ? (
+        <p
+          className={`rounded-lg px-4 py-3 text-sm ${BANNER_BACKGROUND[view.checkout.tone]}`}
+          role={view.checkout.tone === 'failed' ? 'alert' : 'status'}
+          aria-live="polite"
+        >
+          {view.checkout.message}
+        </p>
+      ) : null}
+      <h2 className={view.checkout ? 'mt-4 text-xl font-bold' : 'text-xl font-bold'}>
+        {view.due ? `Pay your ${view.due.kind}` : 'Payments'}
+      </h2>
       {notice ? <p className="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm">{notice}</p> : null}
       {view.paidInFull ? <p className="mt-3">This agreement is paid in full.</p> : null}
       {view.paid.length > 0 ? (
@@ -75,9 +102,9 @@ export function PaymentDetails({
               {view.due.dueLabel ? ` (${view.due.dueLabel})` : ''}
             </p>
             <p className="mt-2">Booking code: {view.bookingCode}</p>
-            <p className="mt-3">{view.instruction}</p>
+            {showPayActions ? <p className="mt-3">{view.instruction}</p> : null}
             {view.balanceNote ? <p className="mt-3">{view.balanceNote}</p> : null}
-            {view.stripeReady && view.achButton ? (
+            {showPayActions && view.stripeReady && view.achButton ? (
               <div className="mt-4 space-y-3">
                 <button
                   type="button"
@@ -113,7 +140,7 @@ export function PaymentDetails({
               </p>
             ) : null}
           </div>
-          {view.qrUrl ? (
+          {showPayActions && view.qrUrl ? (
             <figure className="mt-4 md:mt-0">
               {view.qrUrl.startsWith('/') ? (
                 <Image src={view.qrUrl} alt={view.qrAlt} width={220} height={235} />
