@@ -8,6 +8,15 @@ import type { ObligationRef } from './match';
 import { verifyStripeWebhook } from './stripe-signature';
 import { isStripeSecretKey } from './stripe-key';
 import { planStripeEvent, type CheckoutSessionStatus } from './stripe-event';
+import {
+  STRIPE_CHECKOUT_API_VERSION,
+  checkoutIdempotencyKey,
+  checkoutPaymentMethod,
+  checkoutSessionAcceptsMethod,
+  checkoutSessionFields,
+  offeredPaymentMethodTypes,
+  stripeCheckoutErrorDetails,
+} from './stripe-session';
 import { paymentPageUrl, siteOrigin } from './urls';
 import { zelleQrSources } from './zelle-qr';
 import { zelleRecipientContact, zelleRecipientName } from './zelle-config';
@@ -159,7 +168,12 @@ export async function startCheckout(input: {
     bookingId: contract.booking_id,
     successUrl: `${payUrl}&paid=1`,
     cancelUrl: `${payUrl}&canceled=1`,
-    idempotencyKey: `ob_${input.obligationId}_${method}_${feeCents}_${new Date().toISOString().slice(0, 10)}`,
+    idempotencyKey: checkoutIdempotencyKey({
+      obligationId: input.obligationId,
+      method,
+      feeCents,
+      day: new Date().toISOString().slice(0, 10),
+    }),
   });
   if ('error' in created) return { status: 502, body: { error: 'The payment page could not be opened. You can still pay by Zelle.' } };
 
@@ -191,35 +205,7 @@ async function createStripeCheckout(input: {
   cancelUrl: string;
   idempotencyKey: string;
 }): Promise<{ id: string; url: string } | { error: string }> {
-  const which = input.kind === 'retainer' ? 'Retainer' : 'Balance';
-  const fields: Record<string, string> = {
-    mode: 'payment',
-    success_url: input.successUrl,
-    cancel_url: input.cancelUrl,
-    client_reference_id: input.obligationId,
-    'metadata[obligation_id]': input.obligationId,
-    'metadata[booking_id]': input.bookingId,
-    'metadata[booking_code]': input.bookingCode,
-    'metadata[kind]': input.kind,
-    'line_items[0][quantity]': '1',
-    'line_items[0][price_data][currency]': 'usd',
-    'line_items[0][price_data][unit_amount]': String(input.amountCents),
-    'line_items[0][price_data][product_data][name]': `Wedding music ${which.toLowerCase()} (${input.bookingCode})`,
-  };
-  if (input.method === 'stripe_ach') {
-    fields['payment_method_types[0]'] = 'us_bank_account';
-    fields['payment_method_options[us_bank_account][financial_connections][permissions][0]'] = 'payment_method';
-    fields['payment_method_options[us_bank_account][verification_method]'] = 'automatic';
-  } else {
-    fields['payment_method_types[0]'] = 'card';
-  }
-  if (input.feeCents > 0) {
-    const feeName = input.method === 'stripe_card' ? 'Card processing fee' : 'Bank payment processing fee';
-    fields['line_items[1][quantity]'] = '1';
-    fields['line_items[1][price_data][currency]'] = 'usd';
-    fields['line_items[1][price_data][unit_amount]'] = String(input.feeCents);
-    fields['line_items[1][price_data][product_data][name]'] = feeName;
-  }
+  const fields = checkoutSessionFields(input);
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(fields)) params.append(key, value);
   let response: Response;
@@ -230,20 +216,36 @@ async function createStripeCheckout(input: {
         Authorization: `Bearer ${input.secretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Idempotency-Key': input.idempotencyKey,
+        'Stripe-Version': STRIPE_CHECKOUT_API_VERSION,
       },
       body: params.toString(),
     });
   } catch {
     return { error: 'network' };
   }
-  const payload = (await response.json().catch(() => null)) as { id?: string; url?: string; error?: { message?: string } } | null;
-  if (!response.ok || !payload?.id || !payload.url) {
-    console.error('Stripe Checkout was not created', payload?.error?.message ? 'stripe-error' : response.status);
+  const payload = (await response.json().catch(() => null)) as {
+    id?: unknown;
+    url?: unknown;
+    payment_method_types?: unknown;
+  } | null;
+  const requestId = response.headers.get('request-id');
+  if (!response.ok || typeof payload?.id !== 'string' || typeof payload.url !== 'string' || !payload.url.startsWith('https://')) {
+    console.error('Stripe Checkout was not created', stripeCheckoutErrorDetails({ status: response.status, requestId, payload }));
+    return { error: 'stripe' };
+  }
+  if (!checkoutSessionAcceptsMethod(payload.payment_method_types, input.method)) {
+    console.error('Stripe Checkout omitted the requested payment method', {
+      status: response.status,
+      requestId: stripeCheckoutErrorDetails({ status: response.status, requestId, payload: null }).requestId,
+      expected: checkoutPaymentMethod(input.method),
+      offered: offeredPaymentMethodTypes(payload.payment_method_types),
+    });
     return { error: 'stripe' };
   }
   return { id: payload.id, url: payload.url };
 }
 
+/** Webhook payloads use the endpoint's API version, not the Checkout create version. */
 type StripeSessionObject = {
   id?: string;
   payment_status?: string;

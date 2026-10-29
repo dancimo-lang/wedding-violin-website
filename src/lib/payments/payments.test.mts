@@ -9,6 +9,13 @@ import { extractBookingCodes, ingestZelleOnce, planZelleIngest, selectObligation
 import { confirmationEmail, THANK_YOU_EMAIL_TODO } from './messages';
 import { planStripeEvent, verifyStripeSignatureHeader } from './stripe-event';
 import { isStripeSecretKey } from './stripe-key';
+import {
+  STRIPE_CHECKOUT_API_VERSION,
+  checkoutIdempotencyKey,
+  checkoutSessionAcceptsMethod,
+  checkoutSessionFields,
+  stripeCheckoutErrorDetails,
+} from './stripe-session';
 import { buildPaymentView } from './view';
 import { resolveZelleQr, zelleInstructionLine, zelleRecipientContact, zelleRecipientName } from './zelle-config';
 
@@ -288,6 +295,84 @@ test('Stripe counts as set up for standard and restricted secret keys', () => {
   const checkout = fs.readFileSync(new URL('./stripe-checkout.ts', import.meta.url), 'utf8');
   assert.match(checkout, /isStripeSecretKey\(process\.env\.STRIPE_SECRET_KEY\)/);
   assert.equal(checkout.includes("startsWith('sk_')"), false);
+  assert.match(checkout, /Stripe-Version': STRIPE_CHECKOUT_API_VERSION/);
+  assert.equal(checkout.includes('payment_method_types['), false);
+  assert.equal(checkout.includes("'stripe-error'"), false);
+  assert.match(checkout, /stripeCheckoutErrorDetails/);
+});
+
+test('Checkout sessions allow one method on the 2026-09-30 API and log Stripe errors without secrets', () => {
+  assert.equal(STRIPE_CHECKOUT_API_VERSION, '2026-09-30.endive');
+  const shared = {
+    amountCents: 50000,
+    bookingCode: 'DC-7375',
+    kind: 'retainer' as const,
+    obligationId: '0b7f3c2a-1111-4222-8333-444455556666',
+    bookingId: '9c1e8d7a-aaaa-4bbb-8ccc-ddddeeeeffff',
+    successUrl: 'https://preview.example/pay?t=token&paid=1',
+    cancelUrl: 'https://preview.example/pay?t=token&canceled=1',
+  };
+  const card = checkoutSessionFields({ ...shared, method: 'stripe_card', feeCents: 1524 });
+  assert.equal(card['allowed_payment_method_types[0]'], 'card');
+  assert.equal(card['line_items[0][price_data][unit_amount]'], '50000');
+  assert.equal(card['line_items[0][price_data][currency]'], 'usd');
+  assert.equal(card['line_items[1][price_data][unit_amount]'], '1524');
+  assert.equal(card['line_items[1][price_data][product_data][name]'], 'Card processing fee');
+  assert.equal(card['wallet_options[link][display]'], 'never');
+  assert.equal('payment_method_types[0]' in card, false);
+  assert.equal(card['payment_method_options[us_bank_account][verification_method]'], undefined);
+
+  const bank = checkoutSessionFields({ ...shared, method: 'stripe_ach', feeCents: 0 });
+  assert.equal(bank['allowed_payment_method_types[0]'], 'us_bank_account');
+  assert.equal(bank['payment_method_options[us_bank_account][verification_method]'], 'automatic');
+  assert.equal(bank['payment_method_options[us_bank_account][financial_connections][permissions][0]'], 'payment_method');
+  assert.equal('line_items[1][quantity]' in bank, false);
+  assert.equal(bank['line_items[0][price_data][unit_amount]'], '50000');
+
+  assert.equal(checkoutSessionAcceptsMethod(['card'], 'stripe_card'), true);
+  assert.equal(checkoutSessionAcceptsMethod(['us_bank_account'], 'stripe_ach'), true);
+  assert.equal(checkoutSessionAcceptsMethod(['card', 'link'], 'stripe_card'), false);
+  assert.equal(checkoutSessionAcceptsMethod(['us_bank_account'], 'stripe_card'), false);
+  assert.equal(checkoutSessionAcceptsMethod([], 'stripe_ach'), false);
+
+  const day = '2026-10-29';
+  const key = checkoutIdempotencyKey({ obligationId: shared.obligationId, method: 'stripe_card', feeCents: 1524, day });
+  assert.equal(key, `ob_${shared.obligationId}_stripe_card_1524_${day}_e`);
+  assert.notEqual(key, `ob_${shared.obligationId}_stripe_card_1524_${day}`);
+
+  const details = stripeCheckoutErrorDetails({
+    status: 400,
+    requestId: 'req_abc123',
+    payload: {
+      error: {
+        type: 'invalid_request_error',
+        param: 'payment_method_types',
+        message:
+          'The `payment_method_types` parameter is no longer supported. Contact payer@example.com with rk_test_secretvalue. success_url https://preview.example/pay?t=abcdefghijklmnopqrstuvwxyz0123456789ABC&paid=1',
+        request_log_url: 'https://dashboard.stripe.com/logs/req_abc123',
+      },
+      url: 'https://checkout.stripe.com/c/pay/cs_test_secret',
+    },
+  });
+  assert.deepEqual(details, {
+    status: 400,
+    type: 'invalid_request_error',
+    code: null,
+    param: 'payment_method_types',
+    message:
+      'The `payment_method_types` parameter is no longer supported. Contact [redacted] with [redacted]. success_url https://preview.example/pay?t=[redacted]&paid=1',
+    requestId: 'req_abc123',
+  });
+  assert.equal(JSON.stringify(details).includes('rk_test_'), false);
+  assert.equal(JSON.stringify(details).includes('payer@example.com'), false);
+  assert.equal(JSON.stringify(details).includes('checkout.stripe.com'), false);
+  assert.equal(JSON.stringify(details).includes('abcdefghijklmnopqrstuvwxyz0123456789ABC'), false);
+
+  const sheet = fs.readFileSync(new URL('../../app/globals.css', import.meta.url), 'utf8');
+  const button = fs.readFileSync(new URL('../../components/payments/PaymentDetails.tsx', import.meta.url), 'utf8');
+  assert.match(button, /pay-card-button/);
+  assert.match(button, /view\.cardButton/);
+  assert.match(sheet, /button\.pay-card-button[\s\S]*color:\s*#111827/);
 });
 
 test('card and ACH fees use the published defaults and can be turned on or off', () => {

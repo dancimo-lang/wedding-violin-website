@@ -95,7 +95,7 @@ export function PaymentDetails({
                 {view.cardButton ? (
                   <button
                     type="button"
-                    className="block rounded-lg border border-gray-300 px-4 py-2 disabled:text-gray-400"
+                    className="pay-card-button block rounded-lg border border-gray-300 bg-white px-4 py-2"
                     disabled={busy !== null}
                     onClick={() => void pay('card')}
                   >

@@ -183,3 +183,16 @@ html:focus-within {
 .contract-sheet button {
   color: #ffffff;
 }
+
+/* Filled buttons stay white. This outlined card button sits on the white
+   sheet, so its label has to stay dark. The rule is unlayered because a
+   Tailwind text color loses to the rule above and to the light body color. */
+.contract-sheet button.pay-card-button,
+button.pay-card-button {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+button.pay-card-button:disabled {
+  color: #6b7280;
+}
