@@ -1,8 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { authButtonClass, authErrorClass, authFieldClass, authLabelClass, authTextLinkClass } from './auth-card';
 import { safeAdminPath, userIsAdmin } from '@/lib/admin';
+import { FORGOT_PASSWORD_PATH } from '@/lib/auth/password-reset';
 import { createClient } from '@/lib/supabase/client';
 import { getSupabasePublicEnv } from '@/lib/supabase/env';
 
@@ -103,7 +106,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-6 admin-readable">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="email" className={authLabelClass}>
           Email
         </label>
         <input
@@ -112,13 +115,13 @@ export function LoginForm() {
           name="email"
           required
           autoComplete="email"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
+          className={authFieldClass}
           placeholder="dancimo@gmail.com"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="password" className={authLabelClass}>
           Password
         </label>
         <input
@@ -127,20 +130,19 @@ export function LoginForm() {
           name="password"
           required
           autoComplete="current-password"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
+          className={authFieldClass}
           placeholder="••••••••"
         />
+        <div className="mt-2 text-right">
+          <Link href={FORGOT_PASSWORD_PATH} className={authTextLinkClass}>
+            Forgot password?
+          </Link>
+        </div>
       </div>
 
-      {message && (
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{message}</div>
-      )}
+      {message && <div className={authErrorClass}>{message}</div>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-6 rounded-lg font-medium transition-colors"
-      >
+      <button type="submit" disabled={pending} className={authButtonClass}>
         {pending ? 'Signing in...' : 'Sign In'}
       </button>
     </form>
