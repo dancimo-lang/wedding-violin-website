@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { clientLabel, firstClient, type ClientInfo } from '@/lib/bookings/client-label';
 
 function supabase() {
   return createClient();
@@ -19,7 +20,12 @@ type Booking = {
   service_type: string;
   total_price: number;
   created_at: string;
+  clients: ClientInfo | ClientInfo[] | null;
 };
+
+function rowLabel(booking: Booking): string {
+  return clientLabel(firstClient(booking.clients), booking.client_id);
+}
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -33,7 +39,7 @@ export default function BookingsPage() {
       setLoading(true);
       const { data, error } = await supabase()
         .from('bookings')
-        .select('*')
+        .select('*, clients(name, partner_name, email)')
         .order('event_date', { ascending: true });
 
       if (cancelled) return;
@@ -112,7 +118,7 @@ export default function BookingsPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Client ID</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Couple</th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Venue</th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Service</th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Event Date</th>
@@ -131,7 +137,7 @@ export default function BookingsPage() {
                         : 'border-b border-gray-100 hover:bg-gray-50'
                     }
                   >
-                    <td className="py-4 px-6 text-sm text-gray-900">{booking.client_id}</td>
+                    <td className="py-4 px-6 text-sm text-gray-900">{rowLabel(booking)}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.venue_name || '-'}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.service_type}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.event_date}</td>

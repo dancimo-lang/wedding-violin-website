@@ -30,6 +30,12 @@ export type BookingSyncRow = {
   venueAddress: string | null;
   serviceType: string;
   clientName: string | null;
+  /** Partner's name from the client record, when saved. */
+  partnerName?: string | null;
+  /** Package name, when the booking has one. */
+  packageName?: string | null;
+  /** The booking's Special Requests text. Copied into the event notes. */
+  specialRequests?: string | null;
   /** False for an existing booking the owner chose not to copy to Google. Never pushed. */
   googleSync?: boolean;
 };
@@ -88,12 +94,45 @@ export function bookingEventPayload(row: BookingSyncRow): GoogleEventPayload | n
   return {
     id: googleEventId(row.id),
     summary: clip(`${prefix}${who} · ${service}`, 180),
-    description: `Status: ${row.status}. Added by the website. Change this booking on the website so both calendars stay in step.`,
+    description: bookingEventDescription(row),
     ...(location ? { location } : {}),
     start,
     end,
     extendedProperties: { private: { source: WEBSITE_EVENT_SOURCE, rowId: row.id } },
   };
+}
+
+const DESCRIPTION_LIMIT = 7500;
+const SPECIAL_REQUESTS_LIMIT = 6000;
+
+/** Plain-text event notes: who, what, where, special requests, then the status line. */
+export function bookingEventDescription(row: BookingSyncRow): string {
+  const lines: string[] = [];
+  const couple = [row.clientName, row.partnerName]
+    .map((name) => (name || '').trim())
+    .filter(Boolean)
+    .join(' & ');
+  if (couple) lines.push(`Couple: ${clip(couple, 200)}`);
+  const service = (row.serviceType || '').trim();
+  const pkg = (row.packageName || '').trim();
+  if (service) lines.push(`Service: ${clip(service, 120)}`);
+  if (pkg && pkg !== service) lines.push(`Package: ${clip(pkg, 120)}`);
+  const venue = [row.venueName, row.venueAddress]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(', ');
+  if (venue) lines.push(`Venue: ${clip(venue, 300)}`);
+  const requests = (row.specialRequests || '').replace(/\r\n?/g, '\n').trim();
+  if (requests) {
+    if (lines.length) lines.push('');
+    lines.push('Special requests:');
+    lines.push(clipText(requests, SPECIAL_REQUESTS_LIMIT));
+  }
+  if (lines.length) lines.push('');
+  lines.push(
+    `Status: ${row.status}. Added by the website. Change this booking on the website so both calendars stay in step.`,
+  );
+  return clipText(lines.join('\n'), DESCRIPTION_LIMIT);
 }
 
 export function blockEventPayload(row: BlockSyncRow): GoogleEventPayload {
@@ -237,6 +276,18 @@ export function chunkTimeRange(
     cursor = chunkEnd;
   }
   return chunks;
+}
+
+/** Like clip, but keeps line breaks (for multi-line notes). */
+function clipText(value: string, max: number): string {
+  const trimmed = value
+    .split('\n')
+    .map((line) => line.replace(/[^\S\n]+/g, ' ').trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (trimmed.length <= max) return trimmed;
+  return `${trimmed.slice(0, Math.max(1, max - 1))}…`;
 }
 
 function clip(value: string, max: number): string {
