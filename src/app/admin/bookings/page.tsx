@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { clientLabel, firstClient, type ClientInfo } from '@/lib/bookings/client-label';
 
 function supabase() {
   return createClient();
@@ -22,20 +23,8 @@ type Booking = {
   clients: ClientInfo | ClientInfo[] | null;
 };
 
-type ClientInfo = {
-  name: string | null;
-  partner_name: string | null;
-  email: string | null;
-};
-
-function clientLabel(booking: Booking): string {
-  const client = Array.isArray(booking.clients) ? booking.clients[0] : booking.clients;
-  const names = [client?.name, client?.partner_name]
-    .map((value) => value?.trim())
-    .filter(Boolean);
-  if (names.length > 0) return names.join(' & ');
-  if (client?.email?.trim()) return client.email.trim();
-  return booking.client_id ? booking.client_id.slice(0, 8) : '-';
+function rowLabel(booking: Booking): string {
+  return clientLabel(firstClient(booking.clients), booking.client_id);
 }
 
 export default function BookingsPage() {
@@ -148,7 +137,7 @@ export default function BookingsPage() {
                         : 'border-b border-gray-100 hover:bg-gray-50'
                     }
                   >
-                    <td className="py-4 px-6 text-sm text-gray-900">{clientLabel(booking)}</td>
+                    <td className="py-4 px-6 text-sm text-gray-900">{rowLabel(booking)}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.venue_name || '-'}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.service_type}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.event_date}</td>

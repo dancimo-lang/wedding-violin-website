@@ -25,6 +25,7 @@ import {
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
 import { addCalendarDays, venueRef } from '@/lib/schedule/time';
+import { clientLabel, firstClient, type ClientInfo } from '@/lib/bookings/client-label';
 
 function supabase() {
   return createClient();
@@ -68,6 +69,7 @@ export default function BookingDetailPage() {
   const router = useRouter();
   const recordId = useAdminRecordId('bookings');
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [client, setClient] = useState<ClientInfo | null>(null);
   const [savedStatus, setSavedStatus] = useState('');
   const [events, setEvents] = useState<ActivityItem[]>([]);
   const [occupancies, setOccupancies] = useState<Occupancy[]>([]);
@@ -89,7 +91,7 @@ export default function BookingDetailPage() {
     async function fetchBooking() {
       const { data, error } = await supabase()
         .from('bookings')
-        .select('*')
+        .select('*, clients(name, partner_name, email, phone)')
         .eq('id', bookingId)
         .single();
 
@@ -97,7 +99,9 @@ export default function BookingDetailPage() {
       if (error) {
         setError('Failed to load booking');
       } else {
-        setBooking(data as Booking);
+        const { clients, ...row } = data as Booking & { clients: ClientInfo | ClientInfo[] | null };
+        setClient(firstClient(clients));
+        setBooking(row as Booking);
         setSavedStatus((data as Booking).status);
       }
       const { data: activity } = await supabase()
@@ -287,7 +291,15 @@ export default function BookingDetailPage() {
           >
             <ArrowLeft size={20} />
           </Link>
-          <h2 className="text-3xl font-bold text-gray-900">Booking Details</h2>
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Booking Details</h2>
+            <p className="text-lg text-gray-800">{clientLabel(client, booking.client_id)}</p>
+            {(client?.email || client?.phone) && (
+              <p className="text-sm text-gray-600">
+                {[client?.email, client?.phone].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           {booking.status === 'Cancelled' ? (
