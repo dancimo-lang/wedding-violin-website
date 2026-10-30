@@ -22,6 +22,7 @@ export function param(name: string): PathSegment {
 
 export const apiRouteCatalog: readonly ApiRouteSpec[] = [
   { id: 'booking-status', methods: ['POST'], segments: ['admin', 'booking-status'] },
+  { id: 'existing-booking', methods: ['POST'], segments: ['admin', 'bookings', 'existing'] },
   { id: 'delete-lead', methods: ['DELETE'], segments: ['admin', 'leads', param('id')] },
   { id: 'contract-send', methods: ['POST'], segments: ['admin', 'contracts'] },
   { id: 'contract-void', methods: ['POST'], segments: ['admin', 'contracts', param('id'), 'void'] },

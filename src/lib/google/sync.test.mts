@@ -277,3 +277,17 @@ function memoryStore(overrides: Partial<StoredConnection> = {}) {
   };
   return store satisfies SyncStore & typeof store;
 }
+
+test('never pushes an existing booking the owner kept off Google, on upsert or a full re-queue', async () => {
+  const google = fakeGoogle();
+  const store = memoryStore();
+  store.bookings.set(BOOKING_ID, { ...booking(), status: 'Confirmed', googleSync: false });
+  store.outbox.push(item('1', 'bookings', BOOKING_ID, 'upsert', '2026-06-01T00:00:00.000Z'));
+  store.outbox.push(item('2', 'bookings', BOOKING_ID, 'upsert', '2026-06-02T00:00:00.000Z'));
+
+  const result = await syncGoogleCalendar(store, google, new Date('2026-06-06T18:00:00.000Z'));
+  assert.equal(result.ok, true);
+  assert.equal(result.pushed, 0);
+  assert.equal([...google.events.values()].length, 0);
+  assert.equal(store.links.has(`bookings:${BOOKING_ID}`), false);
+});

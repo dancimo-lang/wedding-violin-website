@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { decryptToken, encryptToken } from './crypto';
 import { GOOGLE_SCOPES } from './oauth';
 import type { BlockSyncRow, BookingSyncRow } from './events';
+import { EXISTING_BOOKING_SOURCE, isGoogleSyncExcluded } from '@/lib/bookings/existing-booking';
 import type { EventLink, OutboxItem, StoredConnection, SyncStore } from './sync';
 
 type ConnectionRow = {
@@ -144,7 +145,15 @@ export function createSupabaseSyncStore(encryptionKey: string): SyncStore {
         .maybeSingle();
       if (error) throw new Error('A booking could not be read for Google sync.');
       if (!data) return null;
+      const { data: markers, error: markerError } = await admin
+        .from('activity_events')
+        .select('metadata')
+        .eq('booking_id', id)
+        .eq('metadata->>source', EXISTING_BOOKING_SOURCE);
+      // If the marker cannot be read, do not risk pushing an excluded booking.
+      if (markerError) throw new Error('A booking could not be read for Google sync.');
       return {
+        googleSync: !isGoogleSyncExcluded((markers || []).map((row) => row.metadata)),
         id: String(data.id),
         status: String(data.status),
         eventDate: String(data.event_date),
