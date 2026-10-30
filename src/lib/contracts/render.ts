@@ -37,6 +37,8 @@ export type StoredRenderFields = {
   travelFeeCents: number;
   additionalFeesCents: number;
   discountCents: number;
+  /** Optional short plain-text note shown after Additional Agreed Fees when that fee is above zero. */
+  additionalFeesDescription?: string;
   totalCents: number;
   retainerCents: number;
   balanceCents: number;
@@ -277,7 +279,7 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
       SELECTED_PACKAGE: definition.title,
       PACKAGE_FEE: formatMoney(fields.packageFeeCents),
       TRAVEL_FEE: formatMoney(fields.travelFeeCents),
-      ADDITIONAL_FEES: formatMoney(fields.additionalFeesCents),
+      ADDITIONAL_FEES: `${formatMoney(fields.additionalFeesCents)}${additionalFeesNote(fields)}`,
       DISCOUNT: formatMoney(fields.discountCents),
       TOTAL: formatMoney(fields.totalCents),
       RETAINER: formatMoney(fields.retainerCents),
@@ -299,7 +301,7 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
     });
   }
 
-  const body = fillTemplate(fullWeddingTemplate, {
+  const body = fullWeddingFees(fillTemplate(fullWeddingTemplate, {
     CLIENT_1_NAME: filled(fields.client1Name),
     CLIENT_2_NAME: filled(fields.client2Name),
     EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -311,7 +313,7 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
     CLIENT_DATE: filled(signedOn),
     MUSICIAN_SIGNATURE: filled(musician),
     MUSICIAN_DATE: filled(musicianOn),
-  });
+  }), fields);
 
   // Section 11 already allows a written opt-out. The sentence is the one the
   // owner approved on the master agreement, so the checkbox is inside the
@@ -322,9 +324,52 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   return body.replace(marker, `${notice}${marker}`);
 }
 
+export const ADDITIONAL_FEES_DESCRIPTION_MAX = 80;
+
+/** Trimmed, single-line, at most 80 characters. */
+export function cleanAdditionalFeesDescription(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, ADDITIONAL_FEES_DESCRIPTION_MAX).trim();
+}
+
+function additionalFeesNote(fields: StoredRenderFields): string {
+  const description = cleanAdditionalFeesDescription(fields.additionalFeesDescription);
+  return description && fields.additionalFeesCents > 0 ? ` (${description})` : '';
+}
+
+const FULL_FEE_ORIGINAL = 'The total fee for all services described in this Agreement is:\n$3,000.00\n';
+const FULL_TRAVEL_ORIGINAL =
+  'No additional travel fees shall apply unless the event location, schedule, or scope of services changes significantly after execution of this Agreement.\n';
+const FULL_TRAVEL_REPLACEMENT =
+  "Weddings outside the Musician's usual service area may require a travel fee to account for mileage, travel time, lodging, parking, tolls, or other necessary travel expenses. Any travel fee or additional fee is listed above and has been agreed upon in writing before this Agreement is finalized. No other travel fees shall apply unless the event location, schedule, or scope of services changes significantly after execution of this Agreement.\n";
+const FULL_PAYMENT_ORIGINAL =
+  'A non-refundable retainer of $1,500.00 is required to reserve the event date.\nThe remaining balance of $1,500.00 is due no later than 30 days prior to the wedding date.\n';
+
+/**
+ * Owner-approved wording for a full wedding agreement with a travel or additional fee.
+ * With both fees at zero the text is returned unchanged, byte for byte.
+ */
+function fullWeddingFees(body: string, fields: StoredRenderFields): string {
+  if (!(fields.travelFeeCents > 0) && !(fields.additionalFeesCents > 0)) return body;
+  for (const part of [FULL_FEE_ORIGINAL, FULL_TRAVEL_ORIGINAL, FULL_PAYMENT_ORIGINAL]) {
+    if (!body.includes(part)) throw new Error('Full wedding agreement fee wording changed.');
+  }
+  const fees =
+    `Package Fee: $${formatMoney(fields.packageFeeCents)}\n` +
+    `Travel Fee: $${formatMoney(fields.travelFeeCents)}\n` +
+    `Additional Agreed Fees: $${formatMoney(fields.additionalFeesCents)}${additionalFeesNote(fields)}\n` +
+    `Total Contract Price: $${formatMoney(fields.totalCents)}\n`;
+  const payment =
+    `A non-refundable retainer of $${formatMoney(fields.retainerCents)} (50% of the Total Contract Price) is required to reserve the event date.\n` +
+    `The remaining balance of $${formatMoney(fields.balanceCents)} (50% of the Total Contract Price) is due no later than 30 days prior to the wedding date.\n`;
+  return body.replace(FULL_FEE_ORIGINAL, fees).replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT).replace(FULL_PAYMENT_ORIGINAL, payment);
+}
+
 export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields, keyof FeeSummary | 'templateId' | 'packageId'> & { templateId?: never }): StoredRenderFields {
   const definition = packageDefinition(summary.packageId);
+  const description = cleanAdditionalFeesDescription(fields.additionalFeesDescription);
   return {
+    ...(description && summary.additionalFeesCents > 0 ? { additionalFeesDescription: description } : {}),
     templateId: definition.templateId,
     packageId: summary.packageId,
     renderEdition: 2,

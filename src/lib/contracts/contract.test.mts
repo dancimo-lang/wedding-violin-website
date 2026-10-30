@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import test from 'node:test';
 import { findOpenObligations, generateBookingCode, isBookingCode } from './booking-code';
@@ -15,6 +16,9 @@ import {
 import { DUO_DJ_OVERTIME, guessPackageId, packageIncludesCocktailHour, SOLO_VIOLIN_OVERTIME, weddingMusicOvertimeClause } from './packages';
 import {
   BLANK,
+  cleanAdditionalFeesDescription,
+  feeSnapshot,
+  UNSIGNED,
   normalizeStoredFields,
   performanceTimeOrderMessage,
   placeholdersIn,
@@ -101,12 +105,25 @@ test('retainer, balance, and the due date stay exact', () => {
 
   const customFull = computeFees({
     packageId: 'FULL',
-    travelFeeCents: 100,
-    additionalFeesCents: 0,
+    travelFeeCents: 25000,
+    additionalFeesCents: 30001,
     discountCents: 0,
     weddingDateIso: '2026-06-15',
   });
-  assert.ok('error' in customFull);
+  assert.ok(!('error' in customFull));
+  if ('error' in customFull) return;
+  assert.equal(customFull.totalCents, 355001);
+  assert.equal(customFull.retainerCents, 177501);
+  assert.equal(customFull.balanceCents, 177500);
+
+  const discountedFull = computeFees({
+    packageId: 'FULL',
+    travelFeeCents: 0,
+    additionalFeesCents: 0,
+    discountCents: 100,
+    weddingDateIso: '2026-06-15',
+  });
+  assert.ok('error' in discountedFull);
 
   const tooMuchDiscount = computeFees({
     packageId: 'A',
@@ -790,4 +807,55 @@ test('public package ids from the booking form map to contract packages', () => 
   assert.equal(guessPackageId({ packageInterest: 'ceremony-duo', service: 'weddings' }), 'C');
   assert.equal(guessPackageId({ packageInterest: 'ceremony-cocktail', service: 'weddings' }), 'D');
   assert.equal(guessPackageId({ packageInterest: 'full-wedding-dj', service: 'weddings' }), 'FULL');
+});
+
+const fullZeroFields = {
+  templateId: 'full-wedding', packageId: 'FULL', renderEdition: 2, client1Name: 'Alex Rivera', client2Name: 'Jordan Lee',
+  weddingDateIso: '2026-06-15', venueName: 'The Barn', venueAddress: '1 Main St, Chicago, IL', ceremonyStart: '16:00', ceremonyEnd: '16:30',
+  cocktailStart: '', cocktailEnd: '', preludeStart: '', otherDetails: '', packageFeeCents: 300000, travelFeeCents: 0,
+  additionalFeesCents: 0, discountCents: 0, totalCents: 300000, retainerCents: 150000, balanceCents: 150000, finalPaymentDueDate: '2026-05-16',
+} as const;
+const fixtureSigned = { client1SignedName: 'Alex Rivera', client2SignedName: 'Jordan Lee', signedOn: 'June 1, 2026', photoOptOut: true, musicianSignedName: 'Daniel Cimo', musicianSignedOn: 'June 2, 2026' };
+
+test('full wedding with no travel or additional fee is byte-identical to the previous text', () => {
+  const dir = new URL('./__fixtures__/', import.meta.url);
+  assert.equal(renderContract({ ...fullZeroFields }, UNSIGNED), readFileSync(new URL('full-wedding-zero-fee.txt', dir), 'utf8'));
+  assert.equal(renderContract({ ...fullZeroFields }, fixtureSigned), readFileSync(new URL('full-wedding-zero-fee-signed.txt', dir), 'utf8'));
+  // A description with no additional fee changes nothing.
+  assert.equal(
+    renderContract({ ...fullZeroFields, additionalFeesDescription: 'Holiday' }, UNSIGNED),
+    readFileSync(new URL('full-wedding-zero-fee.txt', dir), 'utf8'),
+  );
+});
+
+test('full wedding with travel and additional fees uses the approved wording and the new total', () => {
+  const summary = computeFees({ packageId: 'FULL', travelFeeCents: 25000, additionalFeesCents: 30000, discountCents: 0, weddingDateIso: '2026-06-15' });
+  assert.ok(!('error' in summary));
+  if ('error' in summary) return;
+  const { templateId: _t, packageId: _p, ...rest } = fullZeroFields;
+  void _t; void _p;
+  const fields = feeSnapshot(summary, { ...rest, additionalFeesDescription: "  New Year's Day holiday fee  " } as never);
+  const text = renderContract(fields, UNSIGNED);
+  assert.ok(text.includes(
+    "2. Event Fee\nPackage Fee: $3,000.00\nTravel Fee: $250.00\nAdditional Agreed Fees: $300.00 (New Year's Day holiday fee)\nTotal Contract Price: $3,550.00\nThis fee includes:\n",
+  ));
+  assert.ok(text.includes("Standard setup and breakdown\nWeddings outside the Musician's usual service area may require a travel fee to account for mileage, travel time, lodging, parking, tolls, or other necessary travel expenses. Any travel fee or additional fee is listed above and has been agreed upon in writing before this Agreement is finalized. No other travel fees shall apply unless the event location, schedule, or scope of services changes significantly after execution of this Agreement.\n\n3."));
+  assert.ok(text.includes('A non-refundable retainer of $1,775.00 (50% of the Total Contract Price) is required to reserve the event date.\nThe remaining balance of $1,775.00 (50% of the Total Contract Price) is due no later than 30 days prior to the wedding date.\nAccepted payment methods:'));
+  assert.equal(text.includes('The total fee for all services'), false);
+  assert.equal(summary.retainerCents + summary.balanceCents, 355000);
+  const noNote = renderContract({ ...fields, additionalFeesDescription: undefined }, UNSIGNED);
+  assert.ok(noNote.includes('Additional Agreed Fees: $300.00\nTotal Contract Price'));
+});
+
+test('wedding music agreement shows the additional fee description only when set', () => {
+  const plain = renderContract(sampleFields, UNSIGNED);
+  assert.equal(renderContract({ ...sampleFields, additionalFeesDescription: '' }, UNSIGNED), plain);
+  const withFee = { ...sampleFields, additionalFeesCents: 30000 };
+  assert.match(renderContract(withFee, UNSIGNED), /Additional Agreed Fees: \$300\.00\n/);
+  assert.match(
+    renderContract({ ...withFee, additionalFeesDescription: "New Year's Day holiday fee" }, UNSIGNED),
+    /Additional Agreed Fees: \$300\.00 \(New Year's Day holiday fee\)\n/,
+  );
+  assert.equal(cleanAdditionalFeesDescription('  a\nb  '), 'a b');
+  assert.equal(cleanAdditionalFeesDescription('x'.repeat(100)).length, 80);
 });

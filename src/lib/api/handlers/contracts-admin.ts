@@ -5,7 +5,7 @@ import { generateBookingCode, isBookingCode } from '@/lib/contracts/booking-code
 import { contractOwnerEmail } from '@/lib/contracts/mail';
 import { centsToDollarString, computeFees, formatLongDate, formatMoney, parseDollarInput } from '@/lib/contracts/money';
 import { isPackageId, packageDefinition } from '@/lib/contracts/packages';
-import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
+import { cleanAdditionalFeesDescription, feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
 import { renderContractPdf } from '@/lib/contracts/pdf';
 import { validateTypedName } from '@/lib/contracts/signers';
 import { generateContractToken, isContractToken } from '@/lib/contracts/token';
@@ -194,6 +194,7 @@ export async function POST(request: Request) {
     cocktailEnd: cocktailEnd || '',
     preludeStart: preludeStart || '',
     otherDetails: otherDetails || '',
+    additionalFeesDescription: cleanAdditionalFeesDescription(body.additionalFeesDescription),
   });
 
   let preview = '';
