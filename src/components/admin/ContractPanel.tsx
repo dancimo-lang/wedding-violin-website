@@ -53,6 +53,7 @@ export function ContractPanel({
   const [otherDetails, setOtherDetails] = useState('');
   const [travelFee, setTravelFee] = useState('0');
   const [additionalFees, setAdditionalFees] = useState('0');
+  const [additionalFeesDescription, setAdditionalFeesDescription] = useState('');
   const [discount, setDiscount] = useState('0');
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -143,6 +144,7 @@ export function ContractPanel({
         setCeremonyEnd(next.ceremonyEnd);
         setTravelFee('0');
         setAdditionalFees('0');
+        setAdditionalFeesDescription('');
         setDiscount('0');
         setLoadedKey(recordKey);
       }
@@ -160,8 +162,8 @@ export function ContractPanel({
   const summary = useMemo(() => {
     return computeFees({
       packageId,
-      travelFeeCents: dollars(fullWedding ? '0' : travelFee),
-      additionalFeesCents: dollars(fullWedding ? '0' : additionalFees),
+      travelFeeCents: dollars(travelFee),
+      additionalFeesCents: dollars(additionalFees),
       discountCents: dollars(fullWedding ? '0' : discount),
       weddingDateIso: weddingDate,
     });
@@ -183,6 +185,7 @@ export function ContractPanel({
           cocktailEnd,
           preludeStart,
           otherDetails,
+          additionalFeesDescription,
         }),
         UNSIGNED,
       );
@@ -190,6 +193,7 @@ export function ContractPanel({
       return '';
     }
   }, [
+    additionalFeesDescription,
     ceremonyEnd,
     ceremonyStart,
     client1Name,
@@ -236,8 +240,9 @@ export function ContractPanel({
         leadId: source.leadId,
         bookingId: source.bookingId,
         packageId,
-        travelFee: fullWedding ? '0' : travelFee,
-        additionalFees: fullWedding ? '0' : additionalFees,
+        travelFee,
+        additionalFees,
+        additionalFeesDescription: additionalFeesDescription.trim().slice(0, 80),
         discount: fullWedding ? '0' : discount,
         client1Name,
         client2Name,
@@ -347,14 +352,24 @@ export function ContractPanel({
           )}
           {fullWedding && (
             <p className="text-sm text-gray-600">
-              This agreement states a total fee of $3,000.00, a retainer of $1,500.00, and a remaining balance of $1,500.00. It has no blank for a travel fee, an additional fee, or a discount.
+              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount.
             </p>
           )}
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Travel fee" value={fullWedding ? '0.00' : travelFee} onChange={setTravelFee} disabled={fullWedding} />
-            <Field label="Additional fees" value={fullWedding ? '0.00' : additionalFees} onChange={setAdditionalFees} disabled={fullWedding} />
-            <Field label="Discount" value={fullWedding ? '0.00' : discount} onChange={setDiscount} disabled={fullWedding} />
+            <Field label="Travel fee" value={travelFee} onChange={setTravelFee} />
+            <Field label="Additional fees" value={additionalFees} onChange={setAdditionalFees} />
+            {!fullWedding && <Field label="Discount" value={discount} onChange={setDiscount} />}
           </div>
+          <label className="block text-sm text-gray-700">
+            Additional fees description (optional, shown in the agreement)
+            <input
+              className={`${fieldClass} mt-1`}
+              value={additionalFeesDescription}
+              maxLength={80}
+              placeholder="e.g. New Year's Day holiday fee"
+              onChange={(event) => setAdditionalFeesDescription(event.target.value)}
+            />
+          </label>
           <FeeReadout summary={'error' in summary ? null : summary} error={'error' in summary ? summary.error : ''} packageFee={PACKAGES[packageId].feeCents} quotedPrice={source?.quotedPrice ?? null} />
           {preview && (
             <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-4 font-serif text-sm leading-6 text-gray-900">

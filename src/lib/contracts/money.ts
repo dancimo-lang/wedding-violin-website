@@ -111,11 +111,8 @@ export function computeFees(input: FeeInput): FeeSummary | { error: string } {
     return { error: 'Enter fees as dollar amounts with at most two decimal places.' };
   }
   if (input.packageId === 'FULL') {
-    if (input.travelFeeCents !== 0 || input.additionalFeesCents !== 0 || input.discountCents !== 0) {
-      return {
-        error:
-          'The full wedding agreement states a total fee of $3,000.00, a retainer of $1,500.00, and a remaining balance of $1,500.00. It has no blank for a travel fee, an additional fee, or a discount.',
-      };
+    if (input.discountCents !== 0) {
+      return { error: 'The full wedding agreement has no blank for a discount.' };
     }
   }
   const due = finalPaymentDueDate(input.weddingDateIso);
