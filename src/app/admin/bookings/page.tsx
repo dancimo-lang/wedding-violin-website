@@ -19,7 +19,24 @@ type Booking = {
   service_type: string;
   total_price: number;
   created_at: string;
+  clients: ClientInfo | ClientInfo[] | null;
 };
+
+type ClientInfo = {
+  name: string | null;
+  partner_name: string | null;
+  email: string | null;
+};
+
+function clientLabel(booking: Booking): string {
+  const client = Array.isArray(booking.clients) ? booking.clients[0] : booking.clients;
+  const names = [client?.name, client?.partner_name]
+    .map((value) => value?.trim())
+    .filter(Boolean);
+  if (names.length > 0) return names.join(' & ');
+  if (client?.email?.trim()) return client.email.trim();
+  return booking.client_id ? booking.client_id.slice(0, 8) : '-';
+}
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -33,7 +50,7 @@ export default function BookingsPage() {
       setLoading(true);
       const { data, error } = await supabase()
         .from('bookings')
-        .select('*')
+        .select('*, clients(name, partner_name, email)')
         .order('event_date', { ascending: true });
 
       if (cancelled) return;
@@ -112,7 +129,7 @@ export default function BookingsPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Client ID</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Couple</th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Venue</th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Service</th>
                   <th className="text-left py-4 px-6 text-sm font-medium text-gray-600">Event Date</th>
@@ -131,7 +148,7 @@ export default function BookingsPage() {
                         : 'border-b border-gray-100 hover:bg-gray-50'
                     }
                   >
-                    <td className="py-4 px-6 text-sm text-gray-900">{booking.client_id}</td>
+                    <td className="py-4 px-6 text-sm text-gray-900">{clientLabel(booking)}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.venue_name || '-'}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.service_type}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">{booking.event_date}</td>
