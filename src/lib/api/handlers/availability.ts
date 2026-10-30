@@ -10,6 +10,7 @@ import {
   type ExternalCalendarState,
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
+import { refreshStaleBusyForAvailability } from '@/lib/google/run';
 import { addCalendarDays, zonedWallTimeToUtc } from '@/lib/schedule/time';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -65,7 +66,16 @@ export async function GET(request: NextRequest) {
   const windowEnd = zonedWallTimeToUtc(addCalendarDays(to, 1), '00:00');
   if (!windowStart.ok || !windowEnd.ok) return manual();
 
-  const [settingsResult, bookingsResult, blocksResult, connectionResult, busyResult] = await Promise.all([
+  const readConnection = () =>
+    admin.from('google_calendar_connection').select('status, busy_synced_at').eq('id', 1).maybeSingle();
+  const readBusy = () =>
+    admin
+      .from('google_busy_times')
+      .select('id, starts_at, ends_at')
+      .lt('starts_at', new Date(windowEnd.utcMs).toISOString())
+      .gt('ends_at', new Date(windowStart.utcMs).toISOString());
+
+  const [settingsResult, bookingsResult, blocksResult, initialConnection, initialBusy] = await Promise.all([
     admin
       .from('business_settings')
       .select('setup_buffer_minutes, breakdown_buffer_minutes, travel_buffer_minutes, performer_count')
@@ -81,13 +91,23 @@ export async function GET(request: NextRequest) {
       .select('id, block_type, start_date, end_date, start_time, end_time, all_day')
       .lte('start_date', to)
       .gte('end_date', from),
-    admin.from('google_calendar_connection').select('status, busy_synced_at').eq('id', 1).maybeSingle(),
-    admin
-      .from('google_busy_times')
-      .select('id, starts_at, ends_at')
-      .lt('starts_at', new Date(windowEnd.utcMs).toISOString())
-      .gt('ends_at', new Date(windowStart.utcMs).toISOString()),
+    readConnection(),
+    readBusy(),
   ]);
+  let connectionResult = initialConnection;
+  let busyResult = initialBusy;
+
+  // Stored busy times older than the freshness limit: try one throttled,
+  // time-boxed busy-only refresh from Google, then re-read. On any failure the
+  // stale state stays and the answer is requires_manual_confirmation as before.
+  if (!connectionResult.error) {
+    const state = externalCalendarState(connectionResult.data);
+    if ((state === 'stale' || state === 'unsynced') && (await refreshStaleBusyForAvailability())) {
+      const [freshConnection, freshBusy] = await Promise.all([readConnection(), readBusy()]);
+      connectionResult = freshConnection;
+      busyResult = freshBusy;
+    }
+  }
 
   if (bookingsResult.error || blocksResult.error) return manual();
 
