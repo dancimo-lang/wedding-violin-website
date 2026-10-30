@@ -19,3 +19,8 @@ test('the shell reads the id from the browser path', () => {
   assert.equal(adminRecordId('/admin/leads/new', 'leads'), '');
   assert.equal(adminRecordId('/admin/bookings/entry', 'bookings'), '');
 });
+
+test('the add existing booking page is not rewritten to a booking detail', () => {
+  assert.equal(adminDetailShell('/admin/bookings/existing'), null);
+  assert.equal(adminRecordId('/admin/bookings/existing', 'bookings'), '');
+});

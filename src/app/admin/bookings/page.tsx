@@ -89,6 +89,13 @@ export default function BookingsPage() {
           <Plus size={20} />
           Add on calendar
         </Link>
+        <Link
+          href="/admin/bookings/existing"
+          className="flex items-center gap-2 border border-blue-600 text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg"
+        >
+          <Plus size={20} />
+          Add existing booking
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">

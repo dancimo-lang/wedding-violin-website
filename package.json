@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:schedule": "tsx --test src/lib/schedule/availability.test.mts src/lib/schedule/booking-status.test.mts src/lib/google/google.test.mts src/lib/google/sync.test.mts src/components/admin/GoogleConnectionCard.test.mts src/lib/api/match.test.mts src/lib/admin-shell-path.test.mts src/lib/contracts/contract.test.mts src/lib/payments/payments.test.mts src/lib/auth/password-reset.test.mts scripts/gmail-zelle-forwarder/forwarder.test.mts"
+    "test:schedule": "tsx --test src/lib/schedule/availability.test.mts src/lib/schedule/booking-status.test.mts src/lib/google/google.test.mts src/lib/google/sync.test.mts src/components/admin/GoogleConnectionCard.test.mts src/lib/api/match.test.mts src/lib/admin-shell-path.test.mts src/lib/contracts/contract.test.mts src/lib/payments/payments.test.mts src/lib/bookings/existing-booking.test.mts src/lib/auth/password-reset.test.mts scripts/gmail-zelle-forwarder/forwarder.test.mts"
   },
   "dependencies": {
     "@codesweetly/react-youtube-playlist": "^3.1.0",

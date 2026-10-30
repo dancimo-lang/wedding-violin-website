@@ -30,6 +30,8 @@ export type BookingSyncRow = {
   venueAddress: string | null;
   serviceType: string;
   clientName: string | null;
+  /** False for an existing booking the owner chose not to copy to Google. Never pushed. */
+  googleSync?: boolean;
 };
 
 export type BlockSyncRow = {
@@ -65,6 +67,7 @@ export function googleEventId(rowId: string): string {
 }
 
 export function bookingEventPayload(row: BookingSyncRow): GoogleEventPayload | null {
+  if (row.googleSync === false) return null;
   if (!SYNCED_BOOKING_STATUSES.has(row.status)) return null;
   const startTime = timeInput(row.startTime);
   const endTime = timeInput(row.endTime);
