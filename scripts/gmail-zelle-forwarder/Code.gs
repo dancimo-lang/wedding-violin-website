@@ -1,0 +1,282 @@
+// Chase Zelle forwarder for danielcimo.com.
+// Paste this whole file into a new Apps Script project (Extensions → Apps Script
+// from a Google account that can read dancimo@gmail.com, or script.google.com).
+// The parser below is identical to parse-zelle.js.
+
+/**
+ * Pure Chase Zelle alert parser. Google Apps Script pastes this file at the
+ * top of Code.gs. Node tests import it. Keep the two copies identical.
+ * Labels may omit the colon, and values may be on the next line or table cell.
+ */
+function parseZelleAlert(input) {
+  var source = input || {};
+  var plain = source.plain || source.text || '';
+  var fromPlain = parseZelleNormalized(normalizeZelleText(plain));
+  if (fromPlain.ok) return fromPlain;
+  if (source.html) {
+    var fromHtml = parseZelleNormalized(normalizeZelleText(htmlToZelleText(source.html)));
+    if (fromHtml.ok) return fromHtml;
+  }
+  return fromPlain.ok ? fromPlain : { ok: false, error: fromPlain.error || 'This alert could not be read.' };
+}
+
+function htmlToZelleText(html) {
+  return String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|h[1-6]|li|table)>/gi, '\n')
+    .replace(/<\/t[dh]>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ');
+}
+
+function normalizeZelleText(value) {
+  return String(value || '')
+    .replace(/\u00ae/g, '')
+    .replace(/&#174;|&reg;/gi, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/\r\n?/g, '\n');
+}
+
+function parseZelleNormalized(text) {
+  var amountMatch = /\bAmount\b\s*:?\s*\$?\s*([0-9][0-9,]*\.\d{2})/i.exec(text);
+  var sentMatch = /\bSent on\b\s*:?\s*([A-Za-z]{3,9}\.?\s+[0-9]{1,2},\s+[0-9]{4})/i.exec(text);
+  var txnMatch = /\bTransaction number\b\s*:?\s*([0-9]{6,22})/i.exec(text);
+  var memoMatch = /\bMemo\b\s*:?\s*([^\n]*)/i.exec(text);
+  var sender = zelleSenderName(text);
+  if (!amountMatch || !sentMatch || !txnMatch || !sender) {
+    return { ok: false, error: 'The Chase alert is missing the sender, amount, date, or transaction number.' };
+  }
+  var amountCents = zelleDollarsToCents(amountMatch[1]);
+  var sentOn = zelleSentOnToIso(sentMatch[1]);
+  if (amountCents == null || !sentOn) {
+    return { ok: false, error: 'The amount or sent-on date could not be read.' };
+  }
+  var memo = memoMatch ? cleanZelleMemo(memoMatch[1], sender) : '';
+  return {
+    ok: true,
+    senderName: sender,
+    amount: centsToZelleDollars(amountCents),
+    amountCents: amountCents,
+    sentOn: sentOn,
+    transactionNumber: txnMatch[1],
+    memo: memo,
+  };
+}
+
+function zelleSenderName(text) {
+  var match = /sent you money/i.exec(text);
+  if (!match) return '';
+  var before = text.slice(0, match.index).replace(/[\[\]]/g, ' ');
+  var words = before.split(/\s+/);
+  var stop = { CHASE: 1, ZELLE: 1, PAYMENT: 1, BADGE: 1 };
+  var name = [];
+  var i;
+  for (i = words.length - 1; i >= 0 && name.length < 6; i -= 1) {
+    var word = String(words[i] || '').replace(/^[^A-Za-z]+|[^A-Za-z.'’-]+$/g, '');
+    if (!word) continue;
+    if (stop[word.toUpperCase()]) {
+      if (name.length) break;
+      continue;
+    }
+    if (!/^[A-Za-z][A-Za-z.'’-]*$/.test(word)) break;
+    name.unshift(word);
+  }
+  return name.join(' ');
+}
+
+function escapeZelleRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function cleanZelleMemo(value, sender) {
+  var memo = String(value || '').replace(/\s+/g, ' ').trim();
+  var registeredAt = memo.search(/\bis registered\b/i);
+  if (registeredAt >= 0) {
+    memo = memo.slice(0, registeredAt).trim();
+    if (sender) {
+      var nameTail = new RegExp('(?:^|\\s)' + escapeZelleRegExp(sender) + '\\s*$', 'i');
+      memo = memo.replace(nameTail, '').trim();
+    }
+  }
+  memo = memo.replace(/\s+questions\?[\s\S]*$/i, '').trim();
+  if (/^n\/a$/i.test(memo)) return '';
+  return memo;
+}
+
+function zelleDollarsToCents(raw) {
+  var cleaned = String(raw || '').replace(/[$,\s]/g, '');
+  var match = /^(\d+)\.(\d{2})$/.exec(cleaned);
+  if (!match) return null;
+  var cents = Number(match[1]) * 100 + Number(match[2]);
+  if (!isFinite(cents)) return null;
+  return cents;
+}
+
+function centsToZelleDollars(cents) {
+  var whole = Math.floor(cents / 100);
+  var rest = String(cents % 100);
+  if (rest.length < 2) rest = '0' + rest;
+  return whole + '.' + rest;
+}
+
+function zelleSentOnToIso(label) {
+  var match = /^([A-Za-z]{3,9})\.?\s+([0-9]{1,2}),\s+([0-9]{4})$/.exec(String(label || '').trim());
+  if (!match) return '';
+  var months = {
+    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  };
+  var month = months[match[1].slice(0, 3).toLowerCase()];
+  var day = Number(match[2]);
+  var year = Number(match[3]);
+  if (!month || day < 1 || day > 31 || year < 2000) return '';
+  var utc = new Date(Date.UTC(year, month - 1, day));
+  if (utc.getUTCFullYear() !== year || utc.getUTCMonth() !== month - 1 || utc.getUTCDate() !== day) return '';
+  var monthText = month < 10 ? '0' + month : String(month);
+  var dayText = day < 10 ? '0' + day : String(day);
+  return year + '-' + monthText + '-' + dayText;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { parseZelleAlert: parseZelleAlert };
+}
+
+var ZELLE_QUERY = 'from:chase.com subject:"You received money with Zelle" -label:"Zelle/processed" -label:"Zelle/unmatched" newer_than:30d';
+
+function setup() {
+  ensureLabel_('Zelle/processed');
+  ensureLabel_('Zelle/unmatched');
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i += 1) {
+    if (triggers[i].getHandlerFunction() === 'processZelleAlerts') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger('processZelleAlerts').timeBased().everyMinutes(1).create();
+}
+
+function processZelleAlerts() {
+  var props = PropertiesService.getScriptProperties();
+  var secret = props.getProperty('ZELLE_INGEST_SECRET');
+  var url = props.getProperty('ZELLE_INGEST_URL');
+  if (!secret || !url) {
+    throw new Error('Set Script Properties ZELLE_INGEST_SECRET and ZELLE_INGEST_URL, then run setup.');
+  }
+  var onlyAfter = zelleOnlyAfterCutoff_(props.getProperty('ZELLE_ONLY_AFTER'));
+  var bypassSecret = props.getProperty('VERCEL_BYPASS_SECRET');
+  var threads = GmailApp.search(ZELLE_QUERY, 0, 10);
+  for (var i = 0; i < threads.length; i += 1) {
+    processThread_(threads[i], secret, url, bypassSecret, onlyAfter);
+  }
+}
+
+function processThread_(thread, secret, url, bypassSecret, onlyAfter) {
+  var messages = thread.getMessages();
+  var message = messages[messages.length - 1];
+  var parsed = parseZelleAlert({
+    plain: message.getPlainBody(),
+    html: message.getBody(),
+    subject: message.getSubject(),
+  });
+  if (!parsed.ok) {
+    ensureLabel_('Zelle/unmatched').addToThread(thread);
+    return;
+  }
+  if (zelleAlertBeforeCutoff_(parsed.sentOn, onlyAfter)) return;
+  var body = JSON.stringify({
+    senderName: parsed.senderName,
+    amountCents: parsed.amountCents,
+    sentOn: parsed.sentOn,
+    transactionNumber: parsed.transactionNumber,
+    memo: parsed.memo,
+  });
+  var timestamp = String(new Date().getTime());
+  var headers = {
+    'X-Zelle-Timestamp': timestamp,
+    'X-Zelle-Signature': signZelle_(secret, timestamp, body),
+  };
+  var bypass = zelleBypassHeaders_(bypassSecret)['x-vercel-protection-bypass'];
+  if (bypass) headers['x-vercel-protection-bypass'] = bypass;
+  var response;
+  try {
+    response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: body,
+      muteHttpExceptions: true,
+      headers: headers,
+    });
+  } catch (error) {
+    return;
+  }
+  var outcome = '';
+  var code = response.getResponseCode();
+  if (code >= 200 && code < 300) {
+    try {
+      outcome = JSON.parse(response.getContentText() || '{}').outcome || '';
+    } catch (error) {
+      outcome = '';
+    }
+  }
+  var label = zelleForwardLabel_(code, outcome);
+  if (label) ensureLabel_(label).addToThread(thread);
+}
+
+function zelleBypassHeaders_(bypassSecret) {
+  var bypass = String(bypassSecret || '').trim();
+  if (!bypass) return {};
+  return { 'x-vercel-protection-bypass': bypass };
+}
+
+function zelleForwardLabel_(statusCode, outcome) {
+  if (!(statusCode >= 200 && statusCode < 300)) return '';
+  if (outcome === 'unmatched' || outcome === 'ambiguous') return 'Zelle/unmatched';
+  return 'Zelle/processed';
+}
+
+function zelleOnlyAfterCutoff_(raw) {
+  if (raw == null) return '';
+  var cutoff = String(raw).trim();
+  if (!cutoff) return '';
+  if (!zelleIsoDateOk_(cutoff)) {
+    throw new Error('ZELLE_ONLY_AFTER must be an ISO date, YYYY-MM-DD.');
+  }
+  return cutoff;
+}
+
+function zelleAlertBeforeCutoff_(sentOn, cutoff) {
+  if (!cutoff) return false;
+  return String(sentOn || '') < cutoff;
+}
+
+function zelleIsoDateOk_(value) {
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  var year = Number(match[1]);
+  var month = Number(match[2]);
+  var day = Number(match[3]);
+  if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+  var utc = new Date(Date.UTC(year, month - 1, day));
+  return utc.getUTCFullYear() === year && utc.getUTCMonth() === month - 1 && utc.getUTCDate() === day;
+}
+
+function signZelle_(secret, timestamp, body) {
+  var bytes = Utilities.computeHmacSha256Signature(timestamp + '.' + body, secret);
+  var hex = [];
+  for (var i = 0; i < bytes.length; i += 1) {
+    var value = (bytes[i] + 256) % 256;
+    var text = value.toString(16);
+    hex.push(text.length === 1 ? '0' + text : text);
+  }
+  return hex.join('');
+}
+
+function ensureLabel_(name) {
+  var label = GmailApp.getUserLabelByName(name);
+  if (!label) label = GmailApp.createLabel(name);
+  return label;
+}

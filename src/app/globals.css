@@ -134,3 +134,117 @@ html:focus-within {
   color: var(--blue-300);
   text-shadow: 0 0 20px var(--primary-blue);
 }
+
+/* The public site uses light body text. Admin and login forms sit on white
+   cards, so their typed text must stay dark even when a utility class loses
+   to the unlayered body color. */
+.admin-readable input,
+.admin-readable textarea,
+.admin-readable select {
+  color: #111827;
+  background-color: #ffffff;
+  caret-color: #111827;
+}
+
+.admin-readable input::placeholder,
+.admin-readable textarea::placeholder {
+  color: #6b7280;
+}
+
+.admin-readable option {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+.admin-readable input:-webkit-autofill,
+.admin-readable textarea:-webkit-autofill,
+.admin-readable select:-webkit-autofill {
+  -webkit-text-fill-color: #111827;
+  caret-color: #111827;
+}
+
+.contract-sheet,
+.contract-sheet p,
+.contract-sheet h1,
+.contract-sheet h2,
+.contract-sheet li,
+.contract-sheet figcaption,
+.contract-sheet label,
+.contract-sheet pre,
+.pay-sheet,
+.pay-sheet p,
+.pay-sheet h1,
+.pay-sheet h2,
+.pay-sheet li,
+.pay-sheet figcaption,
+.pay-sheet label {
+  color: #111827;
+}
+
+.contract-document {
+  color: #111827;
+}
+
+.contract-signature-block {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  column-gap: 0.45rem;
+  align-items: baseline;
+  vertical-align: baseline;
+}
+
+.contract-signature-name {
+  font-family: var(--font-signature), "Dancing Script", cursive;
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.15;
+  padding: 0 0.2rem 0.28rem;
+  background-image: linear-gradient(#1f2937, #1f2937);
+  background-position: left bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  color: #111827;
+}
+
+.contract-signature-caption {
+  grid-column: 2;
+  margin-top: 0.15rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.contract-sheet input,
+.contract-sheet textarea,
+.contract-sheet select {
+  color: #111827;
+  background-color: #ffffff;
+  caret-color: #111827;
+}
+
+.contract-sheet button,
+.pay-sheet button {
+  color: #ffffff;
+}
+
+.contract-sheet [role='alert'],
+.pay-sheet [role='alert'] {
+  color: #b91c1c;
+}
+
+/* Filled buttons stay white. This outlined card button sits on the white
+   sheet, so its label has to stay dark. The rule is unlayered because a
+   Tailwind text color loses to the rules above and to the light body color. */
+.contract-sheet button.pay-card-button,
+.pay-sheet button.pay-card-button,
+button.pay-card-button {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+button.pay-card-button:disabled {
+  color: #6b7280;
+}

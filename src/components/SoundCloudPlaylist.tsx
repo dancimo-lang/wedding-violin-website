@@ -1,18 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 interface SoundCloudPlaylistProps {
   playlistUrl: string;
   height?: number;
 }
 
-export default function SoundCloudPlaylist({ playlistUrl, height = 350 }: SoundCloudPlaylistProps) {
-  const [isMounted, setIsMounted] = useState(false);
+function subscribe() {
+  return () => {};
+}
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+export default function SoundCloudPlaylist({ playlistUrl, height = 350 }: SoundCloudPlaylistProps) {
+  const isMounted = useSyncExternalStore(subscribe, () => true, () => false);
 
   if (!isMounted) {
     // Return placeholder with same dimensions to prevent layout shift

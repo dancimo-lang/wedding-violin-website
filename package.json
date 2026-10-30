@@ -6,17 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:schedule": "tsx --test src/lib/schedule/availability.test.mts src/lib/schedule/booking-status.test.mts src/lib/google/google.test.mts src/lib/google/sync.test.mts src/components/admin/GoogleConnectionCard.test.mts src/lib/api/match.test.mts src/lib/admin-shell-path.test.mts src/lib/contracts/contract.test.mts src/lib/payments/payments.test.mts src/lib/bookings/existing-booking.test.mts src/lib/auth/password-reset.test.mts scripts/gmail-zelle-forwarder/forwarder.test.mts"
   },
   "dependencies": {
     "@codesweetly/react-youtube-playlist": "^3.1.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "@vercel/blob": "^2.6.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.4",
+    "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "resend": "^6.9.1"
+    "resend": "^6.9.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -26,8 +32,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "sharp": "^0.34.5"
+    "tsx": "^4.23.15",
+    "typescript": "^5"
   }
 }

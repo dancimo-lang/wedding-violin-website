@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import Image from 'next/image';
+import { AvailabilityCheck } from '@/components/AvailabilityCheck';
 import site from '@/data/site.json';
 import { GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
@@ -36,6 +37,7 @@ export default function BookingPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
+            <AvailabilityCheck />
             <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
               {/* useSearchParams bails out of static rendering. The form stays outside that boundary so its HTML is in the first response; this fallback renders nothing. */}
               <Suspense fallback={null}>

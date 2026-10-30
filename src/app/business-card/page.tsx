@@ -39,7 +39,7 @@ export default function BusinessCardPage() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Business Card</h1>
-          <p className="text-gray-600">Traditional front/back wallet-sized business cards (3.5" x 2")</p>
+          <p className="text-gray-600">Traditional front/back wallet-sized business cards (3.5&quot; x 2&quot;)</p>
         </div>
 
         {/* Business Cards Container */}
@@ -191,10 +191,10 @@ export default function BusinessCardPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
             <h3 className="font-semibold text-blue-900 mb-2">Print Instructions</h3>
             <p className="text-blue-700 text-sm mb-2">
-              Use Ctrl+P (or Cmd+P) to print. Select "Save as PDF" for digital copies or choose your printer for physical cards.
+              Use Ctrl+P (or Cmd+P) to print. Select &quot;Save as PDF&quot; for digital copies or choose your printer for physical cards.
             </p>
             <p className="text-blue-700 text-sm">
-              <strong>Recommended:</strong> Print on cardstock paper, set margins to "None", and choose "Actual Size" for accurate 3.5" x 2" wallet-sized cards.
+              <strong>Recommended:</strong> Print on cardstock paper, set margins to &quot;None&quot;, and choose &quot;Actual Size&quot; for accurate 3.5&quot; x 2&quot; wallet-sized cards.
             </p>
           </div>
         </div>

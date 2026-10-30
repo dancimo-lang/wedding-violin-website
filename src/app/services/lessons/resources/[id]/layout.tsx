@@ -9,6 +9,13 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+export async function generateStaticParams() {
+  const tunes = await getTunes();
+  return tunes.map((tune) => ({ id: tune.id }));
+}
+
+export const dynamicParams = true;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const tunes = await getTunes();
