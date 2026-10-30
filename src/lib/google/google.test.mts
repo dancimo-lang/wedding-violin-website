@@ -100,6 +100,51 @@ test('event ids are deterministic and Google-safe, and block reasons are not cop
   assert.match(booking.summary, /Alex Rivera/);
   assert.match(booking.location || '', /100 Madonna Road/);
   assert.equal(JSON.stringify(booking).includes('special'), false);
+  assert.match(booking.description, /^Couple: Alex Rivera\n/);
+  assert.match(booking.description, /Status: Confirmed\. Added by the website/);
+
+  const withNotes = bookingEventPayload({
+    id,
+    status: 'Tentative',
+    eventDate: '2026-06-06',
+    startTime: null,
+    endTime: null,
+    venueName: 'Mission',
+    venueAddress: '100 Madonna Road',
+    serviceType: 'Wedding ceremony',
+    clientName: 'Alex Rivera',
+    partnerName: 'Sam Lee',
+    packageName: 'Ceremony + Cocktail',
+    specialRequests: '  Walk down: Canon in D\r\nRecessional: Signed, Sealed  ',
+  });
+  assert.ok(withNotes);
+  assert.equal(
+    withNotes.description,
+    [
+      'Couple: Alex Rivera & Sam Lee',
+      'Service: Wedding ceremony',
+      'Package: Ceremony + Cocktail',
+      'Venue: Mission, 100 Madonna Road',
+      '',
+      'Special requests:',
+      'Walk down: Canon in D\nRecessional: Signed, Sealed',
+      '',
+      'Status: Tentative. Added by the website. Change this booking on the website so both calendars stay in step.',
+    ].join('\n'),
+  );
+  const long = bookingEventPayload({ ...bookingRowBase(id), specialRequests: 'x'.repeat(20000) });
+  assert.ok(long && long.description.length <= 7500);
+  assert.match(long.description, /Status: /);
+  const blockOnly = blockEventPayload({
+    id,
+    blockType: 'Vacation',
+    startDate: '2026-06-06',
+    endDate: '2026-06-06',
+    startTime: null,
+    endTime: null,
+    allDay: true,
+  });
+  assert.equal(blockOnly.description, 'Blocked on the website calendar.');
   assert.equal(bookingEventPayload({ ...bookingRowBase(id), status: 'Cancelled' }), null);
 });
 
