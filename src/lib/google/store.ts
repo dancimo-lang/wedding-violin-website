@@ -139,7 +139,7 @@ export function createSupabaseSyncStore(encryptionKey: string): SyncStore {
       const { data, error } = await admin
         .from('bookings')
         .select(
-          'id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, service_type, clients(name)',
+          'id, status, event_date, performance_start_time, performance_end_time, venue_name, venue_address, service_type, special_requests, clients(name, partner_name), packages(name)',
         )
         .eq('id', id)
         .maybeSingle();
@@ -163,6 +163,9 @@ export function createSupabaseSyncStore(encryptionKey: string): SyncStore {
         venueAddress: data.venue_address,
         serviceType: String(data.service_type || 'Performance'),
         clientName: readName(data.clients),
+        partnerName: readField(data.clients, 'partner_name'),
+        packageName: readName(data.packages),
+        specialRequests: typeof data.special_requests === 'string' ? data.special_requests : null,
       } satisfies BookingSyncRow;
     },
 
@@ -328,6 +331,16 @@ function toConnection(row: ConnectionRow, encryptionKey: string): StoredConnecti
     calendarMode: row.calendar_mode,
     googleEmail: row.google_email,
   };
+}
+
+function readField(value: unknown, field: string): string | null {
+  if (!value) return null;
+  if (Array.isArray(value)) return readField(value[0], field);
+  if (typeof value === 'object' && field in value) {
+    const text = (value as Record<string, unknown>)[field];
+    return typeof text === 'string' && text.trim() ? text.trim() : null;
+  }
+  return null;
 }
 
 function readName(value: unknown): string | null {
