@@ -34,6 +34,7 @@ export default function Home() {
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/violinwalking.jpg"
+        rightSideImageAlt="Daniel walking on a tree-lined path in a dark suit, carrying a violin and bow"
         size="full"
       />
 
@@ -102,12 +103,13 @@ export default function Home() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-[4/5] bg-gradient-to-br from-blue-900/40 to-blue-800/30 rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(0,174,239,0.3)] ring-2 ring-blue-500/30">
-                <img
+              <div className="relative aspect-[4/5] bg-gradient-to-br from-blue-900/40 to-blue-800/30 rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(0,174,239,0.3)] ring-2 ring-blue-500/30">
+                <Image
                   src="/images/home-image.jpg"
-                  alt="Daniel Cimo - Professional Violinist"
-                  className="w-full h-full object-cover object-center"
-                  loading="eager"
+                  alt="Close-up of a violin scroll and a hand on the fingerboard"
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover object-center"
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-blue-500 to-blue-700 text-white p-6 rounded-2xl shadow-[0_0_30px_rgba(0,174,239,0.7)] ring-2 ring-blue-400/50">

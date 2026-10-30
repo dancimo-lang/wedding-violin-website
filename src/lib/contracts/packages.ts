@@ -82,6 +82,16 @@ export function guessPackageId(hints: {
   quotedPrice?: number | null;
 }): PackageId {
   const text = `${hints.packageInterest ?? ''} ${hints.service ?? ''}`.toLowerCase();
+  // Public package ids from src/data/weddings.json, sent by the booking form's ?package= prefill.
+  const publicIds: Record<string, PackageId> = {
+    'ceremony-solo': 'A',
+    'ceremony-solo-cocktail': 'B',
+    'ceremony-duo': 'C',
+    'ceremony-cocktail': 'D',
+    'full-wedding-dj': 'FULL',
+  };
+  const publicId = (hints.packageInterest ?? '').trim().toLowerCase();
+  if (publicId in publicIds) return publicIds[publicId];
   if (
     /\bfull wedding\b|\bfull-wedding\b|\bpackage\s*full\b/.test(text) ||
     /\$?\s*3,?000\b/.test(text) ||

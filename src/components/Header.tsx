@@ -35,7 +35,7 @@ export default function Header() {
     };
   }, []);
 
-  const googleHref = publishedGoogleHref(site.social.google, site.ownerNotes?.google);
+  const googleHref = publishedGoogleHref(site.social.google);
 
   const isActive = (href: string) => {
     if (href === '/') {
