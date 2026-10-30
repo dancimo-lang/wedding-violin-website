@@ -288,3 +288,37 @@ export function collapseOutbox(items: OutboxItem[]): { item: OutboxItem; ids: st
   }
   return [...groups.values()];
 }
+
+/**
+ * Busy-only refresh for the public availability check. Reads freeBusy and
+ * replaces the stored busy rows; it never touches the outbox, calendars, or events.
+ * Skips when the full sync has not picked a calendar yet, since the primary
+ * calendar mode needs the website's own events subtracted.
+ */
+export async function refreshBusyTimes(
+  store: SyncStore,
+  google: GoogleCalendarGateway,
+  now = new Date(),
+): Promise<SyncResult> {
+  try {
+    const connection = await store.getConnection();
+    if (!connection || connection.status !== 'connected' || !connection.calendarId) {
+      return { ...EMPTY, skipped: true };
+    }
+    if (!connection.refreshToken) {
+      return recordedReconnect(store, 'The saved Google connection could not be read. Use Reconnect Google.');
+    }
+    const accessToken = await google.refreshAccessToken(connection.refreshToken);
+    const window = busyPullWindow(now);
+    let intervals = await google.freeBusy(accessToken, window.timeMin, window.timeMax);
+    if (connection.calendarMode === 'primary' || connection.calendarId === 'primary') {
+      const own = await google.listWebsiteEventIntervals(accessToken, 'primary', window.timeMin, window.timeMax);
+      intervals = subtractIntervals(intervals, own);
+    }
+    await store.replaceBusy(intervals, now.toISOString());
+    return { ...EMPTY, busy: intervals.length };
+  } catch (error) {
+    if (error instanceof GoogleReconnectError) return recordedReconnect(store, RECONNECT_MESSAGE);
+    return recordedFailure(store, error);
+  }
+}

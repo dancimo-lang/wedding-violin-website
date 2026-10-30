@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { BlockSyncRow, BookingSyncRow, GoogleEventPayload, Interval } from './events';
 import { GoogleApiError, GoogleReconnectError, type GoogleCalendarGateway } from './gateway';
-import { syncGoogleCalendar, type EventLink, type OutboxItem, type StoredConnection, type SyncStore } from './sync';
+import { refreshBusyTimes, syncGoogleCalendar, type EventLink, type OutboxItem, type StoredConnection, type SyncStore } from './sync';
 
 const BOOKING_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const BLOCK_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
@@ -290,4 +290,31 @@ test('never pushes an existing booking the owner kept off Google, on upsert or a
   assert.equal(result.pushed, 0);
   assert.equal([...google.events.values()].length, 0);
   assert.equal(store.links.has(`bookings:${BOOKING_ID}`), false);
+});
+
+test('busy-only refresh reads freeBusy and never touches the outbox or events', async () => {
+  const google = fakeGoogle();
+  const store = memoryStore();
+  store.outbox.push(item('1', 'bookings', BOOKING_ID, 'upsert', '2026-06-01T00:00:00.000Z'));
+  google.busy = [{ startMs: 10, endMs: 20 }];
+  const result = await refreshBusyTimes(store, google, new Date('2026-06-06T18:00:00.000Z'));
+  assert.equal(result.ok, true);
+  assert.equal(result.busy, 1);
+  assert.deepEqual(store.savedBusy, [{ startMs: 10, endMs: 20 }]);
+  assert.equal(store.outbox.length, 1);
+  assert.equal(google.events.size, 0);
+});
+
+test('busy-only refresh records a safe failure and skips when not set up', async () => {
+  const google = fakeGoogle();
+  google.failBusy = true;
+  const store = memoryStore();
+  const result = await refreshBusyTimes(store, google, new Date('2026-06-06T18:00:00.000Z'));
+  assert.equal(result.ok, false);
+  assert.equal(store.savedBusy, null);
+  assert.equal(store.failures.join(' ').includes('ya29'), false);
+  const skipped = await refreshBusyTimes(memoryStore({ status: 'disconnected' }), fakeGoogle());
+  assert.equal(skipped.skipped, true);
+  const noCalendar = await refreshBusyTimes(memoryStore({ calendarId: null }), fakeGoogle());
+  assert.equal(noCalendar.skipped, true);
 });
