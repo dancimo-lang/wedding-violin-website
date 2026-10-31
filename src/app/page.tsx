@@ -141,9 +141,9 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section: real Google reviews */}
-      <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
+      <section className="py-20 bg-gradient-to-br from-rose-50 to-amber-50">
         <div className="container mx-auto px-4">
-          <ReviewsSection page="home" title="What Clients Say" variant="dark" />
+          <ReviewsSection page="home" title="What Clients Say" />
         </div>
       </section>
 
