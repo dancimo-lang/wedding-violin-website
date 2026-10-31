@@ -7,6 +7,14 @@ import {
   getServerBookingPrefill,
   subscribeBookingPrefill,
 } from './booking-prefill-store';
+import { BookingCalendar } from '@/components/BookingCalendar';
+
+function formatDate(date: string) {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+  });
+}
 
 const serviceOptions = [
   { value: 'weddings', label: 'Wedding Performance' },
@@ -76,7 +84,14 @@ export default function BookingForm() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit form');
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        setStatus('error');
+        setErrorMessage(
+          response.status === 409 || response.status === 400
+            ? body.error || 'Please check the form and try again.'
+            : 'Something went wrong. Please try again or email directly.'
+        );
+        return;
       }
 
       setStatus('success');
@@ -197,17 +212,33 @@ export default function BookingForm() {
 
       {/* Event Date */}
       <div>
-        <label htmlFor="eventDate" className="block text-sm font-medium text-gray-700 mb-2">
-          Event Date / Timeline
-        </label>
-        <input
-          type="date"
+        <p id="eventDate-label" className="block text-sm font-medium text-gray-700 mb-2">
+          Event Date
+        </p>
+        <BookingCalendar
           id="eventDate"
-          name="eventDate"
           value={formData.eventDate}
-          onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+          onChange={(date) => setFormData((prev) => ({ ...prev, eventDate: date }))}
         />
+        <p className="mt-2 text-sm text-gray-600" aria-live="polite">
+          {formData.eventDate ? (
+            <>
+              Selected: <span className="font-medium text-gray-900">{formatDate(formData.eventDate)}</span>{' '}
+              <button
+                type="button"
+                className="text-amber-700 hover:underline"
+                onClick={() => setFormData((prev) => ({ ...prev, eventDate: '' }))}
+              >
+                Clear
+              </button>
+            </>
+          ) : (
+            'Pick a date, or leave it blank if you are not sure yet.'
+          )}
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          Greyed-out dates are unavailable. Daniel personally confirms every date. Times are Pacific Time.
+        </p>
       </div>
 
       <div className="border-t border-gray-200 pt-6">

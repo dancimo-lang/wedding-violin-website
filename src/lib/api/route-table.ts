@@ -38,6 +38,7 @@ export const apiRouteCatalog: readonly ApiRouteSpec[] = [
   { id: 'admin-tunes', methods: ['POST'], segments: ['admin', 'tunes'] },
   { id: 'admin-tune', methods: ['DELETE'], segments: ['admin', 'tunes', param('id')] },
   { id: 'availability', methods: ['GET'], segments: ['availability'] },
+  { id: 'availability-dates', methods: ['GET'], segments: ['availability', 'dates'] },
   { id: 'contact', methods: ['POST'], segments: ['contact'] },
   { id: 'contract-view', methods: ['GET'], segments: ['contracts', 'view'] },
   { id: 'contract-sign', methods: ['POST'], segments: ['contracts', 'sign'] },

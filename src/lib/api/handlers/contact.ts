@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { todayInTimeZone } from '@/lib/schedule/time';
+import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const SERVICE_OPTIONS = new Set(['weddings', 'proposal', 'lessons', 'recording', 'other']);
@@ -99,6 +101,22 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
+
+    if (eventDate) {
+      if (eventDate < todayInTimeZone()) {
+        return NextResponse.json(
+          { error: 'That date has already passed. Please pick an upcoming date.' },
+          { status: 400 }
+        );
+      }
+      const taken = await loadUnavailableDates(supabase, eventDate, eventDate);
+      if (taken && taken.includes(eventDate)) {
+        return NextResponse.json(
+          { error: 'Sorry, Daniel is already booked on that date. Please choose another date, or call or text to talk it over.' },
+          { status: 409 }
+        );
+      }
+    }
     const normalizedEmail = email as string;
 
     const { data: existingClient, error: lookupError } = await supabase
