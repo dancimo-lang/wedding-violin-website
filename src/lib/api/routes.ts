@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { DELETE as deleteTune } from './handlers/admin-tune';
 import { POST as postTune } from './handlers/admin-tunes';
 import { GET as getAvailability } from './handlers/availability';
+import { GET as getAvailabilityDates } from './handlers/availability-dates';
 import { POST as postBookingStatus } from './handlers/booking-status';
 import { DELETE as deleteLead } from './handlers/delete-lead';
 import { POST as postExistingBooking } from './handlers/existing-booking';
@@ -64,6 +65,7 @@ const handlers: Record<string, ApiHandler> = {
   'admin-tunes': mount(postTune),
   'admin-tune': ({ request, params }) => deleteTune(request, { params: Promise.resolve({ id: params.id ?? '' }) }),
   availability: mount(getAvailability),
+  'availability-dates': () => getAvailabilityDates(),
   contact: mount(postContact),
   'cron-google-sync': mount(syncFromCron),
   'payments-zelle': ({ request, rawBody }) => postZelle(request, rawBody ?? ''),
