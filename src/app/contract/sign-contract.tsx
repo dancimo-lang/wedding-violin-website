@@ -65,7 +65,7 @@ function EventDetailFields({
           {field.label}
           <input
             id={`event-${field.key}`}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            className="mt-1 w-full rounded-lg border-2 border-gray-400 px-3 py-2 text-base"
             type={field.kind === 'time' ? 'time' : 'text'}
             required
             value={values[field.key]}
@@ -124,8 +124,11 @@ export function SignContract() {
       setView(payload);
       setPhotoOptOut(payload.photoOptOut);
       setEventDetails(emptyCoupleDetailDraft());
-      setClient1Name(payload.canSign ? '' : payload.client1Name || '');
-      setClient2Name(payload.canSign ? '' : payload.client2Name || '');
+      // Start the name boxes with the names entered in admin so the couple
+      // sees exactly where to sign; they can still correct them.
+      const stored = payload.canSign && payload.renderFields ? normalizeStoredFields(payload.renderFields) : null;
+      setClient1Name(payload.canSign ? stored?.client1Name?.trim() || '' : payload.client1Name || '');
+      setClient2Name(payload.canSign ? stored?.client2Name?.trim() || '' : payload.client2Name || '');
     }
     load().catch(() => {
       if (!cancelled) setLoadError('This signing link could not be opened.');
@@ -244,6 +247,13 @@ export function SignContract() {
                   This agreement is signed{finished.musicianSigned ? ' by both parties' : ''}.
                 </p>
               )}
+              {view?.canSign && !signedFacts && (
+                <p className="mt-6 rounded-lg bg-blue-50 px-4 py-3 text-sm">
+                  The signature lines in the agreement are filled in for you. To sign, scroll past the agreement and
+                  type your names in the boxes below it.{' '}
+                  <a href="#sign-here" className="font-semibold underline">Go to signing</a>
+                </p>
+              )}
               <ContractText
                 className="mt-6"
                 text={documentText}
@@ -253,7 +263,8 @@ export function SignContract() {
 
               {view?.canSign && !signedFacts && (
                 <form
-                  className="mt-6 space-y-4"
+                  id="sign-here"
+                  className="mt-6 scroll-mt-4 space-y-4"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void sign();
@@ -279,7 +290,7 @@ export function SignContract() {
                   <label className="block text-sm">
                     Client 1 full legal name
                     <input
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className="mt-1 w-full rounded-lg border-2 border-gray-400 px-3 py-2 text-base"
                       value={client1Name}
                       onChange={(event) => setClient1Name(event.target.value)}
                       autoComplete="name"
@@ -288,7 +299,7 @@ export function SignContract() {
                   <label className="block text-sm">
                     Client 2 full legal name, if there is a second client
                     <input
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className="mt-1 w-full rounded-lg border-2 border-gray-400 px-3 py-2 text-base"
                       value={client2Name}
                       onChange={(event) => setClient2Name(event.target.value)}
                       autoComplete="name"
