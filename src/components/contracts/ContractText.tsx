@@ -1,7 +1,7 @@
 import { presentSignedContract } from '@/lib/contracts/signature-style';
 
 const frameClass =
-  'contract-document max-h-[36rem] overflow-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 font-serif text-sm leading-6';
+  'contract-document md:max-h-[36rem] md:overflow-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 font-serif text-sm leading-6';
 
 /**
  * Draws a locked agreement. Signature names use the script font, and a Pacific-time
