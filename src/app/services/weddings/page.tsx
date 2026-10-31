@@ -6,6 +6,7 @@ import Hero from '@/components/Hero';
 import PackageCard from '@/components/PackageCard';
 import SingleVideo from '@/components/SingleVideo';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
+import music from '@/data/music.json';
 import CTASection from '@/components/CTASection';
 import ReviewsSection from '@/components/ReviewsSection';
 import { GOOGLE_RATING, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
@@ -194,7 +195,7 @@ export default function WeddingsPage() {
             <p className="text-lg text-gray-700 text-center mb-8 max-w-2xl mx-auto">
               Violin and Guitar versions of commonly requested Ceremony songs
             </p>
-            <SoundCloudPlaylist playlistUrl="https://soundcloud.com/daniel-francesco-cimo/sets/wedding-violin-sampler" />
+            <SoundCloudPlaylist playlistUrl={music.soundcloud.embedUrl} />
             <p className="text-center text-sm text-gray-600 mt-4">
               Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies
             </p>

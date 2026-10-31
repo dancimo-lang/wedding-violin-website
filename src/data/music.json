@@ -47,6 +47,7 @@
   },
   "soundcloud": {
     "playlistUrl": "https://soundcloud.com/daniel-francesco-cimo/sets/wedding-violin-sampler",
+    "embedUrl": "https://api.soundcloud.com/playlists/1760859327",
     "note": "Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies"
   },
   "cta": {
