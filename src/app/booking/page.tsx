@@ -4,6 +4,7 @@ import site from '@/data/site.json';
 import { GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import BookingForm from './booking-form';
+import ReviewsSection from '@/components/ReviewsSection';
 import BookingPrefill from './booking-prefill';
 
 export default function BookingPage() {
@@ -35,6 +36,7 @@ export default function BookingPage() {
       {/* Form Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
+          <ReviewsSection page="booking" short variant="dark" className="mb-12" />
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
               {/* useSearchParams bails out of static rendering. The form stays outside that boundary so its HTML is in the first response; this fallback renders nothing. */}

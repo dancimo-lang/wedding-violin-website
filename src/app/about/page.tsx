@@ -1,3 +1,4 @@
+import ReviewsSection from '@/components/ReviewsSection';
 import Link from 'next/link';
 import Image from 'next/image';
 import Hero from '@/components/Hero';
@@ -83,6 +84,13 @@ export default function AboutPage() {
           </div>
         </section>
       )}
+
+      {/* Review from a fellow musician (Google) */}
+      <section id="reviews" className="py-16">
+        <div className="container mx-auto px-4">
+          <ReviewsSection page="about" title="From a Fellow Musician" />
+        </div>
+      </section>
 
       {/* Philosophy Section */}
       <section className="py-20 bg-gray-50">
