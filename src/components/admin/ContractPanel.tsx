@@ -55,6 +55,9 @@ export function ContractPanel({
   const [additionalFees, setAdditionalFees] = useState('0');
   const [additionalFeesDescription, setAdditionalFeesDescription] = useState('');
   const [discount, setDiscount] = useState('0');
+  const [performanceFee, setPerformanceFee] = useState('');
+  const [eventType, setEventType] = useState('');
+  const [performanceDescription, setPerformanceDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -159,6 +162,7 @@ export function ContractPanel({
   }, [leadId, bookingId, recordKey, loadedKey, reloadContracts]);
 
   const fullWedding = packageId === 'FULL';
+  const privateEvent = packageId === 'EVENT';
   const summary = useMemo(() => {
     return computeFees({
       packageId,
@@ -166,8 +170,9 @@ export function ContractPanel({
       additionalFeesCents: dollars(additionalFees),
       discountCents: dollars(fullWedding ? '0' : discount),
       weddingDateIso: weddingDate,
+      performanceFeeCents: privateEvent ? dollars(performanceFee) : undefined,
     });
-  }, [additionalFees, discount, fullWedding, packageId, travelFee, weddingDate]);
+  }, [additionalFees, discount, fullWedding, packageId, performanceFee, privateEvent, travelFee, weddingDate]);
 
   const preview = useMemo(() => {
     if ('error' in summary || !client1Name.trim() || !weddingDate) return '';
@@ -186,6 +191,7 @@ export function ContractPanel({
           preludeStart,
           otherDetails,
           additionalFeesDescription,
+          ...(privateEvent ? { eventType, performanceDescription } : {}),
         }),
         UNSIGNED,
       );
@@ -200,8 +206,11 @@ export function ContractPanel({
     client2Name,
     cocktailEnd,
     cocktailStart,
+    eventType,
     otherDetails,
+    performanceDescription,
     preludeStart,
+    privateEvent,
     summary,
     venueAddress,
     venueName,
@@ -211,6 +220,7 @@ export function ContractPanel({
   const blocking = contracts.find((row) => row.status === 'sent' || row.status === 'viewed' || row.status === 'signed');
   const missingDetailMessage = missingCoupleDetailMessage({
     packageId,
+    ceremonyEnd,
     venueName,
     venueAddress,
     ceremonyStart,
@@ -220,8 +230,8 @@ export function ContractPanel({
   const timeOrderMessage = performanceTimeOrderMessage({
     ceremonyStart,
     ceremonyEnd,
-    cocktailStart: fullWedding ? '' : cocktailStart,
-    cocktailEnd: fullWedding ? '' : cocktailEnd,
+    cocktailStart: fullWedding || privateEvent ? '' : cocktailStart,
+    cocktailEnd: fullWedding || privateEvent ? '' : cocktailEnd,
   });
 
   const send = async () => {
@@ -255,6 +265,9 @@ export function ContractPanel({
         cocktailEnd,
         preludeStart,
         otherDetails,
+        ...(privateEvent
+          ? { performanceFee, eventType: eventType.trim(), performanceDescription: performanceDescription.trim(), cocktailStart: '', cocktailEnd: '', preludeStart: '' }
+          : {}),
       }),
     });
     const payload = (await response.json()) as { error?: string; emailed?: boolean; signingUrl?: string; bookingCode?: string };
@@ -321,24 +334,56 @@ export function ContractPanel({
       {creating && !blocking && (
         <div className="mt-4 space-y-4">
           <label className="block text-sm text-gray-700">
-            Package
+            Contract type / package
             <select className={`${fieldClass} mt-1`} value={packageId} onChange={(event) => setPackageId(event.target.value as PackageId)}>
               {(Object.keys(PACKAGES) as PackageId[]).map((id) => (
                 <option key={id} value={id}>
-                  {PACKAGES[id].title} — ${formatMoney(PACKAGES[id].feeCents)}
+                  {PACKAGES[id].customFee
+                    ? `${PACKAGES[id].title} agreement (non-wedding) — fee entered below`
+                    : `${PACKAGES[id].title} — $${formatMoney(PACKAGES[id].feeCents)}`}
                 </option>
               ))}
             </select>
           </label>
+          {privateEvent && (
+            <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Private event agreement for birthdays, parties, corporate and other non-wedding events. Its wording is a draft pending approval.
+            </p>
+          )}
+          {privateEvent && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Event type (e.g. Birthday party)" value={eventType} onChange={setEventType} />
+              <Field label="Performance fee" value={performanceFee} onChange={setPerformanceFee} />
+              <label className="block text-sm text-gray-700 md:col-span-2">
+                Performance description (shown in section 1)
+                <input
+                  className={`${fieldClass} mt-1`}
+                  value={performanceDescription}
+                  maxLength={600}
+                  placeholder="e.g. Solo violin, two hours of background music during dinner"
+                  onChange={(event) => setPerformanceDescription(event.target.value)}
+                />
+              </label>
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Client 1" value={client1Name} onChange={setClient1Name} />
             <Field label="Client 2, if any" value={client2Name} onChange={setClient2Name} />
-            <Field label="Wedding date" value={weddingDate} onChange={setWeddingDate} type="date" />
-            <Field label="Ceremony start" value={ceremonyStart} onChange={setCeremonyStart} type="time" />
+            <Field label={privateEvent ? 'Event date' : 'Wedding date'} value={weddingDate} onChange={setWeddingDate} type="date" />
+            <Field label={privateEvent ? 'Event start' : 'Ceremony start'} value={ceremonyStart} onChange={setCeremonyStart} type="time" />
             <Field label="Venue name" value={venueName} onChange={setVenueName} />
             <Field label="Venue address" value={venueAddress} onChange={setVenueAddress} />
           </div>
-          {!fullWedding && (
+          {privateEvent && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Event end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />
+              <label className="block text-sm text-gray-700">
+                Other agreed performance details
+                <input className={`${fieldClass} mt-1`} value={otherDetails} onChange={(event) => setOtherDetails(event.target.value)} />
+              </label>
+            </div>
+          )}
+          {!fullWedding && !privateEvent && (
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Prelude begins" value={preludeStart} onChange={setPreludeStart} type="time" />
               <Field label="Ceremony end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />
@@ -370,12 +415,8 @@ export function ContractPanel({
               onChange={(event) => setAdditionalFeesDescription(event.target.value)}
             />
           </label>
-          <FeeReadout summary={'error' in summary ? null : summary} error={'error' in summary ? summary.error : ''} packageFee={PACKAGES[packageId].feeCents} quotedPrice={source?.quotedPrice ?? null} />
-          {preview && (
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-gray-50 p-4 font-serif text-sm leading-6 text-gray-900">
-              {preview}
-            </pre>
-          )}
+          <FeeReadout summary={'error' in summary ? null : summary} error={'error' in summary ? summary.error : ''} packageFee={'error' in summary ? PACKAGES[packageId].feeCents : summary.packageFeeCents} quotedPrice={source?.quotedPrice ?? null} />
+          {preview && <ContractText className="max-h-96 overflow-auto md:max-h-96" text={preview} />}
           {missingDetailMessage ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-900">{missingDetailMessage}</p> : null}
           {timeOrderMessage ? <p className="rounded-lg bg-red-50 px-4 py-3 text-red-700">{timeOrderMessage}</p> : null}
           <div className="flex flex-wrap gap-2">
