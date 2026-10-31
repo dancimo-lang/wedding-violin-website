@@ -157,7 +157,7 @@ export default function BookingForm() {
       {/* Phone */}
       <div>
         <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-          Phone <span className="text-gray-400">(optional)</span>
+          Phone <span className="text-gray-600">(optional)</span>
         </label>
         <input
           type="tel"
@@ -246,7 +246,7 @@ export default function BookingForm() {
         <div className="space-y-6">
           <div>
             <label htmlFor="partnerName" className="block text-sm font-medium text-gray-700 mb-2">
-              Partner&apos;s name <span className="text-gray-400">(optional)</span>
+              Partner&apos;s name <span className="text-gray-600">(optional)</span>
             </label>
             <input
               type="text"
@@ -259,7 +259,7 @@ export default function BookingForm() {
           </div>
           <div>
             <label htmlFor="venueName" className="block text-sm font-medium text-gray-700 mb-2">
-              Venue <span className="text-gray-400">(optional)</span>
+              Venue <span className="text-gray-600">(optional)</span>
             </label>
             <input
               type="text"
@@ -273,7 +273,7 @@ export default function BookingForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="eventStart" className="block text-sm font-medium text-gray-700 mb-2">
-                Start time <span className="text-gray-400">(optional)</span>
+                Start time <span className="text-gray-600">(optional)</span>
               </label>
               <input
                 type="time"
@@ -286,7 +286,7 @@ export default function BookingForm() {
             </div>
             <div>
               <label htmlFor="guestCount" className="block text-sm font-medium text-gray-700 mb-2">
-                Guest count <span className="text-gray-400">(optional)</span>
+                Guest count <span className="text-gray-600">(optional)</span>
               </label>
               <input
                 type="number"
@@ -301,7 +301,7 @@ export default function BookingForm() {
           </div>
           <div>
             <label htmlFor="howFound" className="block text-sm font-medium text-gray-700 mb-2">
-              How did you hear about Daniel? <span className="text-gray-400">(optional)</span>
+              How did you hear about Daniel? <span className="text-gray-600">(optional)</span>
             </label>
             <select
               id="howFound"
@@ -351,7 +351,7 @@ export default function BookingForm() {
         />
         <label htmlFor="privacy" className="text-sm text-gray-600">
           I agree to the{' '}
-          <a href="/privacy" className="text-amber-700 hover:underline">
+          <a href="/privacy" className="text-amber-800 underline underline-offset-2 hover:text-amber-900">
             Privacy Policy
           </a>{' '}
           and consent to being contacted about my inquiry.{' '}

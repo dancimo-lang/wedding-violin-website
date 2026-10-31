@@ -5,6 +5,8 @@ import Hero from '@/components/Hero';
 import ServiceCard from '@/components/ServiceCard';
 import TestimonialCard from '@/components/TestimonialCard';
 import CTASection from '@/components/CTASection';
+import SingleVideo from '@/components/SingleVideo';
+import { getWeddingVideoEmbeds } from '@/data/weddingVideos';
 import site from '@/data/site.json';
 import services from '@/data/services.json';
 import testimonials from '@/data/testimonials.json';
@@ -17,6 +19,7 @@ export default function Home() {
   const googleReviewsUrl = GOOGLE_REVIEWS_URL.trim();
   const showTestimonials = publishedTestimonials.length > 0;
   const showGoogleInvite = !showTestimonials && googleReviewsUrl.length > 0;
+  const homeVideo = getWeddingVideoEmbeds()[0];
 
   return (
     <>
@@ -30,13 +33,37 @@ export default function Home() {
         secondaryCtaText="Book Now"
         secondaryCtaHref="/booking"
         tertiaryCtaText="Watch Video"
-        tertiaryCtaOnClick={() => window.location.href = '/music#video-player'}
+        tertiaryCtaOnClick={() => {
+          const target = document.getElementById('see-us-play');
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          else window.location.href = '/music#video-player';
+        }}
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/violinwalking.jpg"
         rightSideImageAlt="Daniel walking on a tree-lined path in a dark suit, carrying a violin and bow"
         size="full"
       />
+
+      {/* Featured performance clip (click-to-load) */}
+      {homeVideo && (
+        <section id="see-us-play" aria-labelledby="see-us-play-heading" className="py-16 scroll-mt-20">
+          <div className="container mx-auto px-4">
+            <h2
+              id="see-us-play-heading"
+              className="text-3xl md:text-4xl font-bold text-white mb-8 text-center drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]"
+            >
+              See Us Play
+            </h2>
+            <SingleVideo
+              videoId={homeVideo.videoId}
+              title={homeVideo.title}
+              orientation={homeVideo.orientation}
+              showTitle={false}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Services Section */}
       <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
