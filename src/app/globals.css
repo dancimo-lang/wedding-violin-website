@@ -248,3 +248,47 @@ button.pay-card-button {
 button.pay-card-button:disabled {
   color: #6b7280;
 }
+
+/* Agreement layout: label and value wrap cleanly on phones. */
+.contract-field {
+  overflow-wrap: anywhere;
+}
+
+.contract-field-label {
+  font-weight: 600;
+}
+
+.contract-signature-block {
+  margin-left: 0.45rem;
+  grid-template-columns: auto;
+}
+
+.contract-signature-caption {
+  grid-column: 1;
+  white-space: normal;
+}
+
+.contract-inline-input {
+  display: inline-block;
+  min-width: 10rem;
+  max-width: 100%;
+  border: 0;
+  border-bottom: 2px solid #1d4ed8;
+  background-color: #eff6ff !important;
+  padding: 0.1rem 0.4rem;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  vertical-align: baseline;
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.contract-inline-input:focus {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 1px;
+}
+
+.contract-inline-input[aria-invalid='true'] {
+  border-bottom-color: #b91c1c;
+  background-color: #fef2f2 !important;
+}

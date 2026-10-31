@@ -1,15 +1,22 @@
+/** Wedding packages with a fixed price. Used by the existing-booking form. */
 export const PACKAGE_IDS = ['A', 'B', 'C', 'D', 'FULL'] as const;
 
-export type PackageId = (typeof PACKAGE_IDS)[number];
+/** Every agreement type the admin can send, including the private event agreement. */
+export const CONTRACT_PACKAGE_IDS = [...PACKAGE_IDS, 'EVENT'] as const;
 
-export type ContractTemplateId = 'wedding-music' | 'full-wedding';
+export type PackageId = (typeof CONTRACT_PACKAGE_IDS)[number];
+
+export type ContractTemplateId = 'wedding-music' | 'full-wedding' | 'private-event';
 
 export type PackageDefinition = {
   id: PackageId;
   templateId: ContractTemplateId;
   /** Title as it appears in the owner-approved agreement. */
   title: string;
+  /** Fixed package fee. Zero for the private event agreement, whose fee the admin enters. */
   feeCents: number;
+  /** True when the admin enters the performance fee for each agreement. */
+  customFee?: boolean;
 };
 
 export const PACKAGES: Record<PackageId, PackageDefinition> = {
@@ -43,14 +50,26 @@ export const PACKAGES: Record<PackageId, PackageDefinition> = {
     title: 'Full Wedding',
     feeCents: 300000,
   },
+  EVENT: {
+    id: 'EVENT',
+    templateId: 'private-event',
+    title: 'Private Event',
+    feeCents: 0,
+    customFee: true,
+  },
 };
 
 export function isPackageId(value: string): value is PackageId {
-  return (PACKAGE_IDS as readonly string[]).includes(value);
+  return (CONTRACT_PACKAGE_IDS as readonly string[]).includes(value);
 }
 
 export function packageDefinition(id: PackageId): PackageDefinition {
   return PACKAGES[id];
+}
+
+/** Words used in emails and page titles for this kind of agreement. */
+export function agreementNoun(templateId: ContractTemplateId | string | null | undefined): string {
+  return templateId === 'private-event' ? 'private event music agreement' : 'wedding music agreement';
 }
 
 /** Packages B and D print cocktail-hour start and end on the agreement. */

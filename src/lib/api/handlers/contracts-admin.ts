@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { generateBookingCode, isBookingCode } from '@/lib/contracts/booking-code';
 import { contractOwnerEmail } from '@/lib/contracts/mail';
 import { centsToDollarString, computeFees, formatLongDate, formatMoney, parseDollarInput } from '@/lib/contracts/money';
-import { isPackageId, packageDefinition } from '@/lib/contracts/packages';
+import { agreementNoun, isPackageId, packageDefinition } from '@/lib/contracts/packages';
 import { cleanAdditionalFeesDescription, feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
 import { renderContractPdf } from '@/lib/contracts/pdf';
 import { validateTypedName } from '@/lib/contracts/signers';
@@ -137,6 +137,17 @@ export async function POST(request: Request) {
   if ([travelFeeCents, additionalFeesCents, discountCents].some((cents) => cents > FEE_CAP_CENTS)) {
     return json({ error: 'Enter a fee of $100,000 or less.' }, 400);
   }
+  const privateEvent = packageId === 'EVENT';
+  const performanceFeeCents = privateEvent ? parseDollarInput(body.performanceFee) : 0;
+  if (performanceFeeCents == null) return json({ error: 'Enter the performance fee as a dollar amount.' }, 400);
+  if (performanceFeeCents > FEE_CAP_CENTS) return json({ error: 'Enter a fee of $100,000 or less.' }, 400);
+  const eventType = privateEvent ? plain(body.eventType, 120) : '';
+  const performanceDescription = privateEvent ? plain(body.performanceDescription, 600) : '';
+  if (eventType == null || performanceDescription == null) {
+    return json({ error: 'Keep the event type and performance description each on a single line.' }, 400);
+  }
+  if (privateEvent && !eventType) return json({ error: 'Enter the event type.' }, 400);
+  if (privateEvent && !performanceDescription) return json({ error: 'Describe the performance services.' }, 400);
 
   const client1Name = plain(body.client1Name, 200);
   const client2Name = plain(body.client2Name, 200);
@@ -157,7 +168,9 @@ export async function POST(request: Request) {
     return json({ error: 'Check the names, date, and venue. Keep each one on a single line.' }, 400);
   }
   if (!client1Name) return json({ error: 'Enter the client name.' }, 400);
-  if (!weddingDate) return json({ error: 'Add the wedding date. The balance is due 30 days before that date.' }, 400);
+  if (!weddingDate) {
+    return json({ error: `Add the ${privateEvent ? 'event' : 'wedding'} date. The balance is due 30 days before that date.` }, 400);
+  }
   const timeOrder = performanceTimeOrderMessage({
     ceremonyStart: ceremonyStart || '',
     ceremonyEnd: ceremonyEnd || '',
@@ -170,7 +183,7 @@ export async function POST(request: Request) {
   if ('error' in loaded) return json({ error: loaded.error }, loaded.status);
 
   if (loaded.booking && loaded.booking.event_date !== weddingDate) {
-    return json({ error: 'The wedding date on this agreement does not match the booking. Save the booking date first.' }, 400);
+    return json({ error: `The ${privateEvent ? 'event' : 'wedding'} date on this agreement does not match the booking. Save the booking date first.` }, 400);
   }
 
   const summary = computeFees({
@@ -179,6 +192,7 @@ export async function POST(request: Request) {
     additionalFeesCents,
     discountCents,
     weddingDateIso: weddingDate,
+    performanceFeeCents,
   });
   if ('error' in summary) return json({ error: summary.error }, 400);
 
@@ -195,6 +209,7 @@ export async function POST(request: Request) {
     preludeStart: preludeStart || '',
     otherDetails: otherDetails || '',
     additionalFeesDescription: cleanAdditionalFeesDescription(body.additionalFeesDescription),
+    ...(privateEvent ? { eventType, performanceDescription } : {}),
   });
 
   let preview = '';
@@ -217,7 +232,7 @@ export async function POST(request: Request) {
       weddingDate,
       venueName: venueName || null,
       venueAddress: venueAddress || null,
-      serviceType: loaded.lead?.requested_services || loaded.lead?.service_type || 'Wedding',
+      serviceType: loaded.lead?.requested_services || loaded.lead?.service_type || (privateEvent ? eventType || 'Private Event' : 'Wedding'),
       ceremonyStart: ceremonyStart || null,
       ceremonyEnd: ceremonyEnd || null,
       performers: loaded.lead?.performers_needed || 1,
@@ -363,8 +378,8 @@ export async function POST(request: Request) {
   const url = signingUrl(publicOrigin(request), token);
   const emailed = await sendContractMail({
     to: email,
-    subject: 'Please sign your wedding music agreement',
-    html: signingEmailHtml(loaded.client.name || client1Name, url, bookingCode, summary.retainerCents),
+    subject: `Please sign your ${agreementNoun(fields.templateId)}`,
+    html: signingEmailHtml(loaded.client.name || client1Name, url, bookingCode, summary.retainerCents, agreementNoun(fields.templateId)),
   });
   if (emailed) {
     await admin.from('activity_events').insert({
@@ -396,11 +411,11 @@ export async function POST(request: Request) {
   });
 }
 
-function signingEmailHtml(name: string, url: string, bookingCode: string, retainerCents: number) {
+function signingEmailHtml(name: string, url: string, bookingCode: string, retainerCents: number, noun = 'wedding music agreement') {
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <p>Hello ${escapeHtml(name)},</p>
-      <p>Daniel Cimo sent a wedding music agreement for you to read and sign.</p>
+      <p>Daniel Cimo sent a ${escapeHtml(noun)} for you to read and sign.</p>
       <p><a href="${escapeHtml(url)}">Read and sign the agreement</a></p>
       <p>Your booking code is ${escapeHtml(bookingCode)}. The retainer is $${escapeHtml(formatMoney(retainerCents))}.</p>
       <p>Reply to this email if you have a question.</p>
@@ -597,12 +612,13 @@ export async function postResend(request: Request, id: string) {
   const url = signingUrl(publicOrigin(request), row.access_token);
   const emailed = await sendContractMail({
     to: client.email.trim().toLowerCase(),
-    subject: 'Please sign your wedding music agreement',
+    subject: `Please sign your ${agreementNoun(normalizeStoredFields(row.render_fields)?.templateId)}`,
     html: signingEmailHtml(
       client.name || 'there',
       url,
       row.booking_code || '',
       row.retainer_cents ?? 0,
+      agreementNoun(normalizeStoredFields(row.render_fields)?.templateId),
     ),
   });
   const now = new Date().toISOString();
@@ -644,6 +660,9 @@ export async function postCountersign(request: Request, id: string) {
     client1SignedName: row.client1_name,
     client2SignedName: row.client2_name || '',
     signedOn: clientSignedOn,
+    // Each client's own signing date, when the agreement recorded one.
+    client1SignedOn: fields.client1SignedOnIso ? formatLongDate(fields.client1SignedOnIso) : '',
+    client2SignedOn: fields.client2SignedOnIso ? formatLongDate(fields.client2SignedOnIso) : '',
     photoOptOut: row.photo_opt_out,
     musicianSignedName: name.trim(),
     musicianSignedOn: musicianOn,
@@ -672,13 +691,14 @@ export async function postCountersign(request: Request, id: string) {
   const attachment = pdfBytes
     ? [{ filename: 'wedding-agreement.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
     : undefined;
-  const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"><p>The wedding music agreement is now signed by both parties. The PDF is attached.</p><p>Daniel Cimo</p></div>`;
+  const noun = agreementNoun(fields.templateId);
+  const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"><p>The ${noun} is now signed by both parties. The PDF is attached.</p><p>Daniel Cimo</p></div>`;
   if (client?.email) {
-    await sendContractMail({ to: client.email, subject: 'Executed wedding music agreement', html, attachments: attachment });
+    await sendContractMail({ to: client.email, subject: `Executed ${noun}`, html, attachments: attachment });
   }
   const owner = contractOwnerEmail();
   if (!client?.email || owner.toLowerCase() !== client.email.toLowerCase()) {
-    await sendContractMail({ to: owner, subject: 'Executed wedding music agreement', html, attachments: attachment });
+    await sendContractMail({ to: owner, subject: `Executed ${noun}`, html, attachments: attachment });
   }
   await auth.admin.from('activity_events').insert({
     lead_id: row.lead_id,

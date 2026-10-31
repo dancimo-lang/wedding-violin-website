@@ -13,7 +13,9 @@ import {
 } from '@/lib/contracts/render';
 import { runGoogleSync } from '@/lib/google/run';
 import { signOnce } from '@/lib/contracts/sign';
-import { validateSignature } from '@/lib/contracts/signers';
+import { validateSignature, validateSigningDates } from '@/lib/contracts/signers';
+import { agreementNoun } from '@/lib/contracts/packages';
+import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import { isContractToken } from '@/lib/contracts/token';
 import { escapeHtml, publicOrigin, requestClientIp, sendContractMail, storeContractPdf } from '@/lib/contracts/delivery';
 import { paymentInstructionsHtml } from '@/lib/payments/messages';
@@ -169,12 +171,19 @@ async function copyCoupleDetailsToRecords(
   fields: StoredRenderFields,
   supplied: CoupleDetailKey[],
 ): Promise<string> {
-  const patch: { venue_name?: string; venue_address?: string; performance_start_time?: string; updated_at: string } = {
+  const patch: {
+    venue_name?: string;
+    venue_address?: string;
+    performance_start_time?: string;
+    performance_end_time?: string;
+    updated_at: string;
+  } = {
     updated_at: new Date().toISOString(),
   };
   if (supplied.includes('venueName')) patch.venue_name = fields.venueName;
   if (supplied.includes('venueAddress')) patch.venue_address = fields.venueAddress;
   if (supplied.includes('ceremonyStart')) patch.performance_start_time = fields.ceremonyStart;
+  if (supplied.includes('ceremonyEnd')) patch.performance_end_time = fields.ceremonyEnd;
   const cocktailLine = coupleCocktailRecordLine(fields, supplied);
   const hasColumns = Object.keys(patch).length > 1;
   if (!hasColumns && !cocktailLine) return '';
@@ -236,7 +245,7 @@ async function noteSigned(row: ContractRecord) {
   });
 }
 
-function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>, instructions: string) {
+function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>, instructions: string, noun: string) {
   const who = escapeHtml(name || 'there');
   const retainer = escapeHtml(facts.retainer || '');
   const code = escapeHtml(facts.bookingCode || '');
@@ -246,7 +255,7 @@ function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>,
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <p>Hello ${who},</p>
-      <p>Your signed wedding music agreement is attached.</p>
+      <p>Your signed ${noun} is attached.</p>
       <p>Retainer due: ${retainer}</p>
       <p>Booking code: ${code}</p>
       ${instructions}
@@ -273,6 +282,18 @@ export async function POST(request: Request) {
     agreed: body.agreed === true,
   });
   if (signatureError) return noStore({ error: signatureError }, 400);
+  const client1SignedOnIso = typeof body.client1SignedOn === 'string' ? body.client1SignedOn.trim() : '';
+  const client2SignedOnIso = typeof body.client2SignedOn === 'string' ? body.client2SignedOn.trim() : '';
+  const dateError = validateSigningDates(
+    {
+      client1Name: typeof body.client1Name === 'string' ? body.client1Name : '',
+      client2Name: typeof body.client2Name === 'string' ? body.client2Name : '',
+      client1SignedOn: client1SignedOnIso,
+      client2SignedOn: client2SignedOnIso,
+    },
+    todayInTimeZone(BUSINESS_TIME_ZONE),
+  );
+  if (dateError) return noStore({ error: dateError }, 400);
 
   let row: ContractRecord | null;
   try {
@@ -287,7 +308,13 @@ export async function POST(request: Request) {
 
   const applied = applyCoupleEventDetails(fields, body.eventDetails === undefined ? {} : body.eventDetails);
   if (!applied.ok) return noStore({ error: applied.error }, 400);
-  const signedFields = applied.fields;
+  const client2Typed = (typeof body.client2Name === 'string' ? body.client2Name : '').trim();
+  // Each signer's own date is part of the signed snapshot; signed_at stays the audit timestamp.
+  const signedFields: StoredRenderFields = {
+    ...applied.fields,
+    client1SignedOnIso,
+    ...(client2Typed ? { client2SignedOnIso } : {}),
+  };
 
   const client1Name = (typeof body.client1Name === 'string' ? body.client1Name : '').trim();
   const client2Name = (typeof body.client2Name === 'string' ? body.client2Name : '').trim();
@@ -297,6 +324,8 @@ export async function POST(request: Request) {
     client1SignedName: client1Name,
     client2SignedName: client2Name,
     signedOn,
+    client1SignedOn: formatLongDate(client1SignedOnIso),
+    client2SignedOn: client2Name ? formatLongDate(client2SignedOnIso) : '',
     photoOptOut,
     musicianSignedName: '',
     musicianSignedOn: '',
@@ -395,13 +424,14 @@ export async function POST(request: Request) {
   const client = await clientEmail(row.lead_id, row.booking_id);
   const owner = contractOwnerEmail();
   const attachment = pdfBytes
-    ? [{ filename: 'wedding-agreement.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
+    ? [{ filename: signedFields.templateId === 'private-event' ? 'event-agreement.pdf' : 'wedding-agreement.pdf', content: Buffer.from(pdfBytes).toString('base64') }]
     : undefined;
-  const html = signedEmailHtml(client.name || client1Name, facts, instructions);
+  const noun = agreementNoun(signedFields.templateId);
+  const html = signedEmailHtml(client.name || client1Name, facts, instructions, noun);
   if (client.email) {
     await sendContractMail({
       to: client.email,
-      subject: 'Your signed wedding music agreement',
+      subject: `Your signed ${noun}`,
       html,
       attachments: attachment,
     });
@@ -409,7 +439,7 @@ export async function POST(request: Request) {
   if (owner && owner.toLowerCase() !== (client.email || '').toLowerCase()) {
     await sendContractMail({
       to: owner,
-      subject: `Signed wedding music agreement${facts.bookingCode ? ` (${facts.bookingCode})` : ''}`,
+      subject: `Signed ${noun}${facts.bookingCode ? ` (${facts.bookingCode})` : ''}`,
       html,
       attachments: attachment,
     });
