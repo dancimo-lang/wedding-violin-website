@@ -124,8 +124,11 @@ export function SignContract() {
       setView(payload);
       setPhotoOptOut(payload.photoOptOut);
       setEventDetails(emptyCoupleDetailDraft());
-      setClient1Name(payload.canSign ? '' : payload.client1Name || '');
-      setClient2Name(payload.canSign ? '' : payload.client2Name || '');
+      // Start the name boxes with the names entered in admin so the couple
+      // sees exactly where to sign; they can still correct them.
+      const stored = payload.canSign && payload.renderFields ? normalizeStoredFields(payload.renderFields) : null;
+      setClient1Name(payload.canSign ? stored?.client1Name?.trim() || '' : payload.client1Name || '');
+      setClient2Name(payload.canSign ? stored?.client2Name?.trim() || '' : payload.client2Name || '');
     }
     load().catch(() => {
       if (!cancelled) setLoadError('This signing link could not be opened.');
