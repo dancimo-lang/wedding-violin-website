@@ -5,6 +5,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { addCalendarDays, monthGrid, todayInTimeZone } from '@/lib/schedule/time';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_NAMES: Record<string, string> = {
+  Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday',
+};
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -65,6 +68,8 @@ export function BookingCalendar({ id, value, onChange }: Props) {
   }, [focusDate, view]);
 
   const days = monthGrid(view.year, view.month);
+  const weeks: string[][] = [];
+  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
   const monthKey = `${view.year}-${String(view.month).padStart(2, '0')}`;
   const canPrev = monthKey > today.slice(0, 7);
   const canNext = monthKey < maxDate.slice(0, 7);
@@ -104,9 +109,9 @@ export function BookingCalendar({ id, value, onChange }: Props) {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="font-semibold text-gray-900" aria-live="polite" id={`${id}-month`}>
+        <p className="font-semibold text-gray-900" aria-live="polite" id={`${id}-month`}>
           {MONTHS[view.month - 1]} {view.year}
-        </h3>
+        </p>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
@@ -117,49 +122,55 @@ export function BookingCalendar({ id, value, onChange }: Props) {
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
-      <div ref={gridRef} role="grid" aria-labelledby={`${id}-month`} className="grid grid-cols-7 gap-1 text-center">
-        {WEEKDAYS.map((weekday) => (
-          <div key={weekday} role="columnheader" className="text-xs font-medium text-gray-500 py-1">
-            {weekday}
+      <div ref={gridRef} role="grid" aria-labelledby={`${id}-month`} className="text-center">
+        <div role="row" className="grid grid-cols-7 gap-1">
+          {WEEKDAYS.map((weekday) => (
+            <div key={weekday} role="columnheader" aria-label={WEEKDAY_NAMES[weekday]} className="text-xs font-medium text-gray-600 py-1">
+              {weekday}
+            </div>
+          ))}
+        </div>
+        {weeks.map((week) => (
+          <div key={week[0]} role="row" className="grid grid-cols-7 gap-1 mt-1">
+            {week.map((date) => {
+              const inMonth = date.slice(0, 7) === monthKey;
+              if (!inMonth) return <div key={date} role="gridcell" />;
+              const disabled = isDisabled(date);
+              const taken = unavailable.has(date) && date >= today;
+              const selected = date === value;
+              const isToday = date === today;
+              return (
+                <div key={date} role="gridcell" aria-selected={selected} aria-disabled={disabled || undefined}>
+                  <button
+                    type="button"
+                    data-date={date}
+                    tabIndex={date === tabbable ? 0 : -1}
+                    disabled={disabled}
+                    aria-disabled={disabled}
+                    aria-current={isToday ? 'date' : undefined}
+                    aria-label={`${longLabel(date)}${taken ? ', unavailable' : disabled ? ', not available' : ''}${selected ? ', selected' : ''}`}
+                    onClick={() => {
+                      setFocusDate(date);
+                      onChange(date);
+                    }}
+                    onKeyDown={(event) => onKeyDown(event, date)}
+                    className={`w-full aspect-square max-h-12 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      selected
+                        ? 'bg-amber-700 text-white font-semibold'
+                        : taken
+                          ? 'bg-gray-200 text-gray-500 line-through cursor-not-allowed'
+                          : disabled
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : `hover:bg-amber-100 text-gray-900 ${isToday ? 'ring-1 ring-amber-700' : ''}`
+                    }`}
+                  >
+                    {Number(date.slice(8, 10))}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ))}
-        {days.map((date) => {
-          const inMonth = date.slice(0, 7) === monthKey;
-          if (!inMonth) return <div key={date} role="gridcell" aria-hidden="true" />;
-          const disabled = isDisabled(date);
-          const taken = unavailable.has(date) && date >= today;
-          const selected = date === value;
-          const isToday = date === today;
-          return (
-            <div key={date} role="gridcell" aria-selected={selected}>
-              <button
-                type="button"
-                data-date={date}
-                tabIndex={date === tabbable ? 0 : -1}
-                disabled={disabled}
-                aria-disabled={disabled}
-                aria-pressed={selected}
-                aria-label={`${longLabel(date)}${taken ? ', unavailable' : disabled ? ', not available' : ''}`}
-                onClick={() => {
-                  setFocusDate(date);
-                  onChange(date);
-                }}
-                onKeyDown={(event) => onKeyDown(event, date)}
-                className={`w-full aspect-square max-h-12 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                  selected
-                    ? 'bg-amber-700 text-white font-semibold'
-                    : taken
-                      ? 'bg-gray-200 text-gray-400 line-through cursor-not-allowed'
-                      : disabled
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : `hover:bg-amber-100 text-gray-900 ${isToday ? 'ring-1 ring-amber-700' : ''}`
-                }`}
-              >
-                {Number(date.slice(8, 10))}
-              </button>
-            </div>
-          );
-        })}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
         <span className="flex items-center gap-1.5">

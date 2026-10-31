@@ -7,6 +7,8 @@ import PackageCard from '@/components/PackageCard';
 import SingleVideo from '@/components/SingleVideo';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
+import ReviewsSection from '@/components/ReviewsSection';
+import { GOOGLE_RATING, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
 import site from '@/data/site.json';
@@ -176,6 +178,13 @@ export default function WeddingsPage() {
       </section>
 
       {/* Audio Samples Section */}
+      {/* Real Google reviews */}
+      <section id="reviews" className="py-20 bg-gradient-to-br from-rose-50 to-amber-50">
+        <div className="container mx-auto px-4">
+          <ReviewsSection page="weddings" title="What Clients Say" />
+        </div>
+      </section>
+
       <section id="wedding-sampler" className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -233,8 +242,17 @@ export default function WeddingsPage() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
             <div>
-              <p className="text-4xl font-bold text-amber-700">5★</p>
-              <p className="text-gray-600 text-sm mt-1">Average Rating</p>
+              <a
+                href={GOOGLE_REVIEWS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-block"
+              >
+                <p className="text-4xl font-bold text-amber-700">{GOOGLE_RATING.value}★</p>
+                <p className="text-gray-700 text-sm mt-1 underline underline-offset-2 group-hover:text-gray-900">
+                  from {GOOGLE_RATING.count} Google reviews<span className="sr-only"> (opens in a new tab)</span>
+                </p>
+              </a>
             </div>
             <div>
               <p className="text-4xl font-bold text-amber-700">10+</p>
