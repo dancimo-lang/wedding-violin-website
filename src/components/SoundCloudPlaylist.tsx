@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface SoundCloudPlaylistProps {
+  /** SoundCloud API URL (e.g. https://api.soundcloud.com/playlists/<id>); the widget cannot resolve /sets/ permalinks reliably. */
   playlistUrl: string;
   height?: number;
 }
