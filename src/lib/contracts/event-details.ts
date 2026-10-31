@@ -1,4 +1,4 @@
-import { packageIncludesCocktailHour, type PackageId } from './packages';
+import type { PackageId } from './packages';
 import {
   formatClock,
   performanceTimeOrderMessage,
@@ -13,6 +13,8 @@ export type CoupleDetailField = {
   label: string;
   kind: 'text' | 'time';
   max: number;
+  /** Optional details (the "(if applicable)" lines) may stay blank at signing. */
+  optional: boolean;
 };
 
 export type CoupleDetailSource = {
@@ -22,17 +24,37 @@ export type CoupleDetailSource = {
   ceremonyStart: string;
   cocktailStart: string;
   cocktailEnd: string;
+  ceremonyEnd?: string;
+  preludeStart?: string;
+  otherDetails?: string;
 };
 
 const DETAIL_SPECS: readonly CoupleDetailField[] = [
-  { key: 'venueName', label: 'Venue name', kind: 'text', max: 255 },
-  { key: 'venueAddress', label: 'Venue address', kind: 'text', max: 500 },
-  { key: 'ceremonyStart', label: 'Ceremony start time', kind: 'time', max: 5 },
-  { key: 'cocktailStart', label: 'Cocktail hour start time', kind: 'time', max: 5 },
-  { key: 'cocktailEnd', label: 'Cocktail hour end time', kind: 'time', max: 5 },
+  { key: 'venueName', label: 'Venue name', kind: 'text', max: 255, optional: false },
+  { key: 'venueAddress', label: 'Venue address', kind: 'text', max: 500, optional: false },
+  { key: 'ceremonyStart', label: 'Ceremony start time', kind: 'time', max: 5, optional: false },
+  { key: 'ceremonyEnd', label: 'Event end time', kind: 'time', max: 5, optional: true },
+  { key: 'preludeStart', label: 'Prelude music start time', kind: 'time', max: 5, optional: true },
+  { key: 'cocktailStart', label: 'Cocktail hour start time', kind: 'time', max: 5, optional: true },
+  { key: 'cocktailEnd', label: 'Cocktail hour end time', kind: 'time', max: 5, optional: true },
+  { key: 'otherDetails', label: 'Other agreed performance details', kind: 'text', max: 400, optional: true },
 ];
 
-const COCKTAIL_KEYS = new Set<CoupleDetailKey>(['cocktailStart', 'cocktailEnd']);
+/** Which blanks appear in each agreement's text. */
+const KEYS_BY_PACKAGE: Record<'wedding-music' | 'FULL' | 'EVENT', ReadonlySet<CoupleDetailKey>> = {
+  'wedding-music': new Set(['venueName', 'venueAddress', 'ceremonyStart', 'preludeStart', 'cocktailStart', 'cocktailEnd', 'otherDetails']),
+  FULL: new Set(['venueName', 'venueAddress', 'ceremonyStart']),
+  EVENT: new Set(['venueName', 'venueAddress', 'ceremonyStart', 'ceremonyEnd', 'otherDetails']),
+};
+
+const EVENT_LABELS: Partial<Record<CoupleDetailKey, string>> = {
+  ceremonyStart: 'Event start time',
+  ceremonyEnd: 'Event end time',
+};
+
+function value(source: CoupleDetailSource, key: CoupleDetailKey): string {
+  return (source[key] ?? '').trim();
+}
 
 export type CoupleDetailResult =
   | { ok: true; fields: StoredRenderFields; supplied: CoupleDetailKey[] }
@@ -43,8 +65,11 @@ export function emptyCoupleDetailDraft(): Record<CoupleDetailKey, string> {
     venueName: '',
     venueAddress: '',
     ceremonyStart: '',
+    ceremonyEnd: '',
+    preludeStart: '',
     cocktailStart: '',
     cocktailEnd: '',
+    otherDetails: '',
   };
 }
 
@@ -55,13 +80,18 @@ function specFor(key: CoupleDetailKey): CoupleDetailField {
 }
 
 function applies(field: CoupleDetailField, packageId: PackageId): boolean {
-  if (!COCKTAIL_KEYS.has(field.key)) return true;
-  return packageIncludesCocktailHour(packageId);
+  const group = packageId === 'FULL' ? 'FULL' : packageId === 'EVENT' ? 'EVENT' : 'wedding-music';
+  return KEYS_BY_PACKAGE[group].has(field.key);
 }
 
-/** Blank details the couple must fill. Cocktail times apply only on packages B and D. */
+/**
+ * Blanks in this agreement's text that the client may fill inline at signing.
+ * Venue and start time are required; the "(if applicable)" lines are optional.
+ */
 export function coupleFillableDetails(source: CoupleDetailSource): CoupleDetailField[] {
-  return DETAIL_SPECS.filter((field) => applies(field, source.packageId) && !source[field.key].trim());
+  return DETAIL_SPECS.filter((field) => applies(field, source.packageId) && !value(source, field.key)).map((field) =>
+    source.packageId === 'EVENT' && EVENT_LABELS[field.key] ? { ...field, label: EVENT_LABELS[field.key] as string } : field,
+  );
 }
 
 function formatList(items: string[]): string {
@@ -72,7 +102,9 @@ function formatList(items: string[]): string {
 
 /** Admin note. Empty when every couple-fillable detail already has a value. */
 export function missingCoupleDetailMessage(source: CoupleDetailSource): string {
-  const labels = coupleFillableDetails(source).map((field) => field.label);
+  const labels = coupleFillableDetails(source)
+    .filter((field) => !field.optional)
+    .map((field) => field.label);
   if (labels.length === 0) return '';
   const list = formatList(labels);
   if (labels.length === 1) {
@@ -108,7 +140,7 @@ function detailProblem(field: CoupleDetailField, value: string): string | null {
 }
 
 function timeMessageForSupplied(fields: StoredRenderFields, supplied: readonly CoupleDetailKey[]): string {
-  const ceremonyTouched = supplied.includes('ceremonyStart');
+  const ceremonyTouched = supplied.includes('ceremonyStart') || supplied.includes('ceremonyEnd');
   const cocktailTouched = supplied.includes('cocktailStart') || supplied.includes('cocktailEnd');
   return performanceTimeOrderMessage(
     {
@@ -142,7 +174,7 @@ export function coupleEventTimeMessage(
 ): string {
   const preview = previewCoupleEventDetails(stored, draft);
   const supplied = coupleFillableDetails(stored)
-    .filter((field) => preview[field.key].trim() !== stored[field.key].trim())
+    .filter((field) => (preview[field.key] ?? '').trim() !== (stored[field.key] ?? '').trim())
     .map((field) => field.key);
   return timeMessageForSupplied(preview, supplied);
 }
@@ -182,7 +214,7 @@ export function applyCoupleEventDetails(stored: StoredRenderFields, raw: unknown
   const missing: string[] = [];
   for (const field of fillable) {
     if (!Object.prototype.hasOwnProperty.call(input, field.key)) {
-      missing.push(field.label);
+      if (!field.optional) missing.push(field.label);
       continue;
     }
     const value = input[field.key];
@@ -191,7 +223,7 @@ export function applyCoupleEventDetails(stored: StoredRenderFields, raw: unknown
     }
     const problem = detailProblem(field, value);
     if (problem === 'blank') {
-      missing.push(field.label);
+      if (!field.optional) missing.push(field.label);
       continue;
     }
     if (problem) return { ok: false, error: problem };
@@ -226,7 +258,7 @@ export function coupleSuppliedSummary(fields: StoredRenderFields | null): string
   if (!fields?.coupleSupplied?.length) return '';
   const parts = fields.coupleSupplied.map((key) => {
     const spec = specFor(key);
-    const raw = fields[key].trim();
+    const raw = (fields[key] ?? '').trim();
     const shown = spec.kind === 'time' ? formatClock(raw) || raw : raw;
     return `${spec.label}: ${shown}`;
   });

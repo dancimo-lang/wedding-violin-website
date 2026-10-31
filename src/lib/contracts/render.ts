@@ -1,4 +1,5 @@
 import { fullWeddingTemplate } from '@/data/contracts/full-wedding';
+import { privateEventTemplate } from '@/data/contracts/private-event';
 import { weddingMusicTemplate } from '@/data/contracts/wedding-music';
 import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import { formatLongDate, formatMoney, type FeeSummary } from './money';
@@ -7,7 +8,16 @@ import { DUO_DJ_OVERTIME, packageDefinition, weddingMusicOvertimeClause, type Co
 export const BLANK = '__________________________________';
 
 /** Event details the couple may fill when the admin left them blank. Rendering ignores this list. */
-export const COUPLE_DETAIL_KEYS = ['venueName', 'venueAddress', 'ceremonyStart', 'cocktailStart', 'cocktailEnd'] as const;
+export const COUPLE_DETAIL_KEYS = [
+  'venueName',
+  'venueAddress',
+  'ceremonyStart',
+  'ceremonyEnd',
+  'preludeStart',
+  'cocktailStart',
+  'cocktailEnd',
+  'otherDetails',
+] as const;
 
 export type CoupleDetailKey = (typeof COUPLE_DETAIL_KEYS)[number];
 
@@ -20,8 +30,10 @@ export type StoredRenderFields = {
    * Absent on agreements created before package-specific text.
    * Those keep the master checklist so a later signature still matches the stored text.
    * Edition 2 prints only the chosen wedding-music package, with no package checkboxes.
+   * Edition 3 also states the selected package ("The Client has selected the following package:")
+   * and prints each signer's own signing date.
    */
-  renderEdition?: 2;
+  renderEdition?: 2 | 3;
   client1Name: string;
   client2Name: string;
   weddingDateIso: string;
@@ -48,6 +60,13 @@ export type StoredRenderFields = {
    * Older agreements omit it, and the rendered text does not read it.
    */
   coupleSupplied?: CoupleDetailKey[];
+  /** Private event agreements: the kind of event, e.g. "Birthday party". */
+  eventType?: string;
+  /** Private event agreements: the services the admin described. */
+  performanceDescription?: string;
+  /** Signing date each client typed or picked (YYYY-MM-DD). Set at signing. */
+  client1SignedOnIso?: string;
+  client2SignedOnIso?: string;
 };
 
 export type SignatureOverlay = {
@@ -57,6 +76,14 @@ export type SignatureOverlay = {
   photoOptOut: boolean;
   musicianSignedName: string;
   musicianSignedOn: string;
+  /** Each client's own signing date. Falls back to signedOn when absent. */
+  client1SignedOn?: string;
+  client2SignedOn?: string;
+  /**
+   * Signing page only: replaces whole placeholder values (e.g. CLIENT_1_SIGNATURE)
+   * with markers that the page draws as inputs. Never used for stored text.
+   */
+  display?: Partial<Record<string, string>>;
 };
 
 export function signatureDateLabel(now = new Date()): string {
@@ -75,6 +102,7 @@ export const UNSIGNED: SignatureOverlay = {
 const TEMPLATES: Record<ContractTemplateId, string> = {
   'wedding-music': weddingMusicTemplate,
   'full-wedding': fullWeddingTemplate,
+  'private-event': privateEventTemplate,
 };
 
 export function templateSource(templateId: ContractTemplateId): string {
@@ -200,7 +228,7 @@ function weddingPackageBlocks(): Record<(typeof WEDDING_PACKAGE_IDS)[number], st
  * The "everything in Package …, plus" sentence is omitted because those lines are printed.
  */
 function weddingMusicTemplateForPackage(packageId: PackageId): string {
-  if (packageId === 'FULL') throw new Error('That package does not use this agreement.');
+  if (packageId === 'FULL' || packageId === 'EVENT') throw new Error('That package does not use this agreement.');
   const blocks = weddingPackageBlocks();
   const selectedAt = weddingMusicTemplate.indexOf('Selected Package:');
   const head = weddingMusicTemplate.slice(0, weddingMusicTemplate.indexOf('{{PACKAGE_A_MARK}} '));
@@ -219,6 +247,24 @@ function weddingMusicTemplateForPackage(packageId: PackageId): string {
   }
   return head + description + weddingMusicTemplate.slice(selectedAt);
 }
+
+const PACKAGE_CHOICE_SENTENCE =
+  'The Client shall select one of the following packages. The selected package determines the services provided under this Agreement.\n';
+/** DRAFT wording requested by the owner (Oct 30, 2026). */
+const PACKAGE_SELECTED_SENTENCE = 'The Client has selected the following package:\n';
+
+function statedPackageTemplate(packageId: PackageId): string {
+  const template = weddingMusicTemplateForPackage(packageId);
+  if (!template.includes(PACKAGE_CHOICE_SENTENCE)) throw new Error('Wedding music agreement is missing the package sentence.');
+  return template.replace(PACKAGE_CHOICE_SENTENCE, PACKAGE_SELECTED_SENTENCE);
+}
+
+/** Slot marker drawn as an input on the signing page. */
+export function slotMarker(name: string): string {
+  return `\u27e6${name}\u27e7`;
+}
+
+export const SLOT_PATTERN = /\u27e6([A-Za-z0-9_:]+)\u27e7/g;
 
 function fillTemplate(template: string, values: Record<string, string>): string {
   const missing: string[] = [];
@@ -255,12 +301,65 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   const client1 = signature.client1SignedName.trim();
   const client2 = signature.client2SignedName.trim();
   const signedOn = signature.signedOn.trim();
+  const client1On = (signature.client1SignedOn ?? '').trim() || signedOn;
+  const client2On = (signature.client2SignedOn ?? '').trim() || signedOn;
   const musician = signature.musicianSignedName.trim();
   const musicianOn = signature.musicianSignedOn.trim();
+  const display = signature.display ?? {};
+  const shown = (values: Record<string, string>): Record<string, string> => {
+    const next = { ...values };
+    for (const [key, value] of Object.entries(display)) {
+      if (typeof value === 'string' && Object.prototype.hasOwnProperty.call(next, key)) next[key] = value;
+    }
+    return next;
+  };
+  const moneyLines = {
+    TRAVEL_FEE: formatMoney(fields.travelFeeCents),
+    ADDITIONAL_FEES: `${formatMoney(fields.additionalFeesCents)}${additionalFeesNote(fields)}`,
+    DISCOUNT: formatMoney(fields.discountCents),
+    TOTAL: formatMoney(fields.totalCents),
+    RETAINER: formatMoney(fields.retainerCents),
+    BALANCE: formatMoney(fields.balanceCents),
+    FINAL_DUE_DATE: filled(formatLongDate(fields.finalPaymentDueDate)),
+  };
+  const clientSignatures = {
+    CLIENT_1_PRINTED_NAME: filled(client1),
+    CLIENT_1_SIGNATURE: filled(client1),
+    CLIENT_1_DATE: client1 ? filled(client1On) : BLANK,
+    CLIENT_2_PRINTED_NAME: filled(client2),
+    CLIENT_2_SIGNATURE: filled(client2),
+    CLIENT_2_DATE: client2 ? filled(client2On) : BLANK,
+    MUSICIAN_SIGNATURE: filled(musician),
+    MUSICIAN_DATE: filled(musicianOn),
+  };
+
+  if (fields.templateId === 'private-event') {
+    return fillTemplate(privateEventTemplate, shown({
+      CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
+      EVENT_TYPE: filled(fields.eventType),
+      EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
+      VENUE_NAME: filled(fields.venueName),
+      VENUE_ADDRESS: filled(fields.venueAddress),
+      EVENT_START: ceremony,
+      EVENT_END: formatClock(fields.ceremonyEnd) || filled(fields.ceremonyEnd),
+      PERFORMANCE_DESCRIPTION: filled(fields.performanceDescription),
+      PERFORMANCE_FEE: formatMoney(fields.packageFeeCents),
+      ...moneyLines,
+      OTHER_DETAILS: filled(fields.otherDetails),
+      PHOTO_OPT_OUT_MARK: mark(signature.photoOptOut),
+      ...clientSignatures,
+    }));
+  }
 
   if (fields.templateId === 'wedding-music') {
-    const packageSpecific = fields.renderEdition === 2;
-    return fillTemplate(packageSpecific ? weddingMusicTemplateForPackage(fields.packageId) : weddingMusicTemplate, {
+    const packageSpecific = fields.renderEdition === 2 || fields.renderEdition === 3;
+    const template =
+      fields.renderEdition === 3
+        ? statedPackageTemplate(fields.packageId)
+        : packageSpecific
+          ? weddingMusicTemplateForPackage(fields.packageId)
+          : weddingMusicTemplate;
+    return fillTemplate(template, shown({
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       WEDDING_DATE: filled(formatLongDate(fields.weddingDateIso)),
       VENUE_NAME: filled(fields.venueName),
@@ -290,18 +389,18 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
       PHOTO_OPT_OUT_MARK: mark(signature.photoOptOut),
       CLIENT_1_PRINTED_NAME: filled(client1),
       CLIENT_1_SIGNATURE: filled(client1),
-      CLIENT_1_DATE: filled(signedOn),
+      CLIENT_1_DATE: filled(client1On),
       CLIENT_2_PRINTED_NAME: filled(client2),
       CLIENT_2_SIGNATURE: filled(client2),
-      CLIENT_2_DATE: client2 ? filled(signedOn) : BLANK,
+      CLIENT_2_DATE: client2 ? filled(client2On) : BLANK,
       MUSICIAN_SIGNATURE: filled(musician),
       MUSICIAN_DATE: filled(musicianOn),
       // Agreements saved before this choice keep the duo and DJ sentence, so their hash still matches.
-      OVERTIME_CLAUSE: fields.renderEdition === 2 ? weddingMusicOvertimeClause(fields.packageId) : DUO_DJ_OVERTIME,
-    });
+      OVERTIME_CLAUSE: packageSpecific ? weddingMusicOvertimeClause(fields.packageId) : DUO_DJ_OVERTIME,
+    }));
   }
 
-  const body = fullWeddingFees(fillTemplate(fullWeddingTemplate, {
+  const body = fullWeddingFees(fillTemplate(fullWeddingTemplate, shown({
     CLIENT_1_NAME: filled(fields.client1Name),
     CLIENT_2_NAME: filled(fields.client2Name),
     EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -310,15 +409,16 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
     EVENT_TIME: filled(eventTime(fields.ceremonyStart, fields.ceremonyEnd)),
     CLIENT_PRINTED_NAME: filled(client1),
     CLIENT_SIGNATURE: filled(client1),
-    CLIENT_DATE: filled(signedOn),
+    CLIENT_DATE: client1 ? filled(client1On) : BLANK,
     MUSICIAN_SIGNATURE: filled(musician),
     MUSICIAN_DATE: filled(musicianOn),
-  }), fields);
+  })), fields);
 
   // Section 11 already allows a written opt-out. The sentence is the one the
   // owner approved on the master agreement, so the checkbox is inside the
   // signed text. The paragraphs of this agreement are otherwise unchanged.
-  const notice = `\n${photoLine(signature.photoOptOut)}\n`;
+  const photo = display.PHOTO_OPT_OUT_MARK ? `${display.PHOTO_OPT_OUT_MARK} ${PHOTO_SENTENCE}` : photoLine(signature.photoOptOut);
+  const notice = `\n${photo}\n`;
   const marker = '\n12. Entire Agreement\n';
   if (!body.includes(marker)) throw new Error('Full wedding agreement is missing section 12.');
   return body.replace(marker, `${notice}${marker}`);
@@ -370,9 +470,12 @@ export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields
   const description = cleanAdditionalFeesDescription(fields.additionalFeesDescription);
   return {
     ...(description && summary.additionalFeesCents > 0 ? { additionalFeesDescription: description } : {}),
+    ...(definition.templateId === 'private-event'
+      ? { eventType: fields.eventType ?? '', performanceDescription: fields.performanceDescription ?? '' }
+      : {}),
     templateId: definition.templateId,
     packageId: summary.packageId,
-    renderEdition: 2,
+    renderEdition: 3,
     client1Name: fields.client1Name,
     client2Name: fields.client2Name,
     weddingDateIso: fields.weddingDateIso,
@@ -400,7 +503,7 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
   const row = value as StoredRenderFields;
   const normalized: StoredRenderFields = {
     ...row,
-    renderEdition: row.renderEdition === 2 ? 2 : undefined,
+    renderEdition: row.renderEdition === 2 || row.renderEdition === 3 ? row.renderEdition : undefined,
     client1Name: row.client1Name ?? '',
     client2Name: row.client2Name ?? '',
     venueName: row.venueName ?? '',
@@ -429,8 +532,13 @@ export function isStoredRenderFields(value: unknown): value is StoredRenderField
   if (!value || typeof value !== 'object') return false;
   const row = value as Partial<StoredRenderFields>;
   return (
-    (row.templateId === 'wedding-music' || row.templateId === 'full-wedding') &&
-    (row.packageId === 'A' || row.packageId === 'B' || row.packageId === 'C' || row.packageId === 'D' || row.packageId === 'FULL') &&
+    (row.templateId === 'wedding-music' || row.templateId === 'full-wedding' || row.templateId === 'private-event') &&
+    (row.packageId === 'A' ||
+      row.packageId === 'B' ||
+      row.packageId === 'C' ||
+      row.packageId === 'D' ||
+      row.packageId === 'FULL' ||
+      row.packageId === 'EVENT') &&
     typeof row.client1Name === 'string' &&
     typeof row.weddingDateIso === 'string' &&
     typeof row.totalCents === 'number' &&

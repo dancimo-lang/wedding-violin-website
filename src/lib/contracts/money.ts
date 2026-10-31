@@ -7,6 +7,8 @@ export type FeeInput = {
   additionalFeesCents: number;
   discountCents: number;
   weddingDateIso: string;
+  /** Private event agreements only: the performance fee the admin entered. */
+  performanceFeeCents?: number;
 };
 
 export type FeeSummary = {
@@ -115,16 +117,28 @@ export function computeFees(input: FeeInput): FeeSummary | { error: string } {
       return { error: 'The full wedding agreement has no blank for a discount.' };
     }
   }
+  let packageFeeCents = definition.feeCents;
+  if (definition.customFee) {
+    const fee = input.performanceFeeCents ?? 0;
+    if (!Number.isInteger(fee) || fee <= 0) return { error: 'Enter the performance fee.' };
+    packageFeeCents = fee;
+  }
   const due = finalPaymentDueDate(input.weddingDateIso);
-  if (!due) return { error: 'Add the wedding date. The balance is due 30 days before that date.' };
+  if (!due) {
+    return {
+      error: definition.customFee
+        ? 'Add the event date. The balance is due 30 days before that date.'
+        : 'Add the wedding date. The balance is due 30 days before that date.',
+    };
+  }
   const totalCents =
-    definition.feeCents + input.travelFeeCents + input.additionalFeesCents - input.discountCents;
+    packageFeeCents + input.travelFeeCents + input.additionalFeesCents - input.discountCents;
   if (totalCents < 0) return { error: 'The discount cannot be larger than the package fee plus the other fees.' };
   const split = splitRetainer(totalCents);
   if (!split) return { error: 'The total could not be calculated.' };
   return {
     packageId: input.packageId,
-    packageFeeCents: definition.feeCents,
+    packageFeeCents,
     travelFeeCents: input.travelFeeCents,
     additionalFeesCents: input.additionalFeesCents,
     discountCents: input.discountCents,

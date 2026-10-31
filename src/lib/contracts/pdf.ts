@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from 'pdf-lib';
-import { presentSignedContract, type ContractSegment, type SignatureTimes } from './signature-style';
+import { contractBlocks, signerRoleFor } from './layout';
+import { formatElectronicSignature, isRecordedSignatureName, type ContractSegment, type SignatureTimes } from './signature-style';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -62,13 +63,6 @@ function wrapParagraph(text: string, font: PDFFont, size: number, width: number)
   return lines.length > 0 ? lines : [''];
 }
 
-/** Drop the separator after the last line so it is not drawn as a blank line. */
-function bodyLines(text: string): string[] {
-  if (!text) return [];
-  const parts = text.split('\n');
-  if (text.endsWith('\n')) parts.pop();
-  return parts;
-}
 
 function measure(font: PDFFont, text: string, size: number): number | null {
   try {
@@ -107,19 +101,6 @@ function newPage(doc: PDFDocument): DrawState {
 function ensure(doc: PDFDocument, state: DrawState, needed: number): DrawState {
   if (state.y - needed >= MARGIN) return state;
   return newPage(doc);
-}
-
-function drawBody(doc: PDFDocument, state: DrawState, text: string, font: PDFFont): DrawState {
-  const maxWidth = PAGE_WIDTH - MARGIN * 2;
-  let current = state;
-  for (const line of bodyLines(text)) {
-    for (const part of wrapParagraph(pdfSafeText(line), font, FONT_SIZE, maxWidth)) {
-      current = ensure(doc, current, LINE_HEIGHT);
-      if (part) current.page.drawText(part, { x: MARGIN, y: current.y, size: FONT_SIZE, font, color: INK });
-      current = { page: current.page, y: current.y - LINE_HEIGHT };
-    }
-  }
-  return current;
 }
 
 function drawSignature(
@@ -179,8 +160,62 @@ function drawSignature(
   return { page: current.page, y: current.y - 16 };
 }
 
+type Fonts = { body: PDFFont; bold: PDFFont; script: PDFFont; oblique: PDFFont };
+
+function drawWrapped(
+  doc: PDFDocument,
+  state: DrawState,
+  text: string,
+  font: PDFFont,
+  size: number,
+  options: { indent?: number; center?: boolean; lineHeight?: number } = {},
+): DrawState {
+  const indent = options.indent ?? 0;
+  const lineHeight = options.lineHeight ?? LINE_HEIGHT;
+  const width = PAGE_WIDTH - MARGIN * 2 - indent;
+  let current = state;
+  for (const part of wrapParagraph(pdfSafeText(text), font, size, width)) {
+    current = ensure(doc, current, lineHeight);
+    if (part) {
+      const x = options.center ? (PAGE_WIDTH - font.widthOfTextAtSize(part, size)) / 2 : MARGIN + indent;
+      current.page.drawText(part, { x, y: current.y, size, font, color: INK });
+    }
+    current = { page: current.page, y: current.y - lineHeight };
+  }
+  return current;
+}
+
+/** "Label: value" with a bold label; the value wraps under itself. */
+function drawField(doc: PDFDocument, state: DrawState, label: string, value: string, fonts: Fonts): DrawState {
+  const labelText = `${pdfSafeText(label)}: `;
+  const labelWidth = fonts.bold.widthOfTextAtSize(labelText, FONT_SIZE);
+  const maxWidth = PAGE_WIDTH - MARGIN * 2;
+  const safeValue = pdfSafeText(value);
+  const firstWidth = maxWidth - labelWidth;
+  let current = ensure(doc, state, LINE_HEIGHT);
+  if (firstWidth < 120) {
+    current.page.drawText(labelText, { x: MARGIN, y: current.y, size: FONT_SIZE, font: fonts.bold, color: INK });
+    current = { page: current.page, y: current.y - LINE_HEIGHT };
+    return drawWrapped(doc, current, safeValue, fonts.body, FONT_SIZE, { indent: 12 });
+  }
+  const words = safeValue.split(/\s+/).filter(Boolean);
+  let first = '';
+  while (words.length > 0) {
+    const next = first ? `${first} ${words[0]}` : words[0] ?? '';
+    if (fonts.body.widthOfTextAtSize(next, FONT_SIZE) > firstWidth && first) break;
+    first = next;
+    words.shift();
+  }
+  current.page.drawText(labelText, { x: MARGIN, y: current.y, size: FONT_SIZE, font: fonts.bold, color: INK });
+  if (first) current.page.drawText(first, { x: MARGIN + labelWidth, y: current.y, size: FONT_SIZE, font: fonts.body, color: INK });
+  current = { page: current.page, y: current.y - LINE_HEIGHT };
+  if (words.length > 0) current = drawWrapped(doc, current, words.join(' '), fonts.body, FONT_SIZE, { indent: 12 });
+  return current;
+}
+
 /**
- * PDF of the locked agreement text.
+ * PDF of the locked agreement text, laid out like the owner's original document:
+ * centered bold title, bold numbered sections, lists, and bold labels.
  * Signature names are drawn in Dancing Script, with the signer's Pacific-time line underneath.
  * The text argument is not modified.
  */
@@ -188,15 +223,73 @@ export async function renderContractPdf(text: string, times: SignatureTimes = {}
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const body = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const oblique = await doc.embedFont(StandardFonts.HelveticaOblique);
   const script = await doc.embedFont(loadScriptFont(), { subset: true });
+  const fonts: Fonts = { body, bold, script, oblique };
   let state = newPage(doc);
+  let role: 'client' | 'musician' | null = null;
+  let title = 'Wedding music agreement';
 
-  for (const segment of presentSignedContract(text, times)) {
-    state = segment.type === 'text' ? drawBody(doc, state, segment.text, body) : drawSignature(doc, state, segment, body, script, oblique);
+  for (const block of contractBlocks(text)) {
+    switch (block.kind) {
+      case 'title':
+        title = block.text;
+        state = drawWrapped(doc, state, block.text, bold, 15, { center: true, lineHeight: 19 });
+        state = { page: state.page, y: state.y - 6 };
+        break;
+      case 'heading':
+        role = null;
+        state = ensure(doc, state, LINE_HEIGHT * 3);
+        state = { page: state.page, y: state.y - 8 };
+        state = drawWrapped(doc, state, block.text, bold, 11.5, { lineHeight: 15 });
+        state = { page: state.page, y: state.y - 2 };
+        break;
+      case 'subheading': {
+        const signer = signerRoleFor(block.text);
+        if (signer) {
+          role = signer;
+          state = ensure(doc, state, LINE_HEIGHT * 5);
+          state = { page: state.page, y: state.y - 6 };
+        }
+        state = drawWrapped(doc, state, block.text, bold, FONT_SIZE);
+        break;
+      }
+      case 'gap':
+        state = { page: state.page, y: state.y - 4 };
+        break;
+      case 'list':
+        for (const item of block.items) {
+          state = ensure(doc, state, LINE_HEIGHT);
+          state.page.drawText('-', { x: MARGIN + 6, y: state.y, size: FONT_SIZE, font: body, color: INK });
+          state = drawWrapped(doc, state, item, body, FONT_SIZE, { indent: 18 });
+        }
+        break;
+      case 'paragraph':
+        state = drawWrapped(doc, state, block.text, body, FONT_SIZE);
+        state = { page: state.page, y: state.y - 3 };
+        break;
+      case 'field': {
+        const value = block.value.trim();
+        if (block.label === 'Signature' && role && isRecordedSignatureName(value)) {
+          const segment: Extract<ContractSegment, { type: 'signature' }> = {
+            type: 'signature',
+            sourceLine: block.text,
+            name: value,
+            role,
+            caption: formatElectronicSignature(role === 'musician' ? times.musicianSignedAt : times.clientSignedAt),
+            newline: '\n',
+          };
+          state = drawSignature(doc, state, segment, body, script, oblique);
+        } else {
+          state = drawField(doc, state, block.label, block.value, fonts);
+        }
+        break;
+      }
+    }
   }
 
-  doc.setTitle('Wedding music agreement');
+  doc.setTitle(title);
   doc.setAuthor('Daniel Cimo');
   return doc.save();
 }
