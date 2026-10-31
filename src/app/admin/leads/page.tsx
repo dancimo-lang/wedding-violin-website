@@ -32,7 +32,7 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState('open');
   const [source, setSource] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
@@ -60,7 +60,8 @@ export default function LeadsPage() {
     const term = search.trim().toLowerCase();
     const filtered = leads.filter((lead) => {
       if (!showArchived && lead.archived_at) return false;
-      if (status !== 'all' && lead.status !== status) return false;
+      if (status === 'open' && lead.status === 'Confirmed') return false;
+      if (status !== 'all' && status !== 'open' && lead.status !== status) return false;
       if (source !== 'all' && lead.inquiry_source !== source) return false;
       if (!term) return true;
       const client = lead.clients;
@@ -119,6 +120,7 @@ export default function LeadsPage() {
       <div className="bg-white rounded-xl shadow p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <input className={`${fieldClass} md:col-span-2`} placeholder="Search name, email, phone, venue, or service" value={search} onChange={(event) => setSearch(event.target.value)} />
         <select className={fieldClass} value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="open">Open leads (hide confirmed)</option>
           <option value="all">All statuses</option>
           {LEAD_STATUSES.map((item) => (
             <option key={item} value={item}>{item}</option>
