@@ -104,7 +104,7 @@ export default function MusicPage() {
               {music.audioSamples.title}
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
-            <SoundCloudPlaylist playlistUrl={music.soundcloud.playlistUrl} />
+            <SoundCloudPlaylist playlistUrl={music.soundcloud.embedUrl} />
             {publishedAudioSamples.length > 0 && (
               <ul className="mt-8 space-y-2">
                 {publishedAudioSamples.map((sample) => (
