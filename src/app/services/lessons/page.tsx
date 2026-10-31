@@ -1,3 +1,4 @@
+import ReviewsSection from '@/components/ReviewsSection';
 import Link from 'next/link';
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
@@ -79,6 +80,13 @@ export default function LessonsPage() {
               {lessons.philosophy.description}
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Student reviews (Google) */}
+      <section id="reviews" className="py-20">
+        <div className="container mx-auto px-4">
+          <ReviewsSection page="lessons" title="What Students Say" />
         </div>
       </section>
 

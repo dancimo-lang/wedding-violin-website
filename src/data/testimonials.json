@@ -1,29 +1,69 @@
 {
+  "_note": "Real Google reviews (5 stars), quoted word for word from Daniel's Google Business Profile. Long reviews are trimmed with an ellipsis only; do not edit wording.",
   "testimonials": [
     {
-      "id": 1,
-      "quote": "Daniel made our wedding ceremony absolutely magical. His violin playing brought tears to everyone's eyes during the processional.",
-      "author": "Sarah & Michael",
-      "event": "Wedding Ceremony",
-      "location": "Paso Robles",
-      "placeholder": true
+      "id": "didi",
+      "quote": "Daniel made my dreams come true for my wedding. I always wanted to walk down the aisle to a song from my favorite childhood movie. I didn’t have sheet music, just a recording, I played it for Daniel and just by ear he was able to adapt it to a beautiful violin solo. …",
+      "shortQuote": "Daniel made my dreams come true for my wedding. I always wanted to walk down the aisle to a song from my favorite childhood movie. …",
+      "author": "Didi M.",
+      "event": "Wedding",
+      "pages": ["home", "weddings", "booking"]
     },
     {
-      "id": 2,
-      "quote": "The perfect addition to our cocktail hour. Guests couldn't stop complimenting the beautiful music.",
-      "author": "Jennifer & David",
-      "event": "Wedding Reception",
-      "location": "San Luis Obispo",
-      "placeholder": true
+      "id": "jess",
+      "quote": "Daniel and his brother took care of all the music and sound at my wedding. From live music at the ceremony - to letting us use the PA for our vows as well as being the MC for our reception. They played violin and guitar songs at the reception and were the DJs for the reception for recorded music. They were professional and personable to work with- Good with detail and just nice to have around. Love these guys! I would use them again.",
+      "shortQuote": "… They were professional and personable to work with- Good with detail and just nice to have around. Love these guys! I would use them again.",
+      "author": "Jess P.",
+      "event": "Wedding",
+      "pages": ["home", "weddings", "booking"]
     },
     {
-      "id": 3,
-      "quote": "My daughter has been taking lessons with Daniel for a year and her progress has been incredible. He's patient, encouraging, and truly passionate about teaching.",
-      "author": "Maria T.",
-      "event": "Private Lessons",
-      "location": "San Luis Obispo",
-      "placeholder": true
+      "id": "tamara",
+      "quote": "We recently hired Daniel Cimo's band (fiddle, mandolin, and upright bass/guitar) to provide music for a party in our home in San Luis Obispo County. The band was professional, arriving early, setting up their equipment, and starting right on time. They adjusted their sound to accommodate the other activities of the evening, tailored their playlist in real-time as they read their audience, and even inspired some impromptu dancing. And they played a long, long time. We were thrilled by the number of compliments we received about the music.",
+      "author": "Tamara V.",
+      "event": "Private party",
+      "pages": ["home", "weddings"]
+    },
+    {
+      "id": "marcus",
+      "quote": "Daniel was an absolute pleasure to work with. He was easy to work with, imaginative, and delivered an outstanding performance. I highly recommend him to all my associates for both formal and informal events. He was a true professional and made the entire experience enjoyable.",
+      "author": "Marcus H.",
+      "pages": ["home", "weddings"]
+    },
+    {
+      "id": "meg",
+      "quote": "Daniel played at my mothers Celebration of Life and made the day for us and our family. His choice of music set the mood and his playing was never in the way.",
+      "author": "Meg S.",
+      "event": "Celebration of Life",
+      "pages": ["home", "weddings"]
+    },
+    {
+      "id": "jennifer",
+      "quote": "… When we started in November 2025, I struggled to even know the basic notes (A, B, C, D, E, F, G), but by April 2026, I am now site reading music and playing a piece by Bach! I cannot express the gratitude I have for the incredible patience, skill, and positive attitude that Daniel brings to each lesson. …",
+      "author": "Jennifer C.",
+      "event": "Violin lessons",
+      "pages": ["lessons"]
+    },
+    {
+      "id": "greg",
+      "quote": "I’ve been taking violin lessons from Daniel Cimo in San Luis Obispo for about a year and a half, and I couldn’t be more pleased. Daniel clearly enjoys teaching music and combines the right amount of theory, etudes and scales, sight-reading, and improvisation to make the lessons both challenging and enjoyable. He tailors the lessons to my taste in music, and includes traditional Americana, bluegrass, and Irish fiddle tunes, and contemporary popular songs. And he does it all with the patience of Job!",
+      "author": "Greg",
+      "event": "Violin lessons",
+      "pages": ["lessons"]
+    },
+    {
+      "id": "rye",
+      "quote": "I've taken lessons with Daniel for a little more than 5 years. He has always been patient, encouraging and committed to my process. We mostly play Irish Fiddle tunes which I write out using MuseScore. Daniel will record (using Ableton) a piece with a violin, a guitar, and a rhythm part that I can use to practice to and this really enhances the process of learning.",
+      "author": "Rye S.",
+      "event": "Violin lessons",
+      "pages": ["lessons"]
+    },
+    {
+      "id": "nico",
+      "quote": "Daniel is an incredibly versatile musician. I’ve seen him play classical music, country, pop, traditional Irish, jazz, and bluegrass, and always with so much passion. He’s very warm, kind, and enjoyable to work with. We’ve worked together in many different capacities over the years (I’m a musician as well). My band is called Próxima Parada, and Dan has recorded with us and performed with us many times. Whatever the vision is, he’s flexible and accommodating. Can’t recommend his services enough!",
+      "author": "Nico L.",
+      "event": "Fellow musician",
+      "pages": ["about"]
     }
-  ],
-  "note": ""
+  ]
 }
