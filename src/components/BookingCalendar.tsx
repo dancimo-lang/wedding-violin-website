@@ -158,9 +158,9 @@ export function BookingCalendar({ id, value, onChange }: Props) {
                       selected
                         ? 'bg-amber-700 text-white font-semibold'
                         : taken
-                          ? 'bg-gray-200 text-gray-500 line-through cursor-not-allowed'
+                          ? 'bg-gray-200 text-gray-700 line-through cursor-not-allowed'
                           : disabled
-                            ? 'text-gray-400 cursor-not-allowed'
+                            ? 'text-gray-500 cursor-not-allowed'
                             : `hover:bg-amber-100 text-gray-900 ${isToday ? 'ring-1 ring-amber-700' : ''}`
                     }`}
                   >

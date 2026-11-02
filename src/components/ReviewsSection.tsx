@@ -39,7 +39,7 @@ export default function ReviewsSection({
         </h2>
       )}
       <p className={`text-center mb-8 ${gold ? 'text-[#d9d1c1]' : light ? 'text-gray-700' : 'text-white/90'}`}>
-        <span className={gold ? 'text-[#c9a961]' : 'text-amber-500'} aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
+        <span className={gold ? 'text-[#c9a961]' : 'text-amber-700'} aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
       </p>
       {children}
       <div className={`grid grid-cols-1 gap-6 mx-auto ${cols}`}>

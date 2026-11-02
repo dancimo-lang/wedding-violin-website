@@ -13,7 +13,7 @@ export default function BookingPage() {
   return (
     <>
       {/* Hero */}
-      <section className={`relative py-8 md:py-14 border-b border-[#c9a961]/50 ${serifHeadings}`}>
+      <section id="plan-proposal" className={`scroll-mt-20 relative py-6 md:py-14 border-b border-[#c9a961]/50 ${serifHeadings}`}>
         <div className="absolute inset-0">
           <Image
             src="/images/booking-hero.jpg"

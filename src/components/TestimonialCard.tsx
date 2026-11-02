@@ -51,7 +51,7 @@ export default function TestimonialCard({
       <figcaption className={`border-t pt-4 ${light ? 'border-gray-200' : 'border-blue-500/30'}`}>
         <p className={`font-semibold ${light ? 'text-gray-900' : 'text-blue-50'}`}>{author}</p>
         <p className={`text-sm ${light ? 'text-gray-700' : 'text-blue-200'}`}>
-          <span className="text-amber-500" aria-label="5 out of 5 stars">★★★★★</span> Google review
+          <span className="text-amber-700" aria-label="5 out of 5 stars">★★★★★</span> Google review
           {event && ` • ${event}`}
           {location && ` • ${location}`}
         </p>

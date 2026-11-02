@@ -302,7 +302,7 @@ export default function WeddingsPage() {
               <p className="text-[#4a4338] leading-relaxed">{weddings.proposal.description}</p>
             </div>
             <Link
-              href="/booking?service=proposal#booking-form"
+              href="/booking?service=proposal#plan-proposal"
               className="inline-block self-center flex-shrink-0 bg-[#14171f] hover:bg-[#2a3040] text-[#f3ede0] px-6 py-3 rounded-full font-semibold transition-colors"
             >
               Plan Your Proposal

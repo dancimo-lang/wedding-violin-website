@@ -123,7 +123,7 @@ export default function BookingForm() {
       {/* Name */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Name <span className="text-red-500">*</span>
+          Name <span className="text-red-700">*</span>
         </label>
         <input
           type="text"
@@ -140,7 +140,7 @@ export default function BookingForm() {
       {/* Email */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-          Email <span className="text-red-500">*</span>
+          Email <span className="text-red-700">*</span>
         </label>
         <input
           type="email"
@@ -173,7 +173,7 @@ export default function BookingForm() {
       {/* Service Type */}
       <div>
         <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-2">
-          Service Type <span className="text-red-500">*</span>
+          Service Type <span className="text-red-700">*</span>
         </label>
         <select
           id="service"
@@ -324,7 +324,7 @@ export default function BookingForm() {
       {/* Message */}
       <div>
         <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-          Message <span className="text-red-500">*</span>
+          Message <span className="text-red-700">*</span>
         </label>
         <textarea
           id="message"
@@ -355,7 +355,7 @@ export default function BookingForm() {
             Privacy Policy
           </a>{' '}
           and consent to being contacted about my inquiry.{' '}
-          <span className="text-red-500">*</span>
+          <span className="text-red-700">*</span>
         </label>
       </div>
 
