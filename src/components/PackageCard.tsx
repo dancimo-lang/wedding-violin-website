@@ -25,9 +25,9 @@ export default function PackageCard({
   details = [],
 }: PackageCardProps) {
   const detailItems = details.filter((item) => item.value.trim() !== '');
-  const href = ctaHref.includes('?')
-    ? `${ctaHref}&package=${id}`
-    : `${ctaHref}?package=${id}`;
+  // Keep any #hash at the end so ?package= lands in the query string.
+  const [hrefPath, hrefHash] = ctaHref.split('#');
+  const href = `${hrefPath}${hrefPath.includes('?') ? '&' : '?'}package=${id}${hrefHash ? `#${hrefHash}` : ''}`;
 
   return (
     <div

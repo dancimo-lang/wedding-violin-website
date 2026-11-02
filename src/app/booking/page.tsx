@@ -6,6 +6,7 @@ import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import BookingForm from './booking-form';
 import ReviewsSection from '@/components/ReviewsSection';
 import BookingPrefill from './booking-prefill';
+import BookingHeading, { BookingHeadingText, GENERIC_HEADING } from './booking-heading';
 
 export default function BookingPage() {
   return (
@@ -24,12 +25,9 @@ export default function BookingPage() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-amber-900/50 to-amber-900/70" />
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 md:mb-4 drop-shadow-lg">
-            Book Daniel
-          </h1>
-          <p className="text-base md:text-xl text-amber-100 max-w-2xl mx-auto drop-shadow-lg">
-            Ready to make your event unforgettable? Fill out the form below and I&apos;ll get back to you within 24-48 hours.
-          </p>
+          <Suspense fallback={<BookingHeadingText {...GENERIC_HEADING} />}>
+            <BookingHeading />
+          </Suspense>
         </div>
       </section>
 

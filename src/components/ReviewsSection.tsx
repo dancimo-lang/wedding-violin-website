@@ -1,3 +1,4 @@
+import type React from 'react';
 import TestimonialCard from '@/components/TestimonialCard';
 import { GOOGLE_RATING, GOOGLE_REVIEWS_URL, reviewsFor } from '@/data/googleReviews';
 
@@ -8,6 +9,10 @@ interface ReviewsSectionProps {
   short?: boolean;
   variant?: 'dark' | 'light';
   className?: string;
+  /** Review ids to leave out on this page (they stay in the data). */
+  exclude?: string[];
+  /** Extra content shown under the rating line, e.g. experience stats. */
+  children?: React.ReactNode;
 }
 
 /** Real Google reviews for a page, plus a link to all reviews on Google. */
@@ -17,8 +22,10 @@ export default function ReviewsSection({
   short = false,
   variant = 'light',
   className = '',
+  exclude = [],
+  children,
 }: ReviewsSectionProps) {
-  const reviews = reviewsFor(page);
+  const reviews = reviewsFor(page).filter((review) => !exclude.includes(review.id));
   if (reviews.length === 0) return null;
   const light = variant === 'light';
   const cols = reviews.length === 1 ? 'max-w-3xl' : reviews.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-2 lg:grid-cols-3 max-w-6xl';
@@ -33,6 +40,7 @@ export default function ReviewsSection({
       <p className={`text-center mb-8 ${light ? 'text-gray-700' : 'text-white/90'}`}>
         <span className="text-amber-500" aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
       </p>
+      {children}
       <div className={`grid grid-cols-1 gap-6 mx-auto ${cols}`}>
         {reviews.map((review) => (
           <TestimonialCard
