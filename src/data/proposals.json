@@ -1,8 +1,13 @@
 {
   "video": {
+    "src": "/videos/proposal-highlight.mp4",
+    "poster": "/videos/proposal-highlight-poster.jpg",
+    "width": 558,
+    "height": 992,
     "videoId": "",
-    "title": "Proposal violin performance",
+    "title": "A real proposal, with live violin",
+    "caption": "A real proposal, with live violin",
     "orientation": "portrait",
-    "notes": "Set videoId (YouTube id) once the proposal clip is approved. Empty = no video section."
+    "notes": "Self-hosted clip (src + poster) takes priority; otherwise set videoId to a YouTube id. Clear both to hide the video. Couple consented Nov 2, 2026."
   }
 }

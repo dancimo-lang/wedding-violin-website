@@ -92,9 +92,10 @@ export default function ProposalsPage() {
           <Link href={BOOK_HREF} className={BUTTON}>
             Plan Your Proposal
           </Link>
-          <ProposalVideo />
         </div>
       </section>
+
+      <ProposalVideo />
 
       {/* What's included */}
       <section aria-labelledby="included-heading" className="py-20 md:py-24 bg-[#f4eddc]">

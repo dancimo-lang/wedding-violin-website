@@ -3,6 +3,7 @@ import { Heart, Cake, Sparkles, Briefcase, Flower2, Music, Speaker, BatteryCharg
 import { createPageMetadata } from '@/lib/page-metadata';
 import { serifHeadings } from '@/lib/fonts';
 import GoldDivider from '@/components/GoldDivider';
+import HighlightVideo from '@/components/HighlightVideo';
 import ReviewsSection from '@/components/ReviewsSection';
 import CTASection from '@/components/CTASection';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
@@ -60,6 +61,19 @@ export default function PrivateEventsPage() {
           <Link href={QUOTE_HREF} className={BUTTON}>
             Request a Quote
           </Link>
+        </div>
+      </section>
+
+      <section aria-label="Event video" className="py-14 md:py-16 bg-[#14171f]">
+        <div className="container mx-auto px-4">
+          <HighlightVideo
+            src="/videos/private-event-highlight.mp4"
+            poster="/videos/private-event-highlight-poster.jpg"
+            width={864}
+            height={1080}
+            caption="Live violin and guitar at a private event"
+            label="Video: Daniel playing live violin with a guitarist at an indoor private event"
+          />
         </div>
       </section>
 
