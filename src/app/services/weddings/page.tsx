@@ -8,6 +8,8 @@ import SingleVideo from '@/components/SingleVideo';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import music from '@/data/music.json';
 import CTASection from '@/components/CTASection';
+import FAQSection from '@/components/FAQSection';
+import faq from '@/data/faq.json';
 import ReviewsSection from '@/components/ReviewsSection';
 import { GOOGLE_RATING, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
@@ -268,6 +270,9 @@ export default function WeddingsPage() {
           </div>
         </div>
       </section>
+
+      {/* FAQ */}
+      <FAQSection title={faq.title} items={faq.items} />
 
       {/* CTA Section */}
       <CTASection
