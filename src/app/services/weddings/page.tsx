@@ -14,6 +14,7 @@ import ReviewsSection from '@/components/ReviewsSection';
 import { GOOGLE_RATING, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
+import towns from '@/data/towns.json';
 import site from '@/data/site.json';
 import { getWeddingVideoEmbeds } from '@/data/weddingVideos';
 
@@ -260,6 +261,27 @@ export default function WeddingsPage() {
               ))}
             </dl>
             <p className="text-sm text-gray-700 mt-4 text-center">{weddings.travelFees.note}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Areas I Serve */}
+      <section id="areas" aria-labelledby="areas-heading" className="pb-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 id="areas-heading" className="text-2xl font-bold text-gray-900 mb-4">Areas I Serve</h2>
+            <ul className="flex flex-wrap justify-center gap-3">
+              {towns.towns.map((town) => (
+                <li key={town.slug}>
+                  <Link
+                    href={`/services/weddings/${town.slug}`}
+                    className="inline-block bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 px-4 py-2 rounded-full font-semibold text-sm transition-colors"
+                  >
+                    {town.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>

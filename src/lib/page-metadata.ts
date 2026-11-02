@@ -78,7 +78,9 @@ function resolvePreview(path: string, imageAlt?: string) {
     direct ??
     (path.startsWith('/services/lessons/resources/')
       ? previews['/services/lessons/resources']
-      : undefined);
+      : path.startsWith('/services/weddings/')
+        ? previews['/services/weddings']
+        : undefined);
 
   if (!preview) return undefined;
 

@@ -1,0 +1,112 @@
+{
+  "towns": [
+    {
+      "slug": "san-luis-obispo",
+      "name": "San Luis Obispo",
+      "metaTitle": "Wedding Violinist in San Luis Obispo",
+      "metaDescription": "Solo violin or violin and guitar duo for San Luis Obispo weddings, from a hometown violinist with 10+ years playing weddings. Custom songs and free local travel.",
+      "angle": "Hometown page: local, no travel fee, flexible for downtown, garden, or ranch-style settings.",
+      "intro": [
+        "San Luis Obispo is home for me, so playing a wedding here feels like playing for neighbors. I've been performing on violin for over 20 years and playing weddings for over 10, and there's nothing I love more than doing it right here in town.",
+        "Because I'm local, travel within San Luis Obispo County is always free, and it's easy for me to arrive early, set up, and sound-check before your guests show up. Whether your day is indoors, in a garden, or out in the open hills around town, I'll help you plan music that fits the space.",
+        "You can choose solo violin or the violin and guitar duo, and up to three custom ceremony songs are included, so you can walk down the aisle to the song that means the most to you. The duo packages include sound equipment and wireless mics for the couple and officiant. If you'd like the full day covered, I also offer a Full Wedding + DJ package."
+      ],
+      "tipsTitle": "Planning tips for San Luis Obispo weddings",
+      "tips": [
+        "Outdoor ceremonies are lovely here. Just plan a covered or indoor backup spot in case of rain, wind, or strong sun.",
+        "No outlet near your ceremony spot? I can bring a portable battery to power the sound system. Just ask ahead of time.",
+        "Send custom song requests at least 30 days before the wedding so I have time to arrange them."
+      ]
+    },
+    {
+      "slug": "paso-robles",
+      "name": "Paso Robles",
+      "metaTitle": "Wedding Violinist in Paso Robles",
+      "metaDescription": "Live violin or violin and guitar duo for Paso Robles vineyard and winery weddings. Tips for heat, shade, and power, plus free travel within SLO County.",
+      "angle": "Wine country: vineyard and outdoor weddings, heat and shade planning, portable battery for open fields.",
+      "intro": [
+        "Paso Robles is known for its wineries and rolling vineyards, and an outdoor wine country ceremony is one of the most beautiful settings for live violin. I'd love to help you fill that open space with music, from the moment guests arrive to your recessional.",
+        "Paso summers can get hot, so a little planning goes a long way. I can't play in excessive heat or in direct sun that could damage the violin, so it helps to plan shade for the musicians and a covered backup spot. Ceremony sites out among the vines often don't have an outlet nearby. If that's the case, I can bring a portable battery to power the sound system. Just let me know ahead of time.",
+        "For larger outdoor spaces, the violin and guitar duo is a great fit. Those packages include sound equipment and wireless mics for the couple and officiant, so everyone hears your vows. If you'd like music into the evening, the cocktail hour packages pair nicely with a wine country reception. And since Paso Robles is in San Luis Obispo County, travel is free."
+      ],
+      "tipsTitle": "Planning tips for Paso Robles weddings",
+      "tips": [
+        "Plan shade for the musicians. Direct sun and excessive heat can damage the instrument.",
+        "Ceremony in the vines with no power nearby? I can bring a portable battery for the sound system on request.",
+        "Have a covered or indoor backup in mind in case the weather turns."
+      ]
+    },
+    {
+      "slug": "pismo-beach",
+      "name": "Pismo Beach",
+      "metaTitle": "Wedding Violinist in Pismo Beach",
+      "metaDescription": "Violin or violin and guitar duo for Pismo Beach weddings by the ocean. Amplification and wireless mics, tips for wind and sand, and free travel in SLO County.",
+      "angle": "Beach town: ocean wind and surf noise, amplification and mics, sheltered backup.",
+      "intro": [
+        "Pismo Beach is a classic Central Coast beach town, and a ceremony with the ocean behind you is hard to beat. Live violin by the water feels romantic, and I'd love to be part of it.",
+        "The coast brings a couple of things to plan around. Ocean breezes and the sound of the surf can carry music away, so amplification really helps. My solo violin packages include sound amplification for the violin, and the duo packages include a full sound setup with wireless mics for the couple and officiant, so your guests can hear both the music and your vows. To protect the instruments, I can't play in rain or high wind, so a sheltered spot or covered backup is a good idea for any beachside plan.",
+        "Up to three custom ceremony songs are included, so you can pick something that feels like you. Pismo Beach is in San Luis Obispo County, so there's no travel fee."
+      ],
+      "tipsTitle": "Planning tips for Pismo Beach weddings",
+      "tips": [
+        "Wind and surf noise are real by the ocean. Amplification and mics help everyone hear.",
+        "Pick a sheltered spot or covered backup in case it gets too windy or wet to play safely.",
+        "If your spot has no power nearby, I can bring a portable battery for the sound system on request."
+      ]
+    },
+    {
+      "slug": "arroyo-grande",
+      "name": "Arroyo Grande",
+      "metaTitle": "Wedding Violinist in Arroyo Grande",
+      "metaDescription": "Solo violin or violin and guitar duo for Arroyo Grande weddings, from ceremony through cocktail hour. Custom songs, sound included with the duo, free local travel.",
+      "angle": "Small-town charm and country settings: ceremony-to-cocktail-hour flow and repertoire variety.",
+      "intro": [
+        "Arroyo Grande has a warm small-town feel, with country settings just outside of town, and it's a lovely place to get married. Whether your day is intimate or a big celebration, live violin adds something special.",
+        "Live music can carry from the ceremony right into cocktail hour, so guests stay in the moment while you take photos. My cocktail hour packages cover about an hour of music after the ceremony. With the duo, I can play across classical, jazz, bossa nova, tango, Celtic, folk, pop, and more. Tell me the styles you like and a few favorite songs, and we'll build a set together.",
+        "Up to three custom ceremony songs are included, arranged for solo violin or violin and guitar. If your ceremony is outdoors, plan a covered backup just in case, and if there's no outlet nearby, I can bring a portable battery to power the sound system. Arroyo Grande is in San Luis Obispo County, so travel is free."
+      ],
+      "tipsTitle": "Planning tips for Arroyo Grande weddings",
+      "tips": [
+        "Adding cocktail hour keeps the music going while you take photos.",
+        "Share your favorite styles and songs so I can tailor the cocktail hour set.",
+        "Send custom song requests at least 30 days before the wedding."
+      ]
+    },
+    {
+      "slug": "avila-beach",
+      "name": "Avila Beach",
+      "metaTitle": "Wedding Violinist in Avila Beach",
+      "metaDescription": "Live violin for Avila Beach weddings, solo or with guitar. Tips for coastal weather and sound, wireless mics with the duo, and free travel in SLO County.",
+      "angle": "Small coastal cove: intimate seaside ceremonies, coastal fog/wind, sound for vows.",
+      "intro": [
+        "Avila Beach is a small seaside town, and it's a beautiful spot for an intimate ceremony by the water. Solo violin is a wonderful fit for smaller gatherings, and the violin and guitar duo adds a fuller sound if you're expecting a bigger crowd.",
+        "Coastal weather can change quickly, with breezes, fog, or the occasional surprise shower. To keep the instruments safe, I can't play in rain or high wind, so plan a sheltered or covered spot as a backup. Outdoors by the ocean, sound can get lost, which is why the duo packages include sound equipment and wireless mics for the couple and officiant. My solo packages include amplification for the violin, too.",
+        "I'll help you choose music for your processional, bridal entrance, and recessional, and up to three custom songs are included. Avila Beach is in San Luis Obispo County, so travel is free."
+      ],
+      "tipsTitle": "Planning tips for Avila Beach weddings",
+      "tips": [
+        "Coastal breezes and fog come and go. Have a covered or sheltered backup.",
+        "Wireless mics with the duo help your vows carry over the ocean.",
+        "No power at your seaside spot? Ask about my portable battery for the sound system."
+      ]
+    },
+    {
+      "slug": "cambria",
+      "name": "Cambria",
+      "metaTitle": "Wedding Violinist in Cambria",
+      "metaDescription": "Violin or violin and guitar duo for Cambria weddings on the coast near the pines. Custom songs, portable power on request, and free travel within SLO County.",
+      "angle": "North coast pines: woodsy, quieter setting; romantic, acoustic-feel music and remote-spot power.",
+      "intro": [
+        "Cambria sits on the north coast, where the pine forest meets the ocean. It's a quiet, romantic place for a wedding, and the gentle sound of live violin suits it perfectly.",
+        "Weddings out here often have a woodsy or garden feel, with spots that can be a little off the beaten path. If your ceremony site doesn't have power nearby, I can bring a portable battery to run the sound system. Just let me know ahead of time. Coastal weather still applies, so plan a covered backup in case of rain or wind, since I can't play in those conditions without risking the instruments.",
+        "Classical, Celtic, and folk pieces suit a woodsy setting beautifully, and I'm happy to tailor the music to yours. Up to three custom ceremony songs are included, and I can add cocktail hour if you'd like music to carry on afterward. Cambria is in San Luis Obispo County, so travel is free."
+      ],
+      "tipsTitle": "Planning tips for Cambria weddings",
+      "tips": [
+        "Remote or forest ceremony spot? A portable battery for the sound system is available on request.",
+        "Plan a covered backup for coastal rain or wind.",
+        "Ask about classical, Celtic, and folk pieces that suit a woodsy setting."
+      ]
+    }
+  ]
+}
