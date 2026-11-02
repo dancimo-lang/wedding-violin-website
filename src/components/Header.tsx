@@ -160,7 +160,7 @@ export default function Header() {
 
             {/* Book Now Button */}
             <Link
-              href="/booking"
+              href="/booking#booking-form"
               className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-md hover:shadow-lg"
             >
               Book Now
@@ -170,7 +170,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <div className="flex lg:hidden items-center gap-3">
             <Link
-              href="/booking"
+              href="/booking#booking-form"
               className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-md hover:shadow-lg"
             >
               Book Now

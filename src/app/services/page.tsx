@@ -67,7 +67,7 @@ export default function ServicesPage() {
         title="Not Sure Which Service You Need?"
         description="Get in touch and let's discuss how I can help make your event or project special."
         buttonText="Contact Me"
-        href="/booking"
+        href="/booking#booking-form"
         variant="dark"
       />
     </>

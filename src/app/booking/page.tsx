@@ -1,3 +1,4 @@
+import { serifHeadings } from '@/lib/fonts';
 import { Suspense } from 'react';
 import Image from 'next/image';
 import site from '@/data/site.json';
@@ -6,12 +7,13 @@ import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import BookingForm from './booking-form';
 import ReviewsSection from '@/components/ReviewsSection';
 import BookingPrefill from './booking-prefill';
+import BookingHeading, { BookingHeadingText } from './booking-heading';
 
 export default function BookingPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative py-20">
+      <section id="plan-proposal" className={`scroll-mt-20 relative py-6 md:py-14 border-b border-[#c9a961]/50 ${serifHeadings}`}>
         <div className="absolute inset-0">
           <Image
             src="/images/booking-hero.jpg"
@@ -22,23 +24,30 @@ export default function BookingPage() {
             priority
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/50 to-amber-900/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#14171f]/70 to-[#14171f]/85" />
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-            Book Daniel
-          </h1>
-          <p className="text-xl text-amber-100 max-w-2xl mx-auto drop-shadow-lg">
-            Ready to make your event unforgettable? Fill out the form below and I&apos;ll get back to you within 24-48 hours.
-          </p>
+          {/* Fallback is the static HTML; props are inline because values exported from a client module are not readable here. */}
+          <Suspense
+            fallback={
+              <BookingHeadingText
+                title="Book Daniel"
+                text="Ready to make your event unforgettable? Fill out the form below and I'll get back to you within 24-48 hours."
+              />
+            }
+          >
+            <BookingHeading />
+          </Suspense>
         </div>
       </section>
 
       {/* Form Section */}
-      <section className="py-20">
+      <section className="py-6 md:py-12">
         <div className="container mx-auto px-4">
-          <ReviewsSection page="booking" short className="mb-12 max-w-4xl mx-auto bg-gray-50 rounded-2xl p-6 md:p-8 shadow-xl" />
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+            <div
+              id="booking-form"
+              className="scroll-mt-24 bg-white rounded-2xl shadow-xl p-6 md:p-12"
+            >
               {/* useSearchParams bails out of static rendering. The form stays outside that boundary so its HTML is in the first response; this fallback renders nothing. */}
               <Suspense fallback={null}>
                 <BookingPrefill />
@@ -91,6 +100,7 @@ export default function BookingPage() {
               </p>
             </div>
           </div>
+          <ReviewsSection page="booking" short className="mt-12 max-w-4xl mx-auto bg-gray-50 rounded-2xl p-6 md:p-8 shadow-xl" />
         </div>
       </section>
     </>

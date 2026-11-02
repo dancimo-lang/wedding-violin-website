@@ -1,3 +1,4 @@
+import type React from 'react';
 import TestimonialCard from '@/components/TestimonialCard';
 import { GOOGLE_RATING, GOOGLE_REVIEWS_URL, reviewsFor } from '@/data/googleReviews';
 
@@ -6,8 +7,12 @@ interface ReviewsSectionProps {
   title?: string;
   /** Use the shorter excerpt when a review has one. */
   short?: boolean;
-  variant?: 'dark' | 'light';
+  variant?: 'dark' | 'light' | 'gold';
   className?: string;
+  /** Review ids to leave out on this page (they stay in the data). */
+  exclude?: string[];
+  /** Extra content shown under the rating line, e.g. experience stats. */
+  children?: React.ReactNode;
 }
 
 /** Real Google reviews for a page, plus a link to all reviews on Google. */
@@ -17,22 +22,26 @@ export default function ReviewsSection({
   short = false,
   variant = 'light',
   className = '',
+  exclude = [],
+  children,
 }: ReviewsSectionProps) {
-  const reviews = reviewsFor(page);
+  const reviews = reviewsFor(page).filter((review) => !exclude.includes(review.id));
   if (reviews.length === 0) return null;
   const light = variant === 'light';
+  const gold = variant === 'gold';
   const cols = reviews.length === 1 ? 'max-w-3xl' : reviews.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-2 lg:grid-cols-3 max-w-6xl';
 
   return (
     <div className={className}>
       {title && (
-        <h2 className={`text-3xl font-bold mb-3 text-center ${light ? 'text-gray-900' : 'text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]'}`}>
+        <h2 className={`text-3xl font-bold mb-3 text-center ${gold ? 'text-[#f3ede0] font-semibold md:text-4xl' : light ? 'text-gray-900' : 'text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]'}`}>
           {title}
         </h2>
       )}
-      <p className={`text-center mb-8 ${light ? 'text-gray-700' : 'text-white/90'}`}>
-        <span className="text-amber-500" aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
+      <p className={`text-center mb-8 ${gold ? 'text-[#d9d1c1]' : light ? 'text-gray-700' : 'text-white/90'}`}>
+        <span className={gold ? 'text-[#c9a961]' : 'text-amber-700'} aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
       </p>
+      {children}
       <div className={`grid grid-cols-1 gap-6 mx-auto ${cols}`}>
         {reviews.map((review) => (
           <TestimonialCard
@@ -49,7 +58,7 @@ export default function ReviewsSection({
           href={GOOGLE_REVIEWS_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className={`font-semibold underline underline-offset-2 ${light ? 'text-amber-800 hover:text-amber-900' : 'text-amber-200 hover:text-white'}`}
+          className={`font-semibold underline underline-offset-2 ${gold ? 'text-[#e6cf95] hover:text-[#f3ede0]' : light ? 'text-amber-800 hover:text-amber-900' : 'text-amber-200 hover:text-white'}`}
         >
           Read all reviews on Google<span className="sr-only"> (opens in a new tab)</span>
         </a>

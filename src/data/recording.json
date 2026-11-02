@@ -58,6 +58,6 @@
     "title": "Let's Create Something Beautiful",
     "description": "Tell me about your project and let's bring your vision to life.",
     "buttonText": "Request a Quote",
-    "href": "/booking?service=recording"
+    "href": "/booking?service=recording#booking-form"
   }
 }

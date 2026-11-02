@@ -14,6 +14,8 @@ interface HeroProps {
   secondaryCtaOnClick?: () => void;
   tertiaryCtaText?: string;
   tertiaryCtaOnClick?: () => void;
+  /** 'gold' uses soft gold buttons (weddings page) instead of blue. */
+  ctaTone?: 'blue' | 'gold';
   videoSrc?: string;
   posterSrc?: string;
   posterAlt?: string;
@@ -38,6 +40,7 @@ export default function Hero({
   secondaryCtaOnClick,
   tertiaryCtaText,
   tertiaryCtaOnClick,
+  ctaTone = 'blue',
   videoSrc,
   posterSrc,
   posterAlt,
@@ -54,6 +57,14 @@ export default function Hero({
     large: 'min-h-[80vh]',
     medium: 'min-h-[60vh]',
   };
+
+  const gold = ctaTone === 'gold';
+  const primaryCtaClass = gold
+    ? 'bg-[#c9a961] hover:bg-[#d8bc7c] text-[#14171f] rounded-full font-semibold transition-colors px-8 py-4 text-lg'
+    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]';
+  const secondaryCtaClass = gold
+    ? 'border border-[#c9a961] bg-[#14171f]/60 text-[#f3ede0] hover:bg-[#14171f]/80 px-8 py-4 rounded-full font-semibold text-lg transition-colors'
+    : 'border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]';
 
   return (
     <section className={`relative ${sizeClasses[size]} flex items-center justify-center`}>
@@ -120,14 +131,14 @@ export default function Hero({
                   ctaOnClick ? (
                     <button
                       onClick={ctaOnClick}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]"
+                      className={primaryCtaClass}
                     >
                       {ctaText}
                     </button>
                   ) : (
                     <Link
                       href={ctaHref}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]"
+                      className={primaryCtaClass}
                     >
                       {ctaText}
                     </Link>
@@ -137,14 +148,14 @@ export default function Hero({
                   secondaryCtaOnClick ? (
                     <button
                       onClick={secondaryCtaOnClick}
-                      className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                      className={secondaryCtaClass}
                     >
                       {secondaryCtaText}
                     </button>
                   ) : secondaryCtaHref && (
                     <Link
                       href={secondaryCtaHref}
-                      className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                      className={secondaryCtaClass}
                     >
                       {secondaryCtaText}
                     </Link>
@@ -153,7 +164,7 @@ export default function Hero({
                 {tertiaryCtaText && tertiaryCtaOnClick && (
                   <button
                     onClick={tertiaryCtaOnClick}
-                    className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]"
+                    className={gold ? 'inline-flex items-center gap-2 border border-[#c9a961] bg-[#14171f]/60 text-[#f3ede0] hover:bg-[#14171f]/80 px-6 py-4 rounded-full font-semibold text-lg transition-colors' : 'inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]'}
                   >
                     <Music className="w-5 h-5" />
                     {tertiaryCtaText}
@@ -199,7 +210,7 @@ export default function Hero({
               {ctaText && (
                 <Link
                   href={ctaHref}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]"
+                  className={primaryCtaClass}
                 >
                   {ctaText}
                 </Link>
@@ -208,14 +219,14 @@ export default function Hero({
                 secondaryCtaOnClick ? (
                   <button
                     onClick={secondaryCtaOnClick}
-                    className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                    className={secondaryCtaClass}
                   >
                     {secondaryCtaText}
                   </button>
                 ) : secondaryCtaHref && (
                   <Link
                     href={secondaryCtaHref}
-                    className="border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                    className={secondaryCtaClass}
                   >
                     {secondaryCtaText}
                   </Link>
@@ -224,7 +235,7 @@ export default function Hero({
               {tertiaryCtaText && tertiaryCtaOnClick && (
                 <button
                   onClick={tertiaryCtaOnClick}
-                  className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]"
+                  className={gold ? 'inline-flex items-center gap-2 border border-[#c9a961] bg-[#14171f]/60 text-[#f3ede0] hover:bg-[#14171f]/80 px-6 py-4 rounded-full font-semibold text-lg transition-colors' : 'inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]'}
                 >
                   <Music className="w-5 h-5" />
                   {tertiaryCtaText}
