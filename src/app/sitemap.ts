@@ -1,3 +1,4 @@
+import towns from '@/data/towns.json'
 import type { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -59,5 +60,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    ...towns.towns.map((town) => ({
+      url: `${baseUrl}/services/weddings/${town.slug}`,
+      lastModified,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
   ]
 }
