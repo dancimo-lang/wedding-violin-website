@@ -240,6 +240,30 @@ export default function WeddingsPage() {
         </div>
       </section>
 
+      {/* Travel Fees */}
+      <section id="travel-fees" aria-labelledby="travel-fees-heading" className="pb-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
+            <h2 id="travel-fees-heading" className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center">
+              {weddings.travelFees.title}
+            </h2>
+            <p className="text-gray-700 text-center mb-6">{weddings.travelFees.description}</p>
+            <dl className="divide-y divide-gray-200">
+              {weddings.travelFees.tiers.map((tier) => (
+                <div key={tier.area} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-6 py-4">
+                  <dt className="min-w-0">
+                    <span className="font-semibold text-gray-900">{tier.area}</span>
+                    {tier.examples && <span className="block text-sm text-gray-600 mt-1">{tier.examples}</span>}
+                  </dt>
+                  <dd className="font-bold text-amber-800 sm:text-right sm:max-w-[14rem] sm:flex-shrink-0">{tier.fee}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-sm text-gray-700 mt-4 text-center">{weddings.travelFees.note}</p>
+          </div>
+        </div>
+      </section>
+
       {/* Trust Indicators */}
       <section className="py-16 border-t border-b border-gray-100">
         <div className="container mx-auto px-4">
