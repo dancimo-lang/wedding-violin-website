@@ -32,7 +32,7 @@ export default function RecordingPage() {
         subtitle={recording.hero.subtitle}
         description={recording.hero.description}
         ctaText="Request a Quote"
-        ctaHref="/booking?service=recording"
+        ctaHref="/booking?service=recording#booking-form"
         splitLayout={true}
         leftSideImage={undefined}
         rightSideImage="/images/newrecording-hero.jpg"

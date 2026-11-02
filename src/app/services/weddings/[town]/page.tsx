@@ -88,10 +88,10 @@ export default async function TownWeddingPage({ params }: { params: Promise<Para
             </div>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
-                href={`/booking?service=weddings`}
+                href={`/booking?service=weddings#booking-form`}
                 className="inline-block bg-amber-700 hover:bg-amber-800 text-white px-8 py-4 rounded-full font-semibold transition-colors"
               >
-                Check My Date
+                Book Now
               </Link>
               <Link
                 href="/services/weddings#wedding-packages"
@@ -157,7 +157,7 @@ export default async function TownWeddingPage({ params }: { params: Promise<Para
         title={`Planning a ${town.name} Wedding?`}
         description="Tell me about your day, and I'll get back to you within 24-48 hours."
         buttonText="Request a Quote"
-        href="/booking?service=weddings"
+        href="/booking?service=weddings#booking-form"
         variant="primary"
       />
     </>

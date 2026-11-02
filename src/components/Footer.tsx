@@ -162,7 +162,7 @@ export default function Footer() {
               </div>
 
               <Link
-                href="/booking"
+                href="/booking#booking-form"
                 className="inline-block mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-[0_0_20px_rgba(0,174,239,0.5)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
               >
                 Book Now

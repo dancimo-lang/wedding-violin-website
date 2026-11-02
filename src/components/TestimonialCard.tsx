@@ -6,7 +6,7 @@ interface TestimonialCardProps {
   event?: string;
   location?: string;
   /** "dark" for the blue home sections, "light" for white/gray sections. */
-  variant?: 'dark' | 'light';
+  variant?: 'dark' | 'light' | 'gold';
 }
 
 export default function TestimonialCard({
@@ -17,6 +17,22 @@ export default function TestimonialCard({
   variant = 'dark',
 }: TestimonialCardProps) {
   const light = variant === 'light';
+  if (variant === 'gold') {
+    return (
+      <figure className="h-full flex flex-col bg-[#1d2230] rounded-xl p-8 border border-[#c9a961]/30">
+        <Quote aria-hidden="true" className="w-8 h-8 text-[#c9a961] mb-4" />
+        <blockquote className="flex-1 mb-6 italic text-[#e9e3d6] leading-relaxed">&ldquo;{quote}&rdquo;</blockquote>
+        <figcaption className="border-t border-[#c9a961]/30 pt-4">
+          <p className="font-semibold text-[#f3ede0]">{author}</p>
+          <p className="text-sm text-[#c8c0b0]">
+            <span className="text-[#c9a961]" aria-label="5 out of 5 stars">★★★★★</span> Google review
+            {event && ` • ${event}`}
+            {location && ` • ${location}`}
+          </p>
+        </figcaption>
+      </figure>
+    );
+  }
   return (
     <figure
       className={
@@ -35,7 +51,7 @@ export default function TestimonialCard({
       <figcaption className={`border-t pt-4 ${light ? 'border-gray-200' : 'border-blue-500/30'}`}>
         <p className={`font-semibold ${light ? 'text-gray-900' : 'text-blue-50'}`}>{author}</p>
         <p className={`text-sm ${light ? 'text-gray-700' : 'text-blue-200'}`}>
-          <span className="text-amber-500" aria-label="5 out of 5 stars">★★★★★</span> Google review
+          <span className="text-amber-700" aria-label="5 out of 5 stars">★★★★★</span> Google review
           {event && ` • ${event}`}
           {location && ` • ${location}`}
         </p>

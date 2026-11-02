@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { Heart, Clock, Music, CloudSun, MapPin, Instagram } from 'lucide-react';
+import { serifHeadings } from '@/lib/fonts';
+import GoldDivider from '@/components/GoldDivider';
 import Hero from '@/components/Hero';
 import PackageCard from '@/components/PackageCard';
 import SingleVideo from '@/components/SingleVideo';
@@ -11,7 +13,6 @@ import CTASection from '@/components/CTASection';
 import FAQSection from '@/components/FAQSection';
 import faq from '@/data/faq.json';
 import ReviewsSection from '@/components/ReviewsSection';
-import { GOOGLE_RATING, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 import { JsonLd, generateServiceSchema } from '@/components/SEO';
 import weddings from '@/data/weddings.json';
 import towns from '@/data/towns.json';
@@ -24,6 +25,16 @@ const iconMap = {
   'Custom Song Requests': Music,
   'Outdoor Weddings': CloudSun,
 };
+
+// Shown elsewhere on the site, but not wedding reviews, so left off this page only.
+const NON_WEDDING_REVIEW_IDS = ['tamara', 'meg'];
+
+// Same experience claims as the FAQ ("over 20 years", "over 10", "over 10").
+const EXPERIENCE_STATS = [
+  { value: '20+', label: 'Years Playing Violin' },
+  { value: '10+', label: 'Years Playing Weddings' },
+  { value: '10+', label: 'Years Teaching' },
+];
 
 function packageDetail(label: string, value: string | null) {
   if (typeof value !== 'string' || value.trim() === '') return null;
@@ -42,7 +53,7 @@ export default function WeddingsPage() {
   };
 
   return (
-    <>
+    <div className={`bg-[#14171f] ${serifHeadings}`}>
       <JsonLd
         data={generateServiceSchema({
           name: 'Wedding Violin Services',
@@ -56,8 +67,9 @@ export default function WeddingsPage() {
         title={weddings.hero.title}
         subtitle={weddings.hero.subtitle}
         description={weddings.hero.description}
-        ctaText="Request a Quote"
-        ctaHref="/booking?service=weddings"
+        ctaText="Book Now"
+        ctaTone="gold"
+        ctaHref="/booking?service=weddings#booking-form"
         secondaryCtaText="Pricing"
         secondaryCtaOnClick={scrollToPackages}
         tertiaryCtaText="Listen"
@@ -67,73 +79,30 @@ export default function WeddingsPage() {
         size="large"
       />
 
-      {/* Proposal Section */}
-      <section className="py-20 bg-gradient-to-br from-rose-50 to-amber-50">
+      {/* Audio samples and video, right after the hero */}
+      <section id="wedding-sampler" aria-labelledby="sampler-heading" className="py-20 md:py-24 bg-[#14171f] scroll-mt-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-rose-100 rounded-full mb-6">
-              <Heart className="w-8 h-8 text-rose-500" />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-black mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
-              {weddings.proposal.title}
-              <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-amber-500 rounded-full"></span>
-            </h2>
-            <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
-              {weddings.proposal.description}
-            </p>
-            <Link
-              href="/booking?service=proposal"
-              className="inline-block mt-8 bg-rose-600 hover:bg-rose-700 text-white px-8 py-4 rounded-full font-semibold transition-colors"
-            >
-              Plan Your Proposal
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Packages and wedding video sit side by side on large screens */}
-      <section id="wedding-packages" className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-start gap-12 lg:gap-10">
+          <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-start gap-10">
             <div className="min-w-0 flex-1">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
-                  Wedding Packages
-                </h2>
-                <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-                  Choose the perfect package for your special day. All packages include custom song selection and professional service.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {weddings.packages.map((pkg) => (
-                  <PackageCard
-                    key={pkg.id}
-                    id={pkg.id}
-                    name={pkg.name}
-                    price={pkg.price}
-                    features={pkg.features}
-                    popular={pkg.popular}
-                    ctaText="Request Quote"
-                    ctaHref="/booking?service=weddings"
-                    details={[
-                      packageDetail('Duration', pkg.duration),
-                      packageDetail('What raises the price', pkg.priceFactors),
-                      packageDetail('Recommended lead time', pkg.leadTime),
-                    ].filter((item): item is { label: string; value: string } => item !== null)}
-                  />
-                ))}
-              </div>
+              <GoldDivider />
+              <h2 id="sampler-heading" className="text-3xl md:text-4xl font-semibold text-[#f3ede0] mb-4 text-center">
+                Wedding Repertoire Samples
+              </h2>
+              <p className="text-lg text-[#d9d1c1] text-center mb-8 max-w-2xl mx-auto">
+                Violin and Guitar versions of commonly requested Ceremony songs
+              </p>
+              <SoundCloudPlaylist playlistUrl={music.soundcloud.embedUrl} />
+              <p className="text-center text-sm text-[#c8c0b0] mt-4">
+                Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies
+              </p>
             </div>
 
             <aside
               aria-labelledby="see-us-play-heading"
               className="w-full max-w-xs mx-auto lg:mx-0 lg:w-80 lg:shrink-0"
             >
-              <h2
-                id="see-us-play-heading"
-                className="text-3xl font-bold text-white mb-6 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
-              >
+              <GoldDivider />
+              <h2 id="see-us-play-heading" className="text-3xl md:text-4xl font-semibold text-[#f3ede0] mb-4 text-center mb-6">
                 See Us Play
               </h2>
 
@@ -153,7 +122,7 @@ export default function WeddingsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="See more on Instagram, opens in a new tab"
-                    className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-amber-100 hover:text-white transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-[#e6cf95] hover:text-[#f3ede0] underline underline-offset-2 transition-colors"
                   >
                     <Instagram size={16} aria-hidden="true" />
                     See more on Instagram
@@ -181,144 +150,164 @@ export default function WeddingsPage() {
         </div>
       </section>
 
-      {/* Audio Samples Section */}
-      {/* Real Google reviews */}
-      <section id="reviews" className="py-20 bg-gradient-to-br from-rose-50 to-amber-50">
+      {/* Packages */}
+      <section id="wedding-packages" aria-labelledby="packages-heading" className="py-20 md:py-24 bg-[#f4eddc] scroll-mt-20">
         <div className="container mx-auto px-4">
-          <ReviewsSection page="weddings" title="What Clients Say" />
-        </div>
-      </section>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <GoldDivider />
+              <h2 id="packages-heading" className="text-3xl md:text-4xl font-semibold text-[#1d1a15] mb-4 text-center">
+                Wedding Packages
+              </h2>
+              <p className="text-lg text-[#4a4338] max-w-2xl mx-auto">
+                Choose the perfect package for your special day. All packages include custom song selection and professional service.
+              </p>
+            </div>
 
-      <section id="wedding-sampler" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
-              Wedding Repertoire Samples
-            </h2>
-            <p className="text-lg text-gray-700 text-center mb-8 max-w-2xl mx-auto">
-              Violin and Guitar versions of commonly requested Ceremony songs
-            </p>
-            <SoundCloudPlaylist playlistUrl={music.soundcloud.embedUrl} />
-            <p className="text-center text-sm text-gray-600 mt-4">
-              Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {weddings.packages.map((pkg) => (
+                <PackageCard
+                  key={pkg.id}
+                  id={pkg.id}
+                  name={pkg.name}
+                  price={pkg.price}
+                  features={pkg.features}
+                  popular={pkg.popular}
+                  tone="gold"
+                  ctaText="Book Now"
+                  ctaHref="/booking?service=weddings#booking-form"
+                  details={[
+                    packageDetail('Recommended lead time', pkg.leadTime),
+                  ].filter((item): item is { label: string; value: string } => item !== null)}
+                />
+              ))}
+            </div>
+
+            <p className="text-center text-[#4a4338] mt-12">
+              Travel is free within San Luis Obispo County.{' '}
+              <a href="#travel-fees" className="font-semibold text-[#7a5c1e] underline underline-offset-2 hover:text-[#5c4413]">
+                See travel fees
+              </a>{' '}
+              for weddings farther away.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Logistics Section */}
-      <section className="py-20 bg-gray-50">
+      {/* Reviews with experience stats */}
+      <section id="reviews" className="py-20 md:py-24 bg-[#14171f]">
+        <div className="container mx-auto px-4">
+          <GoldDivider />
+          <ReviewsSection variant="gold" page="weddings" title="What Clients Say" exclude={NON_WEDDING_REVIEW_IDS}>
+            <ul className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-10 text-center" aria-label="Experience">
+              {EXPERIENCE_STATS.map((stat) => (
+                <li key={stat.label}>
+                  <span className="block text-3xl font-semibold text-[#c9a961] font-[family-name:var(--font-playfair)]">{stat.value}</span>
+                  <span className="text-sm text-[#d9d1c1]">{stat.label}</span>
+                </li>
+              ))}
+            </ul>
+          </ReviewsSection>
+        </div>
+      </section>
+
+      {/* Logistics: what to expect, travel fees and areas served */}
+      <section id="logistics" aria-labelledby="logistics-heading" className="py-20 md:py-24 bg-[#f4eddc]">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
+            <GoldDivider />
+            <h2 id="logistics-heading" className="text-3xl md:text-4xl font-semibold text-[#1d1a15] mb-4 text-center mb-10">
               {weddings.logistics.title}
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {weddings.logistics.items.map((item, index) => {
                 const IconComponent = iconMap[item.title as keyof typeof iconMap] || MapPin;
                 return (
-                  <div
-                    key={index}
-                    className="flex gap-4 bg-white p-6 rounded-xl shadow-md"
-                  >
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <IconComponent className="w-6 h-6 text-amber-700" />
+                  <div key={index} className="flex gap-4 bg-[#fbf7ee] p-6 rounded-lg border border-[#e4d9c3]">
+                    <div className="w-12 h-12 border border-[#c9a961] rounded-full flex items-center justify-center flex-shrink-0">
+                      <IconComponent className="w-6 h-6 text-[#7a5c1e]" aria-hidden="true" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">
-                        {item.title}
-                      </h3>
-                      <p className="text-gray-600 text-sm">
-                        {item.description}
-                      </p>
+                      <h3 className="text-lg font-semibold text-[#1d1a15] mb-2">{item.title}</h3>
+                      <p className="text-[#4a4338] text-sm leading-relaxed">{item.description}</p>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Travel Fees */}
-      <section id="travel-fees" aria-labelledby="travel-fees-heading" className="pb-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
-            <h2 id="travel-fees-heading" className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center">
-              {weddings.travelFees.title}
-            </h2>
-            <p className="text-gray-700 text-center mb-6">{weddings.travelFees.description}</p>
-            <dl className="divide-y divide-gray-200">
-              {weddings.travelFees.tiers.map((tier) => (
-                <div key={tier.area} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-6 py-4">
-                  <dt className="min-w-0">
-                    <span className="font-semibold text-gray-900">{tier.area}</span>
-                    {tier.examples && <span className="block text-sm text-gray-600 mt-1">{tier.examples}</span>}
-                  </dt>
-                  <dd className="font-bold text-amber-800 sm:text-right sm:max-w-[14rem] sm:flex-shrink-0">{tier.fee}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="text-sm text-gray-700 mt-4 text-center">{weddings.travelFees.note}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Areas I Serve */}
-      <section id="areas" aria-labelledby="areas-heading" className="pb-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 id="areas-heading" className="text-2xl font-bold text-gray-900 mb-4">Areas I Serve</h2>
-            <ul className="flex flex-wrap justify-center gap-3">
-              {towns.towns.map((town) => (
-                <li key={town.slug}>
-                  <Link
-                    href={`/services/weddings/${town.slug}`}
-                    className="inline-block bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 px-4 py-2 rounded-full font-semibold text-sm transition-colors"
-                  >
-                    {town.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Indicators */}
-      <section className="py-16 border-t border-b border-gray-100">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
-            <div>
-              <a
-                href={GOOGLE_REVIEWS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-block"
-              >
-                <p className="text-4xl font-bold text-amber-700">{GOOGLE_RATING.value}★</p>
-                <p className="text-gray-700 text-sm mt-1 underline underline-offset-2 group-hover:text-gray-900">
-                  from {GOOGLE_RATING.count} Google reviews<span className="sr-only"> (opens in a new tab)</span>
-                </p>
-              </a>
+            <div id="travel-fees" className="mt-8 bg-[#fbf7ee] rounded-lg border border-[#e4d9c3] p-6 md:p-8 scroll-mt-24">
+              <h3 id="travel-fees-heading" className="text-2xl font-semibold text-[#1d1a15] mb-2 text-center">
+                {weddings.travelFees.title}
+              </h3>
+              <p className="text-[#4a4338] text-center mb-6">{weddings.travelFees.description}</p>
+              <dl className="divide-y divide-[#e4d9c3]">
+                {weddings.travelFees.tiers.map((tier) => (
+                  <div key={tier.area} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-6 py-4">
+                    <dt className="min-w-0">
+                      <span className="font-semibold text-[#1d1a15]">{tier.area}</span>
+                      {tier.examples && <span className="block text-sm text-[#5a5246] mt-1">{tier.examples}</span>}
+                    </dt>
+                    <dd className="font-semibold text-[#7a5c1e] sm:text-right sm:max-w-[14rem] sm:flex-shrink-0">{tier.fee}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="text-sm text-[#4a4338] mt-4 text-center">{weddings.travelFees.note}</p>
             </div>
-            <div>
-              <p className="text-4xl font-bold text-amber-700">10+</p>
-              <p className="text-gray-600 text-sm mt-1">Years Playing Weddings</p>
-            </div>
-            <div className="col-span-2 md:col-span-1 min-w-0 px-1">
-              <p className="text-4xl md:text-3xl lg:text-4xl font-bold text-amber-700 leading-tight">
-                Central Coast
-              </p>
-              <p className="text-gray-600 text-sm mt-1">& Beyond — Travel Available</p>
+
+            <div id="areas" className="mt-8 text-center">
+              <h3 id="areas-heading" className="text-2xl font-semibold text-[#1d1a15] mb-4">Areas I Serve</h3>
+              <ul className="flex flex-wrap justify-center gap-3">
+                {towns.towns.map((town) => (
+                  <li key={town.slug}>
+                    <Link
+                      href={`/services/weddings/${town.slug}`}
+                      className="inline-block bg-[#fbf7ee] border border-[#c9a961] text-[#5c4413] hover:bg-[#f4eddc] px-4 py-2 rounded-full font-semibold text-sm transition-colors"
+                    >
+                      {town.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <FAQSection title={faq.title} items={faq.items} />
+      <FAQSection tone="gold" title={faq.title} items={faq.items} />
+
+      {/* Proposal banner */}
+      <section aria-labelledby="proposal-heading" className="py-14 bg-[#f4eddc] border-t border-[#c9a961]/40">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center gap-6 text-center md:text-left">
+            <div className="inline-flex items-center justify-center w-12 h-12 border border-[#c9a961] rounded-full mx-auto md:mx-0 flex-shrink-0">
+              <Heart className="w-6 h-6 text-[#7a5c1e]" aria-hidden="true" />
+            </div>
+            <div className="flex-1">
+              <h2 id="proposal-heading" className="text-2xl font-semibold text-[#1d1a15] mb-2">
+                {weddings.proposal.title}
+              </h2>
+              <p className="text-[#4a4338] leading-relaxed">{weddings.proposal.description}</p>
+            </div>
+            <div className="flex flex-col items-center gap-3 flex-shrink-0">
+            <Link
+              href="/booking?service=proposal#plan-proposal"
+              className="inline-block bg-[#14171f] hover:bg-[#2a3040] text-[#f3ede0] px-6 py-3 rounded-full font-semibold transition-colors"
+            >
+              Plan Your Proposal
+            </Link>
+              <Link
+                href="/services/proposals"
+                className="text-sm font-semibold text-[#7a5c1e] underline underline-offset-2 hover:text-[#5c4413]"
+              >
+                Learn more<span className="sr-only"> about proposals</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* CTA Section */}
       <CTASection
@@ -326,8 +315,8 @@ export default function WeddingsPage() {
         description={weddings.cta.description}
         buttonText={weddings.cta.buttonText}
         href={weddings.cta.href}
-        variant="primary"
+        variant="gold"
       />
-    </>
+    </div>
   );
 }
