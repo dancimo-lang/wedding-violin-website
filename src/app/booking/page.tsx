@@ -6,7 +6,7 @@ import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import BookingForm from './booking-form';
 import ReviewsSection from '@/components/ReviewsSection';
 import BookingPrefill from './booking-prefill';
-import BookingHeading, { BookingHeadingText, GENERIC_HEADING } from './booking-heading';
+import BookingHeading, { BookingHeadingText } from './booking-heading';
 
 export default function BookingPage() {
   return (
@@ -25,7 +25,15 @@ export default function BookingPage() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-amber-900/50 to-amber-900/70" />
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <Suspense fallback={<BookingHeadingText {...GENERIC_HEADING} />}>
+          {/* Fallback is the static HTML; props are inline because values exported from a client module are not readable here. */}
+          <Suspense
+            fallback={
+              <BookingHeadingText
+                title="Book Daniel"
+                text="Ready to make your event unforgettable? Fill out the form below and I'll get back to you within 24-48 hours."
+              />
+            }
+          >
             <BookingHeading />
           </Suspense>
         </div>
