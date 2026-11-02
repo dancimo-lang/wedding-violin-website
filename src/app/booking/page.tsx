@@ -1,3 +1,4 @@
+import { serifHeadings } from '@/lib/fonts';
 import { Suspense } from 'react';
 import Image from 'next/image';
 import site from '@/data/site.json';
@@ -12,7 +13,7 @@ export default function BookingPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative py-8 md:py-14">
+      <section className={`relative py-8 md:py-14 border-b border-[#c9a961]/50 ${serifHeadings}`}>
         <div className="absolute inset-0">
           <Image
             src="/images/booking-hero.jpg"
@@ -23,7 +24,7 @@ export default function BookingPage() {
             priority
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/50 to-amber-900/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#14171f]/70 to-[#14171f]/85" />
         <div className="relative z-10 container mx-auto px-4 text-center">
           {/* Fallback is the static HTML; props are inline because values exported from a client module are not readable here. */}
           <Suspense

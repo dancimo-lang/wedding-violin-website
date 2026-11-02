@@ -5,7 +5,7 @@ interface CTASectionProps {
   description?: string;
   buttonText: string;
   href: string;
-  variant?: 'primary' | 'dark' | 'light' | 'warm';
+  variant?: 'primary' | 'dark' | 'light' | 'gold';
 }
 
 export default function CTASection({
@@ -28,11 +28,11 @@ export default function CTASection({
       descText: 'text-blue-200',
       button: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-400 hover:to-blue-500 shadow-[0_0_25px_rgba(0,174,239,0.5)] hover:shadow-[0_0_35px_rgba(0,174,239,0.7)]',
     },
-    warm: {
-      bg: 'bg-gradient-to-br from-amber-700 to-rose-700',
-      text: 'text-white',
-      descText: 'text-amber-50',
-      button: 'bg-white text-amber-800 hover:bg-amber-50 shadow-lg',
+    gold: {
+      bg: 'bg-[#14171f] border-t border-[#c9a961]/40',
+      text: 'text-[#f3ede0]',
+      descText: 'text-[#d9d1c1]',
+      button: 'bg-[#c9a961] hover:bg-[#d8bc7c] text-[#14171f]',
     },
     light: {
       bg: 'bg-gradient-to-br from-blue-900/20 to-blue-800/10',
