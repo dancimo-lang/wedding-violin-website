@@ -347,7 +347,7 @@ export function ContractPanel({
           </label>
           {privateEvent && (
             <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Private event agreement for birthdays, parties, corporate and other non-wedding events. Its wording is a draft pending approval.
+              Private event agreement for birthdays, parties, corporate and other non-wedding events.
             </p>
           )}
           {privateEvent && (

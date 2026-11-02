@@ -1,6 +1,6 @@
 -- 011: allow the Private Event agreement (template 'private-event', package 'EVENT').
 -- Its performance fee is entered by the admin, so any positive amount is allowed.
--- NOT YET APPLIED. Run it before sending the first private event agreement.
+-- Applied to the live DB on 2026-11-02.
 
 ALTER TABLE public.contracts DROP CONSTRAINT IF EXISTS contracts_template_package_check;
 ALTER TABLE public.contracts

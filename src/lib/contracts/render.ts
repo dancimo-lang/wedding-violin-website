@@ -250,7 +250,7 @@ function weddingMusicTemplateForPackage(packageId: PackageId): string {
 
 const PACKAGE_CHOICE_SENTENCE =
   'The Client shall select one of the following packages. The selected package determines the services provided under this Agreement.\n';
-/** DRAFT wording requested by the owner (Oct 30, 2026). */
+/** Wording requested by the owner (Oct 30, 2026). */
 const PACKAGE_SELECTED_SENTENCE = 'The Client has selected the following package:\n';
 
 function statedPackageTemplate(packageId: PackageId): string {
