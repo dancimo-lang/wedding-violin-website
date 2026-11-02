@@ -213,8 +213,10 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   assert.doesNotMatch(master, /Signature: Daniel Cimo/);
 
   assert.match(full, /The total fee for all services described in this Agreement is:\n\$3,000\.00/);
-  assert.match(full, /A non-refundable retainer of \$1,500\.00 is required to reserve the event date\./);
-  assert.match(full, /The remaining balance of \$1,500\.00 is due no later than 30 days prior to the wedding date\./);
+  assert.match(full, /A retainer equal to fifty percent \(50%\) of the total fee, \$1,500\.00, is due upon signing this Agreement\./);
+  assert.match(full, /The remaining fifty percent \(50%\) of the total fee, \$1,500\.00, is due no later than thirty \(30\) days before the wedding date\./);
+  assert.match(full, /Payments may be made by credit or debit card through the Musician's secure online payment system/);
+  assert.match(full, /If the Client cancels more than ninety \(90\) days before the wedding date, the Musician will refund fifty percent \(50%\) of any payments received in addition to the retainer\./);
   assert.match(full, /DJ Services: \$200 per hour/);
   assert.match(full, /Live Duo Performance: \$300 per hour/);
   assert.equal(full.includes(SOLO_VIOLIN_OVERTIME), false);
@@ -818,7 +820,7 @@ const fullZeroFields = {
 } as const;
 const fixtureSigned = { client1SignedName: 'Alex Rivera', client2SignedName: 'Jordan Lee', signedOn: 'June 1, 2026', photoOptOut: true, musicianSignedName: 'Daniel Cimo', musicianSignedOn: 'June 2, 2026' };
 
-test('full wedding with no travel or additional fee is byte-identical to the previous text', () => {
+test('full wedding with no travel or additional fee is matches the approved fixture text', () => {
   const dir = new URL('./__fixtures__/', import.meta.url);
   assert.equal(renderContract({ ...fullZeroFields }, UNSIGNED), readFileSync(new URL('full-wedding-zero-fee.txt', dir), 'utf8'));
   assert.equal(renderContract({ ...fullZeroFields }, fixtureSigned), readFileSync(new URL('full-wedding-zero-fee-signed.txt', dir), 'utf8'));
@@ -841,7 +843,7 @@ test('full wedding with travel and additional fees uses the approved wording and
     "2. Event Fee\nPackage Fee: $3,000.00\nTravel Fee: $250.00\nAdditional Agreed Fees: $300.00 (New Year's Day holiday fee)\nTotal Contract Price: $3,550.00\nThis fee includes:\n",
   ));
   assert.ok(text.includes("Standard setup and breakdown\nWeddings outside the Musician's usual service area may require a travel fee to account for mileage, travel time, lodging, parking, tolls, or other necessary travel expenses. Any travel fee or additional fee is listed above and has been agreed upon in writing before this Agreement is finalized. No other travel fees shall apply unless the event location, schedule, or scope of services changes significantly after execution of this Agreement.\n\n3."));
-  assert.ok(text.includes('A non-refundable retainer of $1,775.00 (50% of the Total Contract Price) is required to reserve the event date.\nThe remaining balance of $1,775.00 (50% of the Total Contract Price) is due no later than 30 days prior to the wedding date.\nAccepted payment methods:'));
+  assert.ok(text.includes("A retainer equal to fifty percent (50%) of the Total Contract Price, $1,775.00, is due upon signing this Agreement. The wedding date is secured once this Agreement has been signed by both parties and the retainer has been received.\nThe remaining fifty percent (50%) of the Total Contract Price, $1,775.00, is due no later than thirty (30) days before the wedding date.\nPayments may be made by credit or debit card"));
   assert.equal(text.includes('The total fee for all services'), false);
   assert.equal(summary.retainerCents + summary.balanceCents, 355000);
   const noNote = renderContract({ ...fields, additionalFeesDescription: undefined }, UNSIGNED);

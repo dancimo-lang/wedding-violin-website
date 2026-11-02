@@ -443,7 +443,9 @@ const FULL_TRAVEL_ORIGINAL =
 const FULL_TRAVEL_REPLACEMENT =
   "Weddings outside the Musician's usual service area may require a travel fee to account for mileage, travel time, lodging, parking, tolls, or other necessary travel expenses. Any travel fee or additional fee is listed above and has been agreed upon in writing before this Agreement is finalized. No other travel fees shall apply unless the event location, schedule, or scope of services changes significantly after execution of this Agreement.\n";
 const FULL_PAYMENT_ORIGINAL =
-  'A non-refundable retainer of $1,500.00 is required to reserve the event date.\nThe remaining balance of $1,500.00 is due no later than 30 days prior to the wedding date.\n';
+  'A retainer equal to fifty percent (50%) of the total fee, $1,500.00, is due upon signing this Agreement.';
+const FULL_BALANCE_ORIGINAL =
+  'The remaining fifty percent (50%) of the total fee, $1,500.00, is due no later than thirty (30) days before the wedding date.';
 
 /**
  * Owner-approved wording for a full wedding agreement with a travel or additional fee.
@@ -451,7 +453,7 @@ const FULL_PAYMENT_ORIGINAL =
  */
 function fullWeddingFees(body: string, fields: StoredRenderFields): string {
   if (!(fields.travelFeeCents > 0) && !(fields.additionalFeesCents > 0)) return body;
-  for (const part of [FULL_FEE_ORIGINAL, FULL_TRAVEL_ORIGINAL, FULL_PAYMENT_ORIGINAL]) {
+  for (const part of [FULL_FEE_ORIGINAL, FULL_TRAVEL_ORIGINAL, FULL_PAYMENT_ORIGINAL, FULL_BALANCE_ORIGINAL]) {
     if (!body.includes(part)) throw new Error('Full wedding agreement fee wording changed.');
   }
   const fees =
@@ -459,10 +461,13 @@ function fullWeddingFees(body: string, fields: StoredRenderFields): string {
     `Travel Fee: $${formatMoney(fields.travelFeeCents)}\n` +
     `Additional Agreed Fees: $${formatMoney(fields.additionalFeesCents)}${additionalFeesNote(fields)}\n` +
     `Total Contract Price: $${formatMoney(fields.totalCents)}\n`;
-  const payment =
-    `A non-refundable retainer of $${formatMoney(fields.retainerCents)} (50% of the Total Contract Price) is required to reserve the event date.\n` +
-    `The remaining balance of $${formatMoney(fields.balanceCents)} (50% of the Total Contract Price) is due no later than 30 days prior to the wedding date.\n`;
-  return body.replace(FULL_FEE_ORIGINAL, fees).replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT).replace(FULL_PAYMENT_ORIGINAL, payment);
+  const payment = `A retainer equal to fifty percent (50%) of the Total Contract Price, $${formatMoney(fields.retainerCents)}, is due upon signing this Agreement.`;
+  const balance = `The remaining fifty percent (50%) of the Total Contract Price, $${formatMoney(fields.balanceCents)}, is due no later than thirty (30) days before the wedding date.`;
+  return body
+    .replace(FULL_FEE_ORIGINAL, fees)
+    .replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT)
+    .replace(FULL_PAYMENT_ORIGINAL, payment)
+    .replace(FULL_BALANCE_ORIGINAL, balance);
 }
 
 export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields, keyof FeeSummary | 'templateId' | 'packageId'> & { templateId?: never }): StoredRenderFields {
