@@ -1,0 +1,8 @@
+{
+  "video": {
+    "videoId": "",
+    "title": "Proposal violin performance",
+    "orientation": "portrait",
+    "notes": "Set videoId (YouTube id) once the proposal clip is approved. Empty = no video section."
+  }
+}

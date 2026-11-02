@@ -4,6 +4,8 @@
     { "label": "About", "href": "/about" },
     { "label": "Services", "href": "/services", "children": [
       { "label": "Weddings", "href": "/services/weddings" },
+      { "label": "Proposals", "href": "/services/proposals" },
+      { "label": "Private Events", "href": "/services/private-events" },
       { "label": "Lessons", "href": "/services/lessons" },
       { "label": "Recording", "href": "/services/recording" }
     ]},

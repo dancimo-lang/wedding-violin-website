@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Heart, Clock, Music, CloudSun, MapPin, Instagram } from 'lucide-react';
 import { serifHeadings } from '@/lib/fonts';
+import GoldDivider from '@/components/GoldDivider';
 import Hero from '@/components/Hero';
 import PackageCard from '@/components/PackageCard';
 import SingleVideo from '@/components/SingleVideo';
@@ -34,17 +35,6 @@ const EXPERIENCE_STATS = [
   { value: '10+', label: 'Years Playing Weddings' },
   { value: '10+', label: 'Years Teaching' },
 ];
-
-/** Thin gold line with a small diamond, used above section headings. */
-function GoldDivider() {
-  return (
-    <div className="flex items-center justify-center gap-3 mb-6" aria-hidden="true">
-      <span className="h-px w-12 bg-[#c9a961]/70" />
-      <span className="h-1.5 w-1.5 rotate-45 bg-[#c9a961]" />
-      <span className="h-px w-12 bg-[#c9a961]/70" />
-    </div>
-  );
-}
 
 function packageDetail(label: string, value: string | null) {
   if (typeof value !== 'string' || value.trim() === '') return null;
@@ -301,12 +291,20 @@ export default function WeddingsPage() {
               </h2>
               <p className="text-[#4a4338] leading-relaxed">{weddings.proposal.description}</p>
             </div>
+            <div className="flex flex-col items-center gap-3 flex-shrink-0">
             <Link
               href="/booking?service=proposal#plan-proposal"
-              className="inline-block self-center flex-shrink-0 bg-[#14171f] hover:bg-[#2a3040] text-[#f3ede0] px-6 py-3 rounded-full font-semibold transition-colors"
+              className="inline-block bg-[#14171f] hover:bg-[#2a3040] text-[#f3ede0] px-6 py-3 rounded-full font-semibold transition-colors"
             >
               Plan Your Proposal
             </Link>
+              <Link
+                href="/services/proposals"
+                className="text-sm font-semibold text-[#7a5c1e] underline underline-offset-2 hover:text-[#5c4413]"
+              >
+                Learn more<span className="sr-only"> about proposals</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
