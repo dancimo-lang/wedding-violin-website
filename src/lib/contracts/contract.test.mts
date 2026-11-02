@@ -216,7 +216,7 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   assert.match(full, /A retainer equal to fifty percent \(50%\) of the total fee, \$1,500\.00, is due upon signing this Agreement\./);
   assert.match(full, /The remaining fifty percent \(50%\) of the total fee, \$1,500\.00, is due no later than thirty \(30\) days before the wedding date\./);
   assert.match(full, /Payments may be made by credit or debit card through the Musician's secure online payment system/);
-  assert.match(full, /If the Client cancels more than ninety \(90\) days before the wedding date, the Musician will refund fifty percent \(50%\) of any payments received in addition to the retainer\./);
+  assert.match(full, /8\. Cancellation Policy\nCancellation by Client\nThe retainer is non-refundable\./);
   assert.match(full, /DJ Services: \$200 per hour/);
   assert.match(full, /Live Duo Performance: \$300 per hour/);
   assert.equal(full.includes(SOLO_VIOLIN_OVERTIME), false);
