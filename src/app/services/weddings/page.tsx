@@ -57,7 +57,7 @@ export default function WeddingsPage() {
         subtitle={weddings.hero.subtitle}
         description={weddings.hero.description}
         ctaText="Request a Quote"
-        ctaHref="/booking?service=weddings"
+        ctaHref="/booking?service=weddings#booking-form"
         secondaryCtaText="Pricing"
         secondaryCtaOnClick={scrollToPackages}
         tertiaryCtaText="Listen"
@@ -82,7 +82,7 @@ export default function WeddingsPage() {
               {weddings.proposal.description}
             </p>
             <Link
-              href="/booking?service=proposal"
+              href="/booking?service=proposal#booking-form"
               className="inline-block mt-8 bg-rose-600 hover:bg-rose-700 text-white px-8 py-4 rounded-full font-semibold transition-colors"
             >
               Plan Your Proposal
@@ -115,7 +115,7 @@ export default function WeddingsPage() {
                     features={pkg.features}
                     popular={pkg.popular}
                     ctaText="Request Quote"
-                    ctaHref="/booking?service=weddings"
+                    ctaHref="/booking?service=weddings#booking-form"
                     details={[
                       packageDetail('Duration', pkg.duration),
                       packageDetail('What raises the price', pkg.priceFactors),

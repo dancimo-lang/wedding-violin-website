@@ -230,7 +230,7 @@ export default function TunePage() {
         title="Want to Learn This Tune?"
         description="Schedule a lesson to get personalized instruction on this piece and others."
         buttonText="Book a Lesson"
-        href="/booking?service=lessons"
+        href="/booking?service=lessons#booking-form"
         variant="primary"
       />
     </>

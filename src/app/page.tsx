@@ -23,7 +23,7 @@ export default function Home() {
         ctaText="Listen"
         ctaHref="/services/weddings#wedding-sampler"
         secondaryCtaText="Book Now"
-        secondaryCtaHref="/booking"
+        secondaryCtaHref="/booking#booking-form"
         tertiaryCtaText="Watch Video"
         tertiaryCtaOnClick={() => {
           const target = document.getElementById('see-us-play');
@@ -152,7 +152,7 @@ export default function Home() {
         title="Ready to Create Unforgettable Moments?"
         description="Whether it's your wedding day, your first violin lesson, or your next recording project — let's make it special."
         buttonText="Get in Touch"
-        href="/booking"
+        href="/booking#booking-form"
         variant="primary"
       />
     </>

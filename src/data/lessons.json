@@ -69,6 +69,6 @@
     "title": "Start Your Musical Journey",
     "description": "Book a trial lesson and discover the joy of playing violin.",
     "buttonText": "Schedule a Lesson",
-    "href": "/booking?service=lessons"
+    "href": "/booking?service=lessons#booking-form"
   }
 }

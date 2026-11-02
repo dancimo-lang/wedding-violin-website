@@ -206,7 +206,7 @@ export default function ResourcesPage() {
         title="Need Help Learning These Tunes?"
         description="Schedule a lesson to get personalized guidance on any tune in our library."
         buttonText="Book a Lesson"
-        href="/booking?service=lessons"
+        href="/booking?service=lessons#booking-form"
         variant="primary"
       />
     </>

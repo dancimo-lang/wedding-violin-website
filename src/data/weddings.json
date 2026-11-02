@@ -152,6 +152,6 @@
     "title": "Ready to Make Your Day Unforgettable?",
     "description": "Let's discuss your vision and create the perfect musical atmosphere for your wedding.",
     "buttonText": "Request a Quote",
-    "href": "/booking?service=weddings"
+    "href": "/booking?service=weddings#booking-form"
   }
 }

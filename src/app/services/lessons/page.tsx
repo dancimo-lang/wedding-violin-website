@@ -34,7 +34,7 @@ export default function LessonsPage() {
         subtitle={lessons.hero.subtitle}
         description={lessons.hero.description}
         ctaText="Schedule a Lesson"
-        ctaHref="/booking?service=lessons"
+        ctaHref="/booking?service=lessons#booking-form"
         secondaryCtaText="Student Resources"
         secondaryCtaHref="/services/lessons/resources"
         posterSrc="/images/lessons-hero.jpg"
