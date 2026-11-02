@@ -28,7 +28,7 @@ import {
   type SignatureOverlay,
 } from './render';
 import { signOnce } from './sign';
-import { validateSignature } from './signers';
+import { validateSignature, validateSigningDates } from './signers';
 import { generateContractToken, hashContractText, isContractToken, tokensMatch } from './token';
 import { contractFromAddress, contractReplyTo } from './mail';
 
@@ -500,7 +500,8 @@ test('the couple can fill only the event details that are still blank', () => {
       cocktailStart: '',
       cocktailEnd: '',
     }),
-    'These event details are still blank: Venue name, Venue address, Ceremony start time, Cocktail hour start time, and Cocktail hour end time. The couple will be asked to fill them in before signing.',
+    // Cocktail-hour lines are "(if applicable)", so they are optional and not listed.
+    'These event details are still blank: Venue name, Venue address, and Ceremony start time. The couple will be asked to fill them in before signing.',
   );
   assert.equal(
     missingCoupleDetailMessage({
@@ -548,7 +549,7 @@ test('the couple can fill only the event details that are still blank', () => {
   if (missing.ok) return;
   assert.equal(
     missing.error,
-    'Fill in these event details before signing: Venue address, Ceremony start time, Cocktail hour start time, and Cocktail hour end time.',
+    'Fill in these event details before signing: Venue address and Ceremony start time.',
   );
 
   const backwards = applyCoupleEventDetails(open, {
@@ -858,4 +859,82 @@ test('wedding music agreement shows the additional fee description only when set
   );
   assert.equal(cleanAdditionalFeesDescription('  a\nb  '), 'a b');
   assert.equal(cleanAdditionalFeesDescription('x'.repeat(100)).length, 80);
+});
+
+test('edition 3 states the selected package and keeps its includes verbatim', async () => {
+  const { weddingMusicTemplate } = await import('../../data/contracts/wedding-music');
+  const summary = computeFees({ packageId: 'B', travelFeeCents: 0, additionalFeesCents: 0, discountCents: 0, weddingDateIso: '2027-06-12' });
+  assert.ok(!('error' in summary));
+  if ('error' in summary) return;
+  const fields = feeSnapshot(summary, { ...sampleFields, packageId: undefined, templateId: undefined } as never);
+  assert.equal(fields.renderEdition, 3);
+  const text = renderContract(fields);
+  assert.match(text, /1\. Package Selection\nThe Client has selected the following package:\nPackage B: Solo Violin Ceremony & Cocktail Hour — \$1,000\nIncludes:\n/);
+  assert.ok(!text.includes('The Client shall select one of the following packages'));
+  for (const line of ['Live solo violin performance during cocktail hour', 'Sound amplification for the violin']) {
+    assert.ok(weddingMusicTemplate.includes(line) && text.includes(line));
+  }
+});
+
+test('each signer has their own signing date', () => {
+  const fields: StoredRenderFields = { ...sampleFields, renderEdition: 3 };
+  const text = renderContract(fields, {
+    ...UNSIGNED,
+    client1SignedName: 'Alex Rivera',
+    client2SignedName: 'Jordan Lee',
+    signedOn: 'October 30, 2026',
+    client1SignedOn: 'October 29, 2026',
+    client2SignedOn: 'October 30, 2026',
+  });
+  assert.match(text, /Client 1\nPrinted Name: Alex Rivera\nSignature: Alex Rivera\nDate: October 29, 2026\n/);
+  assert.match(text, /Client 2 \(if applicable\)\nPrinted Name: Jordan Lee\nSignature: Jordan Lee\nDate: October 30, 2026\n/);
+  assert.equal(validateSigningDates({ client1Name: 'Alex Rivera', client2Name: '', client1SignedOn: '', client2SignedOn: '' }, '2026-10-30'), 'Enter the date Client 1 is signing.');
+  assert.equal(validateSigningDates({ client1Name: 'Alex Rivera', client2Name: '', client1SignedOn: '2026-10-30', client2SignedOn: '' }, '2026-10-30'), null);
+  assert.equal(validateSigningDates({ client1Name: 'Alex Rivera', client2Name: 'Jordan Lee', client1SignedOn: '2026-10-30', client2SignedOn: '' }, '2026-10-30'), 'Enter the date Client 2 is signing.');
+  assert.match(validateSigningDates({ client1Name: 'A B', client2Name: '', client1SignedOn: '2026-11-05', client2SignedOn: '' }, '2026-10-30') ?? '', /today's date/);
+});
+
+test('the private event agreement fills every placeholder and has no wedding wording', () => {
+  const summary = computeFees({ packageId: 'EVENT', travelFeeCents: 5000, additionalFeesCents: 0, discountCents: 0, weddingDateIso: '2027-03-20', performanceFeeCents: 60000 });
+  assert.ok(!('error' in summary));
+  if ('error' in summary) return;
+  assert.equal(summary.totalCents, 65000);
+  assert.equal(summary.retainerCents, 32500);
+  assert.equal(summary.finalPaymentDueDate, '2027-02-18');
+  assert.deepEqual(computeFees({ packageId: 'EVENT', travelFeeCents: 0, additionalFeesCents: 0, discountCents: 0, weddingDateIso: '2027-03-20' }), { error: 'Enter the performance fee.' });
+  const fields = feeSnapshot(summary, { ...sampleFields, eventType: 'Birthday party', performanceDescription: 'Solo violin, two hours' } as never);
+  assert.equal(fields.templateId, 'private-event');
+  const text = renderContract(fields);
+  assert.ok(!/wedding|ceremony|bridal/i.test(text));
+  assert.match(text, /^Private Event Music Agreement\n/);
+  assert.match(text, /Event Type: Birthday party\n/);
+  assert.match(text, /Performance Fee: \$600\.00\nTravel Fee: \$50\.00\n/);
+  assert.match(text, /Total Contract Price: \$650\.00\nRetainer \(50% of Total Contract Price\): \$325\.00\n/);
+  assert.match(text, /The Client has engaged the Musician for the following services:\nSolo violin, two hours\n/);
+  assert.equal(normalizeStoredFields(JSON.parse(JSON.stringify(fields)))?.eventType, 'Birthday party');
+});
+
+test('agreement layout finds the title, sections, lists, and signer blocks', async () => {
+  const { contractBlocks } = await import('./layout');
+  const text = renderContract({ ...sampleFields, renderEdition: 3, packageId: 'C' });
+  const blocks = contractBlocks(text);
+  assert.deepEqual(blocks[0], { kind: 'title', text: 'Wedding Music Agreement' });
+  const headings = blocks.filter((block) => block.kind === 'heading').map((block) => ('text' in block ? block.text : ''));
+  assert.equal(headings[0], '1. Package Selection');
+  assert.equal(headings.length, 13);
+  assert.ok(blocks.some((block) => block.kind === 'list' && block.items[0] === 'Up to 30 minutes of pre-ceremony music as guests arrive'));
+  assert.ok(blocks.some((block) => block.kind === 'subheading' && block.text === 'Client 2 (if applicable)'));
+  // Every non-blank source line is still drawn.
+  const drawn = blocks.flatMap((block) => (block.kind === 'list' ? block.items : 'text' in block ? [block.text] : []));
+  assert.equal(drawn.length, text.split('\n').filter((line) => line.trim()).length);
+});
+
+test('optional "(if applicable)" blanks may stay empty at signing', () => {
+  const open: StoredRenderFields = { ...sampleFields, renderEdition: 3, packageId: 'B', venueAddress: '', cocktailStart: '', cocktailEnd: '' };
+  const result = applyCoupleEventDetails(open, { venueAddress: '1 Main St', cocktailStart: '', cocktailEnd: '' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.deepEqual(result.supplied, ['venueAddress']);
+  const required = applyCoupleEventDetails(open, { cocktailStart: '17:00' });
+  assert.equal(required.ok, false);
 });
