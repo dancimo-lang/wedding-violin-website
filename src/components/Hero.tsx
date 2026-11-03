@@ -75,7 +75,7 @@ export default function Hero({
   const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}${shrink}`;
 
   const actions = (
-    <div className={`flex flex-col sm:flex-row sm:flex-wrap items-center gap-4 ${contentAlign === 'left' ? 'justify-center md:justify-start' : 'justify-center'}`}>
+    <div className={`flex flex-col sm:flex-row items-center gap-3 sm:gap-4 ${contentAlign === 'left' ? 'justify-center md:flex-nowrap md:justify-start' : 'justify-center sm:flex-wrap'}`}>
       {ctaText && (
         ctaOnClick ? (
           <button onClick={ctaOnClick} className={primaryCtaClass}>
@@ -180,8 +180,8 @@ export default function Hero({
           </div>
         </div>
       ) : (
-        <div className={`relative z-10 container mx-auto px-4 text-center ${contentAlign === 'left' ? 'md:text-left' : ''} ${size === 'medium' ? 'mt-[20vh]' : size === 'large' && contentAlign !== 'left' ? '-mt-[20vh]' : ''}`}>
-          <div className={`max-w-4xl ${contentAlign === 'left' ? 'mx-auto w-full md:mx-0 md:max-w-[19rem]' : 'mx-auto'}`}>
+        <div className={`relative z-10 container mx-auto px-6 text-center ${contentAlign === 'left' ? 'md:text-left' : ''} ${size === 'medium' ? 'mt-[20vh]' : size === 'large' && contentAlign !== 'left' ? '-mt-[20vh]' : ''}`}>
+          <div className={`max-w-4xl ${contentAlign === 'left' ? 'mx-auto w-full md:mx-0 md:max-w-lg' : 'mx-auto'}`}>
             {subtitle && (
               <p className={`text-white/90 font-medium tracking-wide uppercase text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${contentAlign === 'left' ? 'mb-3' : 'mb-4'}`}>
                 {subtitle}
@@ -191,7 +191,7 @@ export default function Hero({
               {title}
             </h1>
             {description && (
-              <p className={`text-white/90 max-w-2xl drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl ${contentAlign === 'left' ? 'text-base md:text-lg mb-5 md:mx-0' : 'text-lg md:text-xl mb-8 mx-auto'}`}>
+              <p className={`text-white/90 drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] ${contentAlign === 'left' ? 'text-base md:text-lg mb-6 max-md:mx-auto max-md:max-w-2xl max-md:backdrop-blur-sm max-md:bg-black/30 max-md:px-6 max-md:py-3 max-md:rounded-2xl' : 'text-lg md:text-xl mb-8 max-w-2xl mx-auto backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl'}`}>
                 {description}
               </p>
             )}
