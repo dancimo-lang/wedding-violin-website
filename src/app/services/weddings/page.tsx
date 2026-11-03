@@ -74,8 +74,11 @@ export default function WeddingsPage() {
         secondaryCtaOnClick={scrollToPackages}
         tertiaryCtaText="Listen"
         tertiaryCtaOnClick={scrollToSampler}
-        posterSrc="/images/weddings-hero.jpg"
-        posterAlt="Daniel playing violin outdoors in a black suit, with trees and blue sky behind him"
+        posterSrc="/images/weddings-hero-violin.jpg"
+        posterAlt="Daniel seated on a sunlit winery patio playing violin, with vineyard rows and a white wall behind him"
+        imageClassName="max-md:object-[48%_center] md:origin-left md:scale-[1.18] md:object-left"
+        overlayClassName="max-md:bg-black/60 md:bg-gradient-to-r md:from-black/70 md:via-black/50 md:to-black/25"
+        contentAlign="left"
         size="large"
       />
 

@@ -15,7 +15,7 @@ const pages = [
   { file: 'home.jpg', photo: 'home-image.jpg', headline: 'Central Coast Wedding Violinist' },
   { file: 'about.jpg', photo: 'daniel-cimo-professional.jpg', headline: 'Violinist, Educator & Recording Artist' },
   { file: 'services.jpg', photo: 'serveces-heroedited.jpg', headline: 'Weddings, Lessons & Recording' },
-  { file: 'weddings.jpg', photo: 'weddings-hero.jpg', headline: 'San Luis Obispo Wedding Violinist' },
+  { file: 'weddings.jpg', photo: 'weddings-hero-violin.jpg', headline: 'San Luis Obispo Wedding Violinist' },
   { file: 'lessons.jpg', photo: 'lessons-hero.jpg', headline: 'Private Violin Lessons' },
   { file: 'tune-library.jpg', photo: 'lessons-hero.jpg', headline: 'Violin Tune Library' },
   { file: 'recording.jpg', photo: 'newrecording-hero.jpg', headline: 'Studio Recording Services' },

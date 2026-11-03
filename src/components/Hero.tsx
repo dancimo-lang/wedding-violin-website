@@ -21,6 +21,12 @@ interface HeroProps {
   posterSrc?: string;
   posterAlt?: string;
   backgroundPosition?: string;
+  /** Responsive object-position classes. Overrides backgroundPosition when set. */
+  imageClassName?: string;
+  /** Replaces the default dark gradient over the photo. */
+  overlayClassName?: string;
+  /** Left keeps the headline over one side of a wide photo. Mobile stays centered. */
+  contentAlign?: 'center' | 'left';
   overlay?: boolean;
   size?: 'full' | 'large' | 'medium';
   splitLayout?: boolean;
@@ -45,6 +51,9 @@ export default function Hero({
   posterSrc,
   posterAlt,
   backgroundPosition = 'center',
+  imageClassName,
+  overlayClassName,
+  contentAlign = 'center',
   overlay = true,
   size = 'large',
   splitLayout = false,
@@ -62,7 +71,7 @@ export default function Hero({
   const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}`;
 
   const actions = (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+    <div className={`flex flex-col sm:flex-row items-center gap-4 ${contentAlign === 'left' ? 'justify-center md:justify-start' : 'justify-center'}`}>
       {ctaText && (
         ctaOnClick ? (
           <button onClick={ctaOnClick} className={primaryCtaClass}>
@@ -95,7 +104,7 @@ export default function Hero({
   );
 
   return (
-    <section className={`relative flex bg-charcoal ${sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
+    <section className={`relative flex overflow-hidden bg-charcoal ${sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
       {videoSrc && (
         <video
           autoPlay
@@ -121,15 +130,15 @@ export default function Hero({
             }
             fill
             sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: backgroundPosition }}
+            className={`object-cover ${imageClassName ?? ''}`}
+            style={imageClassName ? undefined : { objectPosition: backgroundPosition }}
             priority
           />
         </div>
       )}
 
       {overlay && (
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
+        <div className={`absolute inset-0 ${overlayClassName ?? 'bg-gradient-to-b from-black/40 via-black/20 to-black/50'}`} />
       )}
 
       {splitLayout ? (
@@ -167,8 +176,8 @@ export default function Hero({
           </div>
         </div>
       ) : (
-        <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
-          <div className="max-w-4xl mx-auto">
+        <div className={`relative z-10 container mx-auto px-4 text-center ${contentAlign === 'left' ? 'md:text-left' : ''} ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? (contentAlign === 'left' ? 'md:-mt-[10vh]' : '-mt-[20vh]') : ''}`}>
+          <div className={`max-w-4xl ${contentAlign === 'left' ? 'mx-auto md:mx-0 md:max-w-lg' : 'mx-auto'}`}>
             {subtitle && (
               <p className="text-white/90 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                 {subtitle}
