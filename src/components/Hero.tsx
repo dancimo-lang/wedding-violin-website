@@ -21,6 +21,14 @@ interface HeroProps {
   posterSrc?: string;
   posterAlt?: string;
   backgroundPosition?: string;
+  /** Responsive object-position classes. Overrides backgroundPosition when set. */
+  imageClassName?: string;
+  /** Replaces the default dark gradient over the photo. */
+  overlayClassName?: string;
+  /** Left keeps the headline over one side of a wide photo. Mobile stays centered. */
+  contentAlign?: 'center' | 'left';
+  /** Replaces the default min-height for this hero, for example a wide photo frame. */
+  frameClassName?: string;
   overlay?: boolean;
   size?: 'full' | 'large' | 'medium';
   splitLayout?: boolean;
@@ -45,6 +53,10 @@ export default function Hero({
   posterSrc,
   posterAlt,
   backgroundPosition = 'center',
+  imageClassName,
+  overlayClassName,
+  contentAlign = 'center',
+  frameClassName,
   overlay = true,
   size = 'large',
   splitLayout = false,
@@ -57,12 +69,13 @@ export default function Hero({
     medium: 'min-h-[60vh]',
   };
 
-  const primaryCtaClass = btnGold;
-  const secondaryCtaClass = btnOutlineOnDark;
-  const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}`;
+  const shrink = contentAlign === 'left' ? ' shrink-0' : '';
+  const primaryCtaClass = btnGold + shrink;
+  const secondaryCtaClass = btnOutlineOnDark + shrink;
+  const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}${shrink}`;
 
   const actions = (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+    <div className={`flex flex-col sm:flex-row items-center gap-3 sm:gap-4 ${contentAlign === 'left' ? 'justify-center md:flex-nowrap md:justify-start' : 'justify-center sm:flex-wrap'}`}>
       {ctaText && (
         ctaOnClick ? (
           <button onClick={ctaOnClick} className={primaryCtaClass}>
@@ -95,7 +108,7 @@ export default function Hero({
   );
 
   return (
-    <section className={`relative flex bg-charcoal ${sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
+    <section className={`relative flex overflow-hidden bg-charcoal ${frameClassName ?? sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
       {videoSrc && (
         <video
           autoPlay
@@ -121,15 +134,15 @@ export default function Hero({
             }
             fill
             sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: backgroundPosition }}
+            className={`object-cover ${imageClassName ?? ''}`}
+            style={imageClassName ? undefined : { objectPosition: backgroundPosition }}
             priority
           />
         </div>
       )}
 
       {overlay && (
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
+        <div className={`absolute inset-0 ${overlayClassName ?? 'bg-gradient-to-b from-black/40 via-black/20 to-black/50'}`} />
       )}
 
       {splitLayout ? (
@@ -167,18 +180,18 @@ export default function Hero({
           </div>
         </div>
       ) : (
-        <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
-          <div className="max-w-4xl mx-auto">
+        <div className={`relative z-10 container mx-auto px-6 text-center ${contentAlign === 'left' ? 'md:text-left' : ''} ${size === 'medium' ? 'mt-[20vh]' : size === 'large' && contentAlign !== 'left' ? '-mt-[20vh]' : ''}`}>
+          <div className={`max-w-4xl ${contentAlign === 'left' ? 'mx-auto w-full md:mx-0 md:max-w-lg' : 'mx-auto'}`}>
             {subtitle && (
-              <p className="text-white/90 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+              <p className={`text-white/90 font-medium tracking-wide uppercase text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${contentAlign === 'left' ? 'mb-3' : 'mb-4'}`}>
                 {subtitle}
               </p>
             )}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+            <h1 className={`font-semibold text-white leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] ${contentAlign === 'left' ? 'text-4xl md:text-5xl mb-4' : 'text-4xl md:text-5xl lg:text-6xl mb-6'}`}>
               {title}
             </h1>
             {description && (
-              <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl">
+              <p className={`text-white/90 drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] ${contentAlign === 'left' ? 'text-base md:text-lg mb-6 max-md:mx-auto max-md:max-w-2xl max-md:backdrop-blur-sm max-md:bg-black/30 max-md:px-6 max-md:py-3 max-md:rounded-2xl' : 'text-lg md:text-xl mb-8 max-w-2xl mx-auto backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl'}`}>
                 {description}
               </p>
             )}
