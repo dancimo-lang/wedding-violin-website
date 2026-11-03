@@ -13,7 +13,7 @@ export default function BookingPage() {
   return (
     <>
       {/* Hero */}
-      <section id="plan-proposal" className={`scroll-mt-20 relative py-6 md:py-14 border-b border-[#c9a961]/50 ${serifHeadings}`}>
+      <section id="plan-proposal" className={`scroll-mt-20 relative py-6 md:py-14 border-b border-gold/50 ${serifHeadings}`}>
         <div className="absolute inset-0">
           <Image
             src="/images/booking-hero.jpg"
@@ -24,7 +24,7 @@ export default function BookingPage() {
             priority
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#14171f]/70 to-[#14171f]/85" />
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/70 to-charcoal/85" />
         <div className="relative z-10 container mx-auto px-4 text-center">
           {/* Fallback is the static HTML; props are inline because values exported from a client module are not readable here. */}
           <Suspense
@@ -41,12 +41,12 @@ export default function BookingPage() {
       </section>
 
       {/* Form Section */}
-      <section className="py-6 md:py-12">
+      <section className="py-6 md:py-12 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             <div
               id="booking-form"
-              className="scroll-mt-24 bg-white rounded-2xl shadow-xl p-6 md:p-12"
+              className="scroll-mt-24 bg-cream-card rounded-2xl border border-cream-line shadow-sm p-6 md:p-12"
             >
               {/* useSearchParams bails out of static rendering. The form stays outside that boundary so its HTML is in the first response; this fallback renders nothing. */}
               <Suspense fallback={null}>
@@ -57,50 +57,50 @@ export default function BookingPage() {
 
             {/* Contact Info */}
             <div className="mt-12 text-center">
-              <p className="text-gray-600 mb-2">
+              <p className="text-ink-body mb-2">
                 Prefer to talk?{' '}
                 <a
                   href={phoneTelHref()}
-                  className="text-amber-700 font-medium hover:underline"
+                  className="text-gold-deep font-medium hover:text-gold-deeper hover:underline"
                 >
                   Call
                 </a>
                 {' or '}
                 <a
                   href={phoneSmsHref()}
-                  className="text-amber-700 font-medium hover:underline"
+                  className="text-gold-deep font-medium hover:text-gold-deeper hover:underline"
                 >
                   text
                 </a>{' '}
                 <a
                   href={phoneTelHref()}
-                  className="text-amber-700 font-medium hover:underline"
+                  className="text-gold-deep font-medium hover:text-gold-deeper hover:underline"
                 >
                   {site.phone}
                 </a>
               </p>
-              <p className="text-gray-600">
+              <p className="text-ink-body">
                 Prefer email?{' '}
                 <a
                   href="mailto:dancimo@gmail.com"
-                  className="text-amber-700 font-medium hover:underline"
+                  className="text-gold-deep font-medium hover:text-gold-deeper hover:underline"
                 >
                   dancimo@gmail.com
                 </a>
               </p>
-              <p className="text-gray-600 mt-2">
+              <p className="text-ink-body mt-2">
                 <a
                   href={GOOGLE_REVIEWS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-amber-700 font-medium hover:underline"
+                  className="text-gold-deep font-medium hover:text-gold-deeper hover:underline"
                 >
                   Read my reviews on Google
                 </a>
               </p>
             </div>
           </div>
-          <ReviewsSection page="booking" short className="mt-12 max-w-4xl mx-auto bg-gray-50 rounded-2xl p-6 md:p-8 shadow-xl" />
+          <ReviewsSection variant="light" page="booking" short className="mt-12 max-w-4xl mx-auto bg-cream-card rounded-2xl border border-cream-line p-6 md:p-8" />
         </div>
       </section>
     </>

@@ -21,7 +21,7 @@ export const metadata = createPageMetadata({
 });
 
 const BOOK_HREF = '/booking?service=proposal#plan-proposal';
-const BUTTON = 'inline-block bg-[#c9a961] hover:bg-[#d8bc7c] text-[#14171f] px-8 py-4 rounded-full font-semibold text-lg transition-colors';
+const BUTTON = 'inline-block bg-gold hover:bg-gold-hover text-charcoal px-8 py-4 rounded-full font-semibold text-lg transition-colors';
 
 const included = [
   'Solo violin at your proposal',
@@ -60,7 +60,7 @@ const proposalFaq = [
 
 export default function ProposalsPage() {
   return (
-    <div className={`bg-[#14171f] ${serifHeadings}`}>
+    <div className={`bg-charcoal ${serifHeadings}`}>
       <JsonLd
         data={{
           ...generateServiceSchema({
@@ -81,12 +81,12 @@ export default function ProposalsPage() {
       />
 
       {/* Header */}
-      <section className="pt-28 pb-16 md:pt-36 md:pb-20 border-b border-[#c9a961]/40">
+      <section className="pt-28 pb-16 md:pt-36 md:pb-20 border-b border-gold/40">
         <div className="container mx-auto px-4 text-center max-w-3xl">
-          <p className="text-sm uppercase tracking-widest text-[#e6cf95] mb-4">Proposals</p>
-          <h1 className="text-4xl md:text-5xl font-semibold text-[#f3ede0] mb-6">{weddings.proposal.title}</h1>
-          <p className="text-lg text-[#d9d1c1] leading-relaxed mb-8">{weddings.proposal.description}</p>
-          <p className="text-2xl font-semibold text-[#c9a961] mb-8 font-[family-name:var(--font-playfair)]">
+          <p className="text-sm uppercase tracking-widest text-gold-bright mb-4">Proposals</p>
+          <h1 className="text-4xl md:text-5xl font-semibold text-cream-bright mb-6">{weddings.proposal.title}</h1>
+          <p className="text-lg text-cream-muted leading-relaxed mb-8">{weddings.proposal.description}</p>
+          <p className="text-2xl font-semibold text-gold mb-8 font-[family-name:var(--font-playfair)]">
             Starting at $250
           </p>
           <Link href={BOOK_HREF} className={BUTTON}>
@@ -98,27 +98,27 @@ export default function ProposalsPage() {
       <ProposalVideo />
 
       {/* What's included */}
-      <section aria-labelledby="included-heading" className="py-20 md:py-24 bg-[#f4eddc]">
+      <section aria-labelledby="included-heading" className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4 max-w-3xl">
           <GoldDivider />
-          <h2 id="included-heading" className="text-3xl md:text-4xl font-semibold text-[#1d1a15] mb-10 text-center">
+          <h2 id="included-heading" className="text-3xl md:text-4xl font-semibold text-ink mb-10 text-center">
             What&apos;s Included
           </h2>
-          <div className="bg-[#fbf7ee] border-2 border-[#c9a961] rounded-xl p-8 shadow-sm">
-            <p className="text-center text-2xl font-semibold text-[#7a5c1e] mb-6 font-[family-name:var(--font-playfair)]">
+          <div className="bg-cream-card border-2 border-gold rounded-xl p-8 shadow-sm">
+            <p className="text-center text-2xl font-semibold text-gold-deep mb-6 font-[family-name:var(--font-playfair)]">
               Starting at $250
             </p>
             <ul className="space-y-4">
               {included.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-[#9a7a35]" aria-hidden="true" />
-                  <span className="text-[#4a4338]">{item}</span>
+                  <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-gold-icon" aria-hidden="true" />
+                  <span className="text-ink-body">{item}</span>
                 </li>
               ))}
             </ul>
-            <p className="text-sm text-[#4a4338] mt-6 text-center">
+            <p className="text-sm text-ink-body mt-6 text-center">
               Outside San Luis Obispo County, the{' '}
-              <Link href="/services/weddings#travel-fees" className="font-semibold text-[#7a5c1e] underline underline-offset-2 hover:text-[#5c4413]">
+              <Link href="/services/weddings#travel-fees" className="font-semibold text-gold-deep underline underline-offset-2 hover:text-gold-deeper">
                 travel fees
               </Link>{' '}
               apply.
@@ -128,20 +128,20 @@ export default function ProposalsPage() {
       </section>
 
       {/* How it works */}
-      <section aria-labelledby="how-heading" className="py-20 md:py-24 bg-[#14171f]">
+      <section aria-labelledby="how-heading" className="py-20 md:py-24 bg-charcoal">
         <div className="container mx-auto px-4 max-w-5xl">
           <GoldDivider />
-          <h2 id="how-heading" className="text-3xl md:text-4xl font-semibold text-[#f3ede0] mb-12 text-center">
+          <h2 id="how-heading" className="text-3xl md:text-4xl font-semibold text-cream-bright mb-12 text-center">
             How It Works
           </h2>
           <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((step, index) => (
-              <li key={step.title} className="bg-[#1d2230] border border-[#c9a961]/30 rounded-xl p-6">
-                <span className="block text-3xl font-semibold text-[#c9a961] mb-3 font-[family-name:var(--font-playfair)]" aria-hidden="true">
+              <li key={step.title} className="bg-charcoal-raised border border-gold/30 rounded-xl p-6">
+                <span className="block text-3xl font-semibold text-gold mb-3 font-[family-name:var(--font-playfair)]" aria-hidden="true">
                   {index + 1}
                 </span>
-                <h3 className="text-xl font-semibold text-[#f3ede0] mb-2">{step.title}</h3>
-                <p className="text-[#d9d1c1] text-sm leading-relaxed">{step.text}</p>
+                <h3 className="text-xl font-semibold text-cream-bright mb-2">{step.title}</h3>
+                <p className="text-cream-muted text-sm leading-relaxed">{step.text}</p>
               </li>
             ))}
           </ol>

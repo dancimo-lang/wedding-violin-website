@@ -132,7 +132,7 @@ export default function BookingForm() {
           required
           value={formData.name}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
           placeholder="Your full name"
         />
       </div>
@@ -149,7 +149,7 @@ export default function BookingForm() {
           required
           value={formData.email}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
           placeholder="your@email.com"
         />
       </div>
@@ -165,7 +165,7 @@ export default function BookingForm() {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
           placeholder="(555) 123-4567"
         />
       </div>
@@ -181,7 +181,7 @@ export default function BookingForm() {
           required
           value={formData.service}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors bg-white text-black"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors bg-white text-black"
         >
           <option value="">Select a service...</option>
           {serviceOptions.map((option) => (
@@ -226,7 +226,7 @@ export default function BookingForm() {
               Selected: <span className="font-medium text-gray-900">{formatDate(formData.eventDate)}</span>{' '}
               <button
                 type="button"
-                className="text-amber-700 hover:underline"
+                className="text-gold-deep hover:text-gold-deeper hover:underline"
                 onClick={() => setFormData((prev) => ({ ...prev, eventDate: '' }))}
               >
                 Clear
@@ -254,7 +254,7 @@ export default function BookingForm() {
               name="partnerName"
               value={formData.partnerName}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
             />
           </div>
           <div>
@@ -267,7 +267,7 @@ export default function BookingForm() {
               name="venueName"
               value={formData.venueName}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -281,7 +281,7 @@ export default function BookingForm() {
                 name="eventStart"
                 value={formData.eventStart}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
               />
             </div>
             <div>
@@ -295,7 +295,7 @@ export default function BookingForm() {
                 name="guestCount"
                 value={formData.guestCount}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors text-black"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
               />
             </div>
           </div>
@@ -308,7 +308,7 @@ export default function BookingForm() {
               name="howFound"
               value={formData.howFound}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors bg-white text-black"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors bg-white text-black"
             >
               <option value="">Select if you would like</option>
               <option>Google</option>
@@ -333,7 +333,7 @@ export default function BookingForm() {
           rows={5}
           value={formData.message}
           onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none text-black"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors resize-none text-black"
           placeholder="Tell me about your event, project, or lesson goals..."
         />
       </div>
@@ -347,11 +347,11 @@ export default function BookingForm() {
           required
           checked={formData.privacy}
           onChange={handleChange}
-          className="mt-1 w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+          className="mt-1 w-4 h-4 text-gold-deep border-cream-line rounded focus:ring-gold"
         />
         <label htmlFor="privacy" className="text-sm text-gray-600">
           I agree to the{' '}
-          <a href="/privacy" className="text-amber-800 underline underline-offset-2 hover:text-amber-900">
+          <a href="/privacy" className="text-gold-deep underline underline-offset-2 hover:text-gold-deeper">
             Privacy Policy
           </a>{' '}
           and consent to being contacted about my inquiry.{' '}
@@ -370,7 +370,7 @@ export default function BookingForm() {
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="w-full bg-amber-700 hover:bg-amber-800 disabled:bg-amber-400 text-white py-4 px-6 rounded-full font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+        className="w-full bg-gold hover:bg-gold-hover disabled:bg-gold/50 text-charcoal py-4 px-6 rounded-full font-semibold text-lg transition-colors flex items-center justify-center gap-2"
       >
         {status === 'loading' ? (
           <>

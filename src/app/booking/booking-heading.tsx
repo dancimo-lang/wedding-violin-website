@@ -15,8 +15,8 @@ const PROPOSAL_HEADING = {
 export function BookingHeadingText({ title, text }: { title: string; text: string }) {
   return (
     <>
-      <h1 className="text-3xl md:text-5xl font-semibold text-[#f3ede0] mb-2 md:mb-4 drop-shadow-lg">{title}</h1>
-      <p className="text-base md:text-xl text-[#e9e3d6] max-w-2xl mx-auto drop-shadow-lg">{text}</p>
+      <h1 className="text-3xl md:text-5xl font-semibold text-cream-bright mb-2 md:mb-4 drop-shadow-lg">{title}</h1>
+      <p className="text-base md:text-xl text-cream-soft max-w-2xl mx-auto drop-shadow-lg">{text}</p>
     </>
   );
 }

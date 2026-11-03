@@ -32,7 +32,7 @@ const previews: Record<string, { url: string; alt: string }> = {
   },
   '/services/weddings': {
     url: '/og/weddings.jpg',
-    alt: 'Daniel Cimo, San Luis Obispo wedding violinist, in the weddings page photo',
+    alt: 'Daniel seated on a sunlit winery patio playing violin, with vineyard rows and a white wall behind him',
   },
   '/services/lessons': {
     url: '/og/lessons.jpg',

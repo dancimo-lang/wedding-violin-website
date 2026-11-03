@@ -11,7 +11,7 @@ interface HighlightVideoProps {
 export default function HighlightVideo({ src, poster, caption, label, width, height }: HighlightVideoProps) {
   return (
     <figure className="mx-auto w-full max-w-[420px]">
-      <div className="rounded-xl border border-[#c9a961]/50 bg-black p-1.5 shadow-lg">
+      <div className="rounded-xl border border-gold/50 bg-black p-1.5 shadow-lg">
         <video
           className="block w-full h-auto rounded-lg bg-black"
           style={{ aspectRatio: `${width} / ${height}` }}
@@ -26,7 +26,7 @@ export default function HighlightVideo({ src, poster, caption, label, width, hei
           <source src={src} type="video/mp4" />
         </video>
       </div>
-      <figcaption className="mt-3 text-center text-sm italic text-[#d9d1c1]">{caption}</figcaption>
+      <figcaption className="mt-3 text-center text-sm italic text-cream-muted">{caption}</figcaption>
     </figure>
   );
 }

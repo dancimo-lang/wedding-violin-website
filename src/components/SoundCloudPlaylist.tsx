@@ -52,7 +52,7 @@ export default function SoundCloudPlaylist({ playlistUrl, height = 350 }: SoundC
         <button
           type="button"
           onClick={() => setLoad(true)}
-          className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="w-full h-full bg-cream-card rounded-lg flex items-center justify-center text-ink-body focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
           Load audio player
         </button>

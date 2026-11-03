@@ -6,6 +6,7 @@ import ServiceCard from '@/components/ServiceCard';
 import ReviewsSection from '@/components/ReviewsSection';
 import CTASection from '@/components/CTASection';
 import SingleVideo from '@/components/SingleVideo';
+import GoldDivider from '@/components/GoldDivider';
 import { getWeddingVideoEmbeds } from '@/data/weddingVideos';
 import site from '@/data/site.json';
 import services from '@/data/services.json';
@@ -39,11 +40,12 @@ export default function Home() {
 
       {/* Featured performance clip (click-to-load) */}
       {homeVideo && (
-        <section id="see-us-play" aria-labelledby="see-us-play-heading" className="py-16 scroll-mt-20">
+        <section id="see-us-play" aria-labelledby="see-us-play-heading" className="py-16 md:py-20 scroll-mt-20 bg-charcoal">
           <div className="container mx-auto px-4">
+            <GoldDivider />
             <h2
               id="see-us-play-heading"
-              className="text-3xl md:text-4xl font-bold text-white mb-8 text-center drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]"
+              className="text-3xl md:text-4xl font-semibold text-cream-bright mb-8 text-center"
             >
               See Us Play
             </h2>
@@ -58,13 +60,14 @@ export default function Home() {
       )}
 
       {/* Services Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-950/30 to-blue-900/20 backdrop-blur-sm">
+      <section className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
+            <GoldDivider />
+            <h2 className="text-3xl md:text-4xl font-semibold text-ink mb-4">
               Services
             </h2>
-            <p className="text-lg text-white/90 max-w-2xl mx-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            <p className="text-lg text-ink-body max-w-2xl mx-auto">
               From wedding ceremonies to private instruction, I bring passion and professionalism to every performance.
             </p>
           </div>
@@ -84,45 +87,45 @@ export default function Home() {
       </section>
 
       {/* Why Choose Section */}
-      <section className="py-20">
+      <section className="py-20 md:py-24 bg-charcoal">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
+              <h2 className="text-3xl md:text-4xl font-semibold text-cream-bright mb-6">
                 Why Choose Daniel Cimo?
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(0,174,239,0.6)]">
-                    <span className="text-white font-bold">1</span>
+                  <div className="w-12 h-12 border border-gold rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-gold font-semibold">1</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-blue-100 mb-1">Professional Excellence</h3>
-                    <p className="text-blue-200">Years of performance experience ensuring flawless execution for your special moments.</p>
+                    <h3 className="font-semibold text-cream-bright mb-1">Professional Excellence</h3>
+                    <p className="text-cream-muted">Years of performance experience ensuring flawless execution for your special moments.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(0,174,239,0.6)]">
-                    <span className="text-white font-bold">2</span>
+                  <div className="w-12 h-12 border border-gold rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-gold font-semibold">2</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-blue-100 mb-1">Personalized Service</h3>
-                    <p className="text-blue-200">Custom song selections and packages tailored to your unique vision.</p>
+                    <h3 className="font-semibold text-cream-bright mb-1">Personalized Service</h3>
+                    <p className="text-cream-muted">Custom song selections and packages tailored to your unique vision.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(0,174,239,0.6)]">
-                    <span className="text-white font-bold">3</span>
+                  <div className="w-12 h-12 border border-gold rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-gold font-semibold">3</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-blue-100 mb-1">Central Coast Local</h3>
-                    <p className="text-blue-200">Based in San Luis Obispo, serving Paso Robles and the entire Central Coast region.</p>
+                    <h3 className="font-semibold text-cream-bright mb-1">Central Coast Local</h3>
+                    <p className="text-cream-muted">Based in San Luis Obispo, serving Paso Robles and the entire Central Coast region.</p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="relative">
-              <div className="relative aspect-[4/5] bg-gradient-to-br from-blue-900/40 to-blue-800/30 rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(0,174,239,0.3)] ring-2 ring-blue-500/30">
+              <div className="relative aspect-[4/5] rounded-3xl overflow-hidden ring-2 ring-gold/40">
                 <Image
                   src="/images/home-image.jpg"
                   alt="Close-up of a violin scroll and a hand on the fingerboard"
@@ -131,9 +134,9 @@ export default function Home() {
                   className="object-cover object-center"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-blue-500 to-blue-700 text-white p-6 rounded-2xl shadow-[0_0_30px_rgba(0,174,239,0.7)] ring-2 ring-blue-400/50">
-                <p className="text-3xl font-bold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">20+</p>
-                <p className="text-blue-100">Years Performing</p>
+              <div className="absolute -bottom-6 -left-6 bg-charcoal text-cream-bright p-6 rounded-2xl border border-gold">
+                <p className="text-3xl font-semibold text-gold">20+</p>
+                <p className="text-cream-muted">Years Performing</p>
               </div>
             </div>
           </div>
@@ -141,7 +144,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section: real Google reviews */}
-      <section className="py-20 bg-gradient-to-br from-rose-50 to-amber-50">
+      <section className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
           <ReviewsSection page="home" title="What Clients Say" />
         </div>

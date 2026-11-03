@@ -105,7 +105,7 @@ export function BookingCalendar({ id, value, onChange }: Props) {
           onClick={() => shiftMonth(-1)}
           disabled={!canPrev}
           aria-label="Previous month"
-          className="p-2 rounded-full hover:bg-amber-50 disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+          className="p-2 rounded-full hover:bg-cream disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-gold"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -117,7 +117,7 @@ export function BookingCalendar({ id, value, onChange }: Props) {
           onClick={() => shiftMonth(1)}
           disabled={!canNext}
           aria-label="Next month"
-          className="p-2 rounded-full hover:bg-amber-50 disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-amber-500"
+          className="p-2 rounded-full hover:bg-cream disabled:opacity-30 disabled:hover:bg-transparent focus:outline-none focus:ring-2 focus:ring-gold"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -154,14 +154,14 @@ export function BookingCalendar({ id, value, onChange }: Props) {
                       onChange(date);
                     }}
                     onKeyDown={(event) => onKeyDown(event, date)}
-                    className={`w-full aspect-square max-h-12 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                    className={`w-full aspect-square max-h-12 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gold ${
                       selected
-                        ? 'bg-amber-700 text-white font-semibold'
+                        ? 'bg-gold text-charcoal font-semibold'
                         : taken
                           ? 'bg-gray-200 text-gray-700 line-through cursor-not-allowed'
                           : disabled
                             ? 'text-gray-500 cursor-not-allowed'
-                            : `hover:bg-amber-100 text-gray-900 ${isToday ? 'ring-1 ring-amber-700' : ''}`
+                            : `hover:bg-cream text-gray-900 ${isToday ? 'ring-1 ring-gold-deep' : ''}`
                     }`}
                   >
                     {Number(date.slice(8, 10))}
@@ -177,7 +177,7 @@ export function BookingCalendar({ id, value, onChange }: Props) {
           <span className="inline-block w-4 h-4 rounded bg-gray-200" aria-hidden="true" /> Unavailable
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-4 rounded bg-amber-700" aria-hidden="true" /> Selected
+          <span className="inline-block w-4 h-4 rounded bg-gold" aria-hidden="true" /> Selected
         </span>
         {!loaded && <span>Loading availability…</span>}
       </div>

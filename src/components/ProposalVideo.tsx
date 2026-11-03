@@ -10,7 +10,7 @@ export default function ProposalVideo() {
   const { src, poster, width, height, videoId, title, caption, orientation } = proposals.video;
   if (src) {
     return (
-      <section aria-label="Proposal video" className="py-14 md:py-16 bg-[#14171f]">
+      <section aria-label="Proposal video" className="py-14 md:py-16 bg-charcoal">
         <div className="container mx-auto px-4">
           <HighlightVideo
             src={src}
@@ -26,7 +26,7 @@ export default function ProposalVideo() {
   }
   if (!videoId) return null;
   return (
-    <section aria-label="Proposal video" className="py-14 md:py-16 bg-[#14171f]">
+    <section aria-label="Proposal video" className="py-14 md:py-16 bg-charcoal">
       <div className="max-w-md mx-auto px-4">
         <SingleVideo videoId={videoId} title={title} orientation={orientation === 'portrait' ? 'portrait' : 'landscape'} showTitle={false} />
       </div>
