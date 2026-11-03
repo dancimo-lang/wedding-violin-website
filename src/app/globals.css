@@ -1,22 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: linear-gradient(135deg, #0a1628 0%, #1a2942 100%);
-  --foreground: #e8f4f8;
-  --primary-blue: #00aeef;
-  --blue-50: #e6f7ff;
-  --blue-100: #bae7ff;
-  --blue-200: #91d5ff;
-  --blue-300: #69c0ff;
-  --blue-400: #40a9ff;
-  --blue-500: #00aeef;
-  --blue-600: #0090d9;
-  --blue-700: #0078bf;
-  --blue-800: #005fa3;
-  --blue-900: #003d6b;
-  --dark-bg: #0a1628;
-  --dark-bg-secondary: #1a2942;
-  --glow-blue: rgba(0, 174, 239, 0.4);
+  /* Palette taken from the Weddings and Proposals pages. */
+  --header-height: 4.5rem;
+  --background: #14171f;
+  --foreground: #f3ede0;
   --font-monte-carlo: 'MonteCarlo', cursive;
 }
 
@@ -24,6 +12,25 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-family-monte-carlo: var(--font-monte-carlo);
+  --color-charcoal: #14171f;
+  --color-charcoal-raised: #1d2230;
+  --color-charcoal-hover: #2a3040;
+  --color-cream: #f4eddc;
+  --color-cream-card: #fbf7ee;
+  --color-cream-bright: #f3ede0;
+  --color-cream-muted: #d9d1c1;
+  --color-cream-soft: #e9e3d6;
+  --color-cream-dim: #c8c0b0;
+  --color-ink: #1d1a15;
+  --color-ink-body: #4a4338;
+  --color-ink-soft: #5a5246;
+  --color-gold: #c9a961;
+  --color-gold-hover: #d8bc7c;
+  --color-gold-bright: #e6cf95;
+  --color-gold-deep: #7a5c1e;
+  --color-gold-deeper: #5c4413;
+  --color-gold-icon: #9a7a35;
+  --color-cream-line: #e4d9c3;
 }
 
 html {
@@ -31,8 +38,7 @@ html {
 }
 
 body {
-  background: linear-gradient(135deg, #0a1628 0%, #1a2942 100%);
-  background-attachment: fixed;
+  background: #14171f;
   color: var(--foreground);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -41,9 +47,9 @@ body {
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  outline: 2px solid var(--primary-blue);
+  outline: 2px solid #c9a961;
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px var(--glow-blue);
+  box-shadow: 0 0 0 4px rgba(201, 169, 97, 0.35);
   border-radius: 8px;
 }
 
@@ -74,27 +80,24 @@ html:focus-within {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--dark-bg);
+  background: #14171f;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--blue-500) 0%, var(--blue-700) 100%);
+  background: #c9a961;
   border-radius: 8px;
-  box-shadow: 0 0 10px var(--glow-blue);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--blue-400) 0%, var(--blue-600) 100%);
-  box-shadow: 0 0 15px var(--primary-blue);
+  background: #d8bc7c;
 }
 
-/* Prose styles for content pages */
+/* Prose styles for content pages on cream backgrounds */
 .prose h1 {
   font-size: 2.25rem;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 1rem;
-  color: var(--blue-50);
-  text-shadow: 0 0 20px var(--glow-blue);
+  color: #1d1a15;
 }
 
 .prose h2 {
@@ -102,14 +105,13 @@ html:focus-within {
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
-  color: var(--blue-100);
-  text-shadow: 0 0 15px var(--glow-blue);
+  color: #1d1a15;
 }
 
 .prose p {
   margin-bottom: 1rem;
   line-height: 1.75;
-  color: var(--blue-200);
+  color: #4a4338;
 }
 
 .prose ul {
@@ -120,19 +122,30 @@ html:focus-within {
 
 .prose li {
   margin-bottom: 0.5rem;
-  color: var(--blue-200);
+  color: #4a4338;
 }
 
 .prose a {
-  color: var(--primary-blue);
+  color: #7a5c1e;
   text-decoration: underline;
-  text-shadow: 0 0 10px var(--glow-blue);
-  transition: all 0.3s ease;
+  transition: color 0.2s ease;
 }
 
 .prose a:hover {
-  color: var(--blue-300);
-  text-shadow: 0 0 20px var(--primary-blue);
+  color: #5c4413;
+}
+
+/* Agreements, payments, and the admin tools keep a sans heading. */
+.contract-sheet h1,
+.contract-sheet h2,
+.contract-sheet h3,
+.pay-sheet h1,
+.pay-sheet h2,
+.pay-sheet h3,
+.admin-readable h1,
+.admin-readable h2,
+.admin-readable h3 {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 /* The public site uses light body text. Admin and login forms sit on white

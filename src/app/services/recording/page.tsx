@@ -1,5 +1,6 @@
 import Hero from '@/components/Hero';
 import CTASection from '@/components/CTASection';
+import GoldDivider from '@/components/GoldDivider';
 import { Building2, Wifi, MapPin, FileAudio } from 'lucide-react';
 import { createPageMetadata } from '@/lib/page-metadata';
 import recording from '@/data/recording.json';
@@ -41,7 +42,7 @@ export default function RecordingPage() {
       />
 
       {/* Services Section */}
-      <section className="py-20">
+      <section className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {recording.services.map((service, index) => {
@@ -49,15 +50,15 @@ export default function RecordingPage() {
               return (
                 <div
                   key={index}
-                  className="text-center p-8 bg-gray-50 rounded-2xl"
+                  className="text-center p-8 bg-cream-card rounded-2xl border border-cream-line"
                 >
-                  <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Icon className="w-8 h-8 text-amber-700" />
+                  <div className="w-16 h-16 border border-gold rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Icon className="w-8 h-8 text-gold-deep" />
                   </div>
-                  <h3 className="text-xl font-semibold text-black mb-3 drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
+                  <h3 className="text-xl font-semibold text-ink mb-3">
                     {service.title}
                   </h3>
-                  <p className="text-gray-600">{service.description}</p>
+                  <p className="text-ink-body">{service.description}</p>
                 </div>
               );
             })}
@@ -66,21 +67,22 @@ export default function RecordingPage() {
       </section>
 
       {/* Workflow Section */}
-      <section className="py-20 bg-gray-900 text-white">
+      <section className="py-20 md:py-24 bg-cream-card">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12">
+            <GoldDivider />
+            <h2 className="text-3xl md:text-4xl font-semibold text-ink text-center mb-12">
               {recording.workflow.title}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {recording.workflow.steps.map((step) => (
                 <div key={step.step} className="text-center">
-                  <div className="w-12 h-12 bg-amber-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-xl font-bold">{step.step}</span>
+                  <div className="w-12 h-12 bg-gold rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-xl font-semibold text-charcoal">{step.step}</span>
                   </div>
-                  <h3 className="font-semibold mb-2">{step.title}</h3>
-                  <p className="text-gray-400 text-sm">{step.description}</p>
+                  <h3 className="font-semibold text-ink mb-2">{step.title}</h3>
+                  <p className="text-ink-body text-sm">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -89,34 +91,33 @@ export default function RecordingPage() {
       </section>
 
       {/* Deliverables Section */}
-      <section className="py-20">
+      <section className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
+                <h2 className="text-3xl md:text-4xl font-semibold text-ink mb-6">
                   {recording.deliverables.title}
-                  <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
                 </h2>
                 <ul className="space-y-4">
                   {recording.deliverables.items.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
-                      <FileAudio className="w-5 h-5 text-amber-600 mt-1 flex-shrink-0" />
-                      <span className="text-gray-700">{item}</span>
+                      <FileAudio className="w-5 h-5 text-gold-deep mt-1 flex-shrink-0" />
+                      <span className="text-ink-body">{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="bg-gray-50 p-8 rounded-2xl">
-                <h3 className="font-semibold text-gray-900 mb-4">
+              <div className="bg-cream-card p-8 rounded-2xl border border-cream-line">
+                <h3 className="font-semibold text-ink mb-4">
                   Supported Formats
                 </h3>
                 <div className="flex flex-wrap gap-3">
                   {recording.formats.map((format) => (
                     <span
                       key={format}
-                      className="bg-white px-4 py-2 rounded-full text-sm font-medium text-gray-700 border border-gray-200"
+                      className="bg-cream px-4 py-2 rounded-full text-sm font-medium text-ink-body border border-gold/40"
                     >
                       {format}
                     </span>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Music } from 'lucide-react';
+import { btnGold, btnOutlineOnDark } from '@/lib/theme';
 
 interface HeroProps {
   title: string;
@@ -14,7 +15,7 @@ interface HeroProps {
   secondaryCtaOnClick?: () => void;
   tertiaryCtaText?: string;
   tertiaryCtaOnClick?: () => void;
-  /** 'gold' uses soft gold buttons (weddings page) instead of blue. */
+  /** Kept so existing pages can opt into the shared gold buttons. */
   ctaTone?: 'blue' | 'gold';
   videoSrc?: string;
   posterSrc?: string;
@@ -40,7 +41,6 @@ export default function Hero({
   secondaryCtaOnClick,
   tertiaryCtaText,
   tertiaryCtaOnClick,
-  ctaTone = 'blue',
   videoSrc,
   posterSrc,
   posterAlt,
@@ -48,27 +48,54 @@ export default function Hero({
   overlay = true,
   size = 'large',
   splitLayout = false,
-  leftSideImage,
   rightSideImage,
   rightSideImageAlt,
 }: HeroProps) {
   const sizeClasses = {
-    full: 'min-h-screen',
+    full: 'lg:h-[calc(100svh-var(--header-height))] lg:min-h-[36rem]',
     large: 'min-h-[80vh]',
     medium: 'min-h-[60vh]',
   };
 
-  const gold = ctaTone === 'gold';
-  const primaryCtaClass = gold
-    ? 'bg-[#c9a961] hover:bg-[#d8bc7c] text-[#14171f] rounded-full font-semibold transition-colors px-8 py-4 text-lg'
-    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(0,174,239,0.6)] hover:shadow-[0_0_40px_rgba(0,174,239,0.8)]';
-  const secondaryCtaClass = gold
-    ? 'border border-[#c9a961] bg-[#14171f]/60 text-[#f3ede0] hover:bg-[#14171f]/80 px-8 py-4 rounded-full font-semibold text-lg transition-colors'
-    : 'border-2 border-blue-300 text-blue-100 hover:bg-blue-500 hover:text-white hover:border-blue-500 px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(0,174,239,0.4)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]';
+  const primaryCtaClass = btnGold;
+  const secondaryCtaClass = btnOutlineOnDark;
+  const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}`;
+
+  const actions = (
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+      {ctaText && (
+        ctaOnClick ? (
+          <button onClick={ctaOnClick} className={primaryCtaClass}>
+            {ctaText}
+          </button>
+        ) : (
+          <Link href={ctaHref} className={primaryCtaClass}>
+            {ctaText}
+          </Link>
+        )
+      )}
+      {secondaryCtaText && (
+        secondaryCtaOnClick ? (
+          <button onClick={secondaryCtaOnClick} className={secondaryCtaClass}>
+            {secondaryCtaText}
+          </button>
+        ) : secondaryCtaHref && (
+          <Link href={secondaryCtaHref} className={secondaryCtaClass}>
+            {secondaryCtaText}
+          </Link>
+        )
+      )}
+      {tertiaryCtaText && tertiaryCtaOnClick && (
+        <button onClick={tertiaryCtaOnClick} className={tertiaryCtaClass}>
+          <Music className="w-5 h-5" />
+          {tertiaryCtaText}
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <section className={`relative ${sizeClasses[size]} flex items-center justify-center`}>
-      {/* Video Background */}
+    <section className={`relative flex bg-charcoal ${sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
       {videoSrc && (
         <video
           autoPlay
@@ -82,7 +109,6 @@ export default function Hero({
         </video>
       )}
 
-      {/* Poster Fallback (when no video) */}
       {!videoSrc && !splitLayout && (
         <div className="absolute inset-0">
           <Image
@@ -102,87 +128,38 @@ export default function Hero({
         </div>
       )}
 
-      {/* Gradient Overlay */}
       {overlay && (
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
       )}
 
-      {/* Split Layout Content */}
       {splitLayout ? (
-        <div className="relative z-10 container mx-auto px-4 h-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-full">
-            {/* Left Side */}
-            <div className="flex flex-col justify-center items-center text-white p-8 lg:p-12">
+        <div className="relative z-10 container mx-auto px-4 lg:h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 lg:h-full">
+            <div className="flex flex-col justify-center lg:justify-start items-center text-center text-cream-bright px-6 py-16 lg:px-12 lg:pt-28 lg:pb-16">
               {subtitle && (
-                <p className="text-white/90 font-medium tracking-wide uppercase mb-6 text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                <p className="text-gold-bright font-medium tracking-wide uppercase mb-6 text-sm md:text-base">
                   {subtitle}
                 </p>
               )}
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-8 leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] text-center">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-8 leading-tight">
                 {title}
               </h1>
               {description && (
-                <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] text-center">
+                <p className="text-lg md:text-xl text-cream-muted mb-8 max-w-2xl">
                   {description}
                 </p>
               )}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                {ctaText && (
-                  ctaOnClick ? (
-                    <button
-                      onClick={ctaOnClick}
-                      className={primaryCtaClass}
-                    >
-                      {ctaText}
-                    </button>
-                  ) : (
-                    <Link
-                      href={ctaHref}
-                      className={primaryCtaClass}
-                    >
-                      {ctaText}
-                    </Link>
-                  )
-                )}
-                {secondaryCtaText && (
-                  secondaryCtaOnClick ? (
-                    <button
-                      onClick={secondaryCtaOnClick}
-                      className={secondaryCtaClass}
-                    >
-                      {secondaryCtaText}
-                    </button>
-                  ) : secondaryCtaHref && (
-                    <Link
-                      href={secondaryCtaHref}
-                      className={secondaryCtaClass}
-                    >
-                      {secondaryCtaText}
-                    </Link>
-                  )
-                )}
-                {tertiaryCtaText && tertiaryCtaOnClick && (
-                  <button
-                    onClick={tertiaryCtaOnClick}
-                    className={gold ? 'inline-flex items-center gap-2 border border-[#c9a961] bg-[#14171f]/60 text-[#f3ede0] hover:bg-[#14171f]/80 px-6 py-4 rounded-full font-semibold text-lg transition-colors' : 'inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]'}
-                  >
-                    <Music className="w-5 h-5" />
-                    {tertiaryCtaText}
-                  </button>
-                )}
-              </div>
+              {actions}
             </div>
 
-            {/* Right Side */}
-            <div className="relative h-full">
+            <div className="relative min-h-[52vh] lg:min-h-0">
               {rightSideImage && (
                 <Image
                   src={rightSideImage}
                   alt={rightSideImageAlt ?? 'Daniel playing violin'}
-                  width={800}
-                  height={1200}
+                  fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="w-full h-full object-cover"
+                  className="object-cover"
                   priority
                 />
               )}
@@ -190,7 +167,6 @@ export default function Hero({
           </div>
         </div>
       ) : (
-        /* Original Layout */
         <div className={`relative z-10 container mx-auto px-4 text-center ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? '-mt-[20vh]' : ''}`}>
           <div className="max-w-4xl mx-auto">
             {subtitle && (
@@ -198,59 +174,23 @@ export default function Hero({
                 {subtitle}
               </p>
             )}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
               {title}
             </h1>
             {description && (
-              <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/10 px-6 py-3 rounded-2xl">
+              <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl">
                 {description}
               </p>
             )}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {ctaText && (
-                <Link
-                  href={ctaHref}
-                  className={primaryCtaClass}
-                >
-                  {ctaText}
-                </Link>
-              )}
-              {secondaryCtaText && (
-                secondaryCtaOnClick ? (
-                  <button
-                    onClick={secondaryCtaOnClick}
-                    className={secondaryCtaClass}
-                  >
-                    {secondaryCtaText}
-                  </button>
-                ) : secondaryCtaHref && (
-                  <Link
-                    href={secondaryCtaHref}
-                    className={secondaryCtaClass}
-                  >
-                    {secondaryCtaText}
-                  </Link>
-                )
-              )}
-              {tertiaryCtaText && tertiaryCtaOnClick && (
-                <button
-                  onClick={tertiaryCtaOnClick}
-                  className={gold ? 'inline-flex items-center gap-2 border border-[#c9a961] bg-[#14171f]/60 text-[#f3ede0] hover:bg-[#14171f]/80 px-6 py-4 rounded-full font-semibold text-lg transition-colors' : 'inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-4 rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]'}
-                >
-                  <Music className="w-5 h-5" />
-                  {tertiaryCtaText}
-                </button>
-              )}
-            </div>
+            {actions}
           </div>
         </div>
       )}
 
-      {/* Scroll Indicator */}
       {size === 'full' && (
-        <div className="absolute bottom-32 right-8 animate-bounce">
-          <div className="w-6 h-10 border-2 border-blue-300/50 rounded-full flex items-start justify-center p-2 shadow-[0_0_15px_rgba(0,174,239,0.4)]">
-            <div className="w-1 h-2 bg-blue-300/70 rounded-full" />
+        <div className="absolute bottom-8 right-8 animate-bounce">
+          <div className="w-6 h-10 border-2 border-gold/70 rounded-full flex items-start justify-center p-2">
+            <div className="w-1 h-2 bg-gold rounded-full" />
           </div>
         </div>
       )}

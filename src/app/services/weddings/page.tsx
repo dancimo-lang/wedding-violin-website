@@ -53,7 +53,7 @@ export default function WeddingsPage() {
   };
 
   return (
-    <div className={`bg-[#14171f] ${serifHeadings}`}>
+    <div className={`bg-charcoal ${serifHeadings}`}>
       <JsonLd
         data={generateServiceSchema({
           name: 'Wedding Violin Services',
@@ -80,19 +80,19 @@ export default function WeddingsPage() {
       />
 
       {/* Audio samples and video, right after the hero */}
-      <section id="wedding-sampler" aria-labelledby="sampler-heading" className="py-20 md:py-24 bg-[#14171f] scroll-mt-20">
+      <section id="wedding-sampler" aria-labelledby="sampler-heading" className="py-20 md:py-24 bg-charcoal scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-start gap-10">
             <div className="min-w-0 flex-1">
               <GoldDivider />
-              <h2 id="sampler-heading" className="text-3xl md:text-4xl font-semibold text-[#f3ede0] mb-4 text-center">
+              <h2 id="sampler-heading" className="text-3xl md:text-4xl font-semibold text-cream-bright mb-4 text-center">
                 Wedding Repertoire Samples
               </h2>
-              <p className="text-lg text-[#d9d1c1] text-center mb-8 max-w-2xl mx-auto">
+              <p className="text-lg text-cream-muted text-center mb-8 max-w-2xl mx-auto">
                 Violin and Guitar versions of commonly requested Ceremony songs
               </p>
               <SoundCloudPlaylist playlistUrl={music.soundcloud.embedUrl} />
-              <p className="text-center text-sm text-[#c8c0b0] mt-4">
+              <p className="text-center text-sm text-cream-dim mt-4">
                 Wedding violin repertoire featuring classical and contemporary pieces perfect for ceremonies
               </p>
             </div>
@@ -102,7 +102,7 @@ export default function WeddingsPage() {
               className="w-full max-w-xs mx-auto lg:mx-0 lg:w-80 lg:shrink-0"
             >
               <GoldDivider />
-              <h2 id="see-us-play-heading" className="text-3xl md:text-4xl font-semibold text-[#f3ede0] mb-4 text-center mb-6">
+              <h2 id="see-us-play-heading" className="text-3xl md:text-4xl font-semibold text-cream-bright mb-4 text-center mb-6">
                 See Us Play
               </h2>
 
@@ -122,7 +122,7 @@ export default function WeddingsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="See more on Instagram, opens in a new tab"
-                    className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-[#e6cf95] hover:text-[#f3ede0] underline underline-offset-2 transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-gold-bright hover:text-cream-bright underline underline-offset-2 transition-colors"
                   >
                     <Instagram size={16} aria-hidden="true" />
                     See more on Instagram
@@ -138,7 +138,7 @@ export default function WeddingsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Watch on Instagram, opens in a new tab"
-                    className="inline-flex w-full items-center justify-center gap-2 mt-6 py-3 px-6 rounded-full font-semibold bg-amber-700 text-white hover:bg-amber-800 transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 mt-6 py-3 px-6 rounded-full font-semibold bg-gold text-charcoal hover:bg-gold-hover transition-colors"
                   >
                     <Instagram size={18} aria-hidden="true" />
                     Watch on Instagram
@@ -151,15 +151,15 @@ export default function WeddingsPage() {
       </section>
 
       {/* Packages */}
-      <section id="wedding-packages" aria-labelledby="packages-heading" className="py-20 md:py-24 bg-[#f4eddc] scroll-mt-20">
+      <section id="wedding-packages" aria-labelledby="packages-heading" className="py-20 md:py-24 bg-cream scroll-mt-20">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <GoldDivider />
-              <h2 id="packages-heading" className="text-3xl md:text-4xl font-semibold text-[#1d1a15] mb-4 text-center">
+              <h2 id="packages-heading" className="text-3xl md:text-4xl font-semibold text-ink mb-4 text-center">
                 Wedding Packages
               </h2>
-              <p className="text-lg text-[#4a4338] max-w-2xl mx-auto">
+              <p className="text-lg text-ink-body max-w-2xl mx-auto">
                 Choose the perfect package for your special day. All packages include custom song selection and professional service.
               </p>
             </div>
@@ -183,9 +183,9 @@ export default function WeddingsPage() {
               ))}
             </div>
 
-            <p className="text-center text-[#4a4338] mt-12">
+            <p className="text-center text-ink-body mt-12">
               Travel is free within San Luis Obispo County.{' '}
-              <a href="#travel-fees" className="font-semibold text-[#7a5c1e] underline underline-offset-2 hover:text-[#5c4413]">
+              <a href="#travel-fees" className="font-semibold text-gold-deep underline underline-offset-2 hover:text-gold-deeper">
                 See travel fees
               </a>{' '}
               for weddings farther away.
@@ -195,15 +195,15 @@ export default function WeddingsPage() {
       </section>
 
       {/* Reviews with experience stats */}
-      <section id="reviews" className="py-20 md:py-24 bg-[#14171f]">
+      <section id="reviews" className="py-20 md:py-24 bg-charcoal">
         <div className="container mx-auto px-4">
           <GoldDivider />
           <ReviewsSection variant="gold" page="weddings" title="What Clients Say" exclude={NON_WEDDING_REVIEW_IDS}>
             <ul className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-10 text-center" aria-label="Experience">
               {EXPERIENCE_STATS.map((stat) => (
                 <li key={stat.label}>
-                  <span className="block text-3xl font-semibold text-[#c9a961] font-[family-name:var(--font-playfair)]">{stat.value}</span>
-                  <span className="text-sm text-[#d9d1c1]">{stat.label}</span>
+                  <span className="block text-3xl font-semibold text-gold font-[family-name:var(--font-playfair)]">{stat.value}</span>
+                  <span className="text-sm text-cream-muted">{stat.label}</span>
                 </li>
               ))}
             </ul>
@@ -212,11 +212,11 @@ export default function WeddingsPage() {
       </section>
 
       {/* Logistics: what to expect, travel fees and areas served */}
-      <section id="logistics" aria-labelledby="logistics-heading" className="py-20 md:py-24 bg-[#f4eddc]">
+      <section id="logistics" aria-labelledby="logistics-heading" className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <GoldDivider />
-            <h2 id="logistics-heading" className="text-3xl md:text-4xl font-semibold text-[#1d1a15] mb-4 text-center mb-10">
+            <h2 id="logistics-heading" className="text-3xl md:text-4xl font-semibold text-ink mb-4 text-center mb-10">
               {weddings.logistics.title}
             </h2>
 
@@ -224,46 +224,46 @@ export default function WeddingsPage() {
               {weddings.logistics.items.map((item, index) => {
                 const IconComponent = iconMap[item.title as keyof typeof iconMap] || MapPin;
                 return (
-                  <div key={index} className="flex gap-4 bg-[#fbf7ee] p-6 rounded-lg border border-[#e4d9c3]">
-                    <div className="w-12 h-12 border border-[#c9a961] rounded-full flex items-center justify-center flex-shrink-0">
-                      <IconComponent className="w-6 h-6 text-[#7a5c1e]" aria-hidden="true" />
+                  <div key={index} className="flex gap-4 bg-cream-card p-6 rounded-lg border border-cream-line">
+                    <div className="w-12 h-12 border border-gold rounded-full flex items-center justify-center flex-shrink-0">
+                      <IconComponent className="w-6 h-6 text-gold-deep" aria-hidden="true" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-[#1d1a15] mb-2">{item.title}</h3>
-                      <p className="text-[#4a4338] text-sm leading-relaxed">{item.description}</p>
+                      <h3 className="text-lg font-semibold text-ink mb-2">{item.title}</h3>
+                      <p className="text-ink-body text-sm leading-relaxed">{item.description}</p>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div id="travel-fees" className="mt-8 bg-[#fbf7ee] rounded-lg border border-[#e4d9c3] p-6 md:p-8 scroll-mt-24">
-              <h3 id="travel-fees-heading" className="text-2xl font-semibold text-[#1d1a15] mb-2 text-center">
+            <div id="travel-fees" className="mt-8 bg-cream-card rounded-lg border border-cream-line p-6 md:p-8 scroll-mt-24">
+              <h3 id="travel-fees-heading" className="text-2xl font-semibold text-ink mb-2 text-center">
                 {weddings.travelFees.title}
               </h3>
-              <p className="text-[#4a4338] text-center mb-6">{weddings.travelFees.description}</p>
-              <dl className="divide-y divide-[#e4d9c3]">
+              <p className="text-ink-body text-center mb-6">{weddings.travelFees.description}</p>
+              <dl className="divide-y divide-cream-line">
                 {weddings.travelFees.tiers.map((tier) => (
                   <div key={tier.area} className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-6 py-4">
                     <dt className="min-w-0">
-                      <span className="font-semibold text-[#1d1a15]">{tier.area}</span>
-                      {tier.examples && <span className="block text-sm text-[#5a5246] mt-1">{tier.examples}</span>}
+                      <span className="font-semibold text-ink">{tier.area}</span>
+                      {tier.examples && <span className="block text-sm text-ink-soft mt-1">{tier.examples}</span>}
                     </dt>
-                    <dd className="font-semibold text-[#7a5c1e] sm:text-right sm:max-w-[14rem] sm:flex-shrink-0">{tier.fee}</dd>
+                    <dd className="font-semibold text-gold-deep sm:text-right sm:max-w-[14rem] sm:flex-shrink-0">{tier.fee}</dd>
                   </div>
                 ))}
               </dl>
-              <p className="text-sm text-[#4a4338] mt-4 text-center">{weddings.travelFees.note}</p>
+              <p className="text-sm text-ink-body mt-4 text-center">{weddings.travelFees.note}</p>
             </div>
 
             <div id="areas" className="mt-8 text-center">
-              <h3 id="areas-heading" className="text-2xl font-semibold text-[#1d1a15] mb-4">Areas I Serve</h3>
+              <h3 id="areas-heading" className="text-2xl font-semibold text-ink mb-4">Areas I Serve</h3>
               <ul className="flex flex-wrap justify-center gap-3">
                 {towns.towns.map((town) => (
                   <li key={town.slug}>
                     <Link
                       href={`/services/weddings/${town.slug}`}
-                      className="inline-block bg-[#fbf7ee] border border-[#c9a961] text-[#5c4413] hover:bg-[#f4eddc] px-4 py-2 rounded-full font-semibold text-sm transition-colors"
+                      className="inline-block bg-cream-card border border-gold text-gold-deeper hover:bg-cream px-4 py-2 rounded-full font-semibold text-sm transition-colors"
                     >
                       {town.name}
                     </Link>
@@ -279,28 +279,28 @@ export default function WeddingsPage() {
       <FAQSection tone="gold" title={faq.title} items={faq.items} />
 
       {/* Proposal banner */}
-      <section aria-labelledby="proposal-heading" className="py-14 bg-[#f4eddc] border-t border-[#c9a961]/40">
+      <section aria-labelledby="proposal-heading" className="py-14 bg-cream border-t border-gold/40">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center gap-6 text-center md:text-left">
-            <div className="inline-flex items-center justify-center w-12 h-12 border border-[#c9a961] rounded-full mx-auto md:mx-0 flex-shrink-0">
-              <Heart className="w-6 h-6 text-[#7a5c1e]" aria-hidden="true" />
+            <div className="inline-flex items-center justify-center w-12 h-12 border border-gold rounded-full mx-auto md:mx-0 flex-shrink-0">
+              <Heart className="w-6 h-6 text-gold-deep" aria-hidden="true" />
             </div>
             <div className="flex-1">
-              <h2 id="proposal-heading" className="text-2xl font-semibold text-[#1d1a15] mb-2">
+              <h2 id="proposal-heading" className="text-2xl font-semibold text-ink mb-2">
                 {weddings.proposal.title}
               </h2>
-              <p className="text-[#4a4338] leading-relaxed">{weddings.proposal.description}</p>
+              <p className="text-ink-body leading-relaxed">{weddings.proposal.description}</p>
             </div>
             <div className="flex flex-col items-center gap-3 flex-shrink-0">
             <Link
               href="/booking?service=proposal#plan-proposal"
-              className="inline-block bg-[#14171f] hover:bg-[#2a3040] text-[#f3ede0] px-6 py-3 rounded-full font-semibold transition-colors"
+              className="inline-block bg-charcoal hover:bg-charcoal-hover text-cream-bright px-6 py-3 rounded-full font-semibold transition-colors"
             >
               Plan Your Proposal
             </Link>
               <Link
                 href="/services/proposals"
-                className="text-sm font-semibold text-[#7a5c1e] underline underline-offset-2 hover:text-[#5c4413]"
+                className="text-sm font-semibold text-gold-deep underline underline-offset-2 hover:text-gold-deeper"
               >
                 Learn more<span className="sr-only"> about proposals</span>
               </Link>

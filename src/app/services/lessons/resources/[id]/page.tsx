@@ -45,10 +45,10 @@ export default function TunePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-cream">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading tune...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto mb-4"></div>
+          <p className="text-ink-body">Loading tune...</p>
         </div>
       </div>
     );
@@ -56,10 +56,10 @@ export default function TunePage() {
 
   if (!tune) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-cream">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Tune Not Found</h1>
-          <Link href="/services/lessons/resources" className="text-amber-600 hover:text-amber-700">
+          <h1 className="text-2xl font-semibold text-ink mb-4">Tune Not Found</h1>
+          <Link href="/services/lessons/resources" className="text-gold-deep hover:text-gold-deeper">
             Back to Tune Library
           </Link>
         </div>
@@ -73,17 +73,17 @@ export default function TunePage() {
   return (
     <>
       {/* Thin Banner */}
-      <section className="bg-gradient-to-r from-amber-600 to-amber-700 py-6">
+      <section className="bg-charcoal border-b border-gold/40 py-6">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-1">{tune.title}</h1>
-                <p className="text-amber-100">{tune.type} • {tune.key} • {tune.difficulty}</p>
+                <h1 className="text-3xl font-semibold text-cream-bright mb-1">{tune.title}</h1>
+                <p className="text-cream-muted">{tune.type} • {tune.key} • {tune.difficulty}</p>
               </div>
               <Link
                 href="/services/lessons/resources"
-                className="inline-flex items-center gap-2 bg-white hover:bg-gray-100 text-amber-700 px-6 py-3 rounded-lg font-medium transition-colors"
+                className="inline-flex items-center gap-2 bg-gold hover:bg-gold-hover text-charcoal px-6 py-3 rounded-full font-medium transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 Back to Library
@@ -95,29 +95,29 @@ export default function TunePage() {
 
       {/* Sheet Music and Video Section */}
       {(hasSheetMusic || hasVideo) && (
-      <section className="py-8">
+      <section className="py-8 bg-cream">
         <div className="container mx-auto px-4">
           <div className={`mx-auto grid grid-cols-1 gap-6 ${hasSheetMusic && hasVideo ? 'max-w-6xl lg:grid-cols-2' : 'max-w-3xl'}`}>
             {/* Sheet Music */}
             {hasSheetMusic && (
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="bg-cream-card rounded-xl border border-cream-line overflow-hidden">
+              <div className="p-4 border-b border-cream-line flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-amber-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Sheet Music</h2>
+                  <FileText className="w-5 h-5 text-gold-deep" />
+                  <h2 className="text-xl font-semibold text-ink">Sheet Music</h2>
                 </div>
                 <a
                   href={tune.sheetMusicPath}
                   download
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                  className="inline-flex items-center gap-2 bg-gold hover:bg-gold-hover text-charcoal px-4 py-2 rounded-full font-medium transition-colors text-sm"
                 >
                   <Download className="w-4 h-4" />
                   Download
                 </a>
               </div>
-              <div className="p-4 bg-gray-50 min-h-[500px]">
+              <div className="p-4 bg-cream min-h-[500px]">
                 {tune.sheetMusicPath.endsWith('.pdf') ? (
                   <div className="w-full h-[600px]">
                     <object
@@ -127,7 +127,7 @@ export default function TunePage() {
                       title={`${tune.title} Sheet Music`}
                     >
                       <p className="text-center py-8">
-                        <a href={tune.sheetMusicPath} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700">
+                        <a href={tune.sheetMusicPath} target="_blank" rel="noopener noreferrer" className="text-gold-deep hover:text-gold-deeper">
                           Click here to view the PDF in a new tab
                         </a>
                       </p>
@@ -148,12 +148,12 @@ export default function TunePage() {
 
             {/* Video */}
             {hasVideo && (
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex items-center gap-3">
-                <Youtube className="w-5 h-5 text-red-600" />
-                <h2 className="text-xl font-bold text-gray-900">Video Tutorial</h2>
+            <div className="bg-cream-card rounded-xl border border-cream-line overflow-hidden">
+              <div className="p-4 border-b border-cream-line flex items-center gap-3">
+                <Youtube className="w-5 h-5 text-gold-deep" />
+                <h2 className="text-xl font-semibold text-ink">Video Tutorial</h2>
               </div>
-              <div className="aspect-video bg-gray-900 flex items-center justify-center">
+              <div className="aspect-video bg-charcoal flex items-center justify-center">
                 <iframe
                   width="100%"
                   height="100%"
@@ -173,18 +173,18 @@ export default function TunePage() {
       )}
 
       {/* Description Section */}
-      <section className="py-8 bg-gray-50">
+      <section className="py-8 bg-cream-card">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-cream rounded-xl border border-cream-line p-6">
               <div className="flex items-center gap-4 mb-4">
-                <Music className="w-6 h-6 text-amber-600" />
-                <h2 className="text-2xl font-bold text-gray-900">About This Tune</h2>
+                <Music className="w-6 h-6 text-gold-deep" />
+                <h2 className="text-2xl font-semibold text-ink">About This Tune</h2>
               </div>
-              <p className="text-gray-700 text-lg leading-relaxed mb-6">
+              <p className="text-ink-body text-lg leading-relaxed mb-6">
                 {tune.description} Composed by {tune.composer}.
               </p>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-ink-soft">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Type:</span>
                   <span>{tune.type}</span>
@@ -208,14 +208,14 @@ export default function TunePage() {
       </section>
 
       {/* Tags Section */}
-      <section className="py-8">
+      <section className="py-8 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-wrap gap-2">
               {tune.tags.map(tag => (
                 <span
                   key={tag}
-                  className="px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium"
+                  className="px-4 py-2 bg-cream-card text-gold-deep border border-gold/40 rounded-full text-sm font-medium"
                 >
                   #{tag}
                 </span>

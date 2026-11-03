@@ -16,7 +16,7 @@ export default function QRCodePage() {
         width: 300,
         margin: 2,
         color: {
-          dark: '#000000',
+          dark: '#14171f',
           light: '#FFFFFF',
         },
       });
@@ -44,18 +44,18 @@ export default function QRCodePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-blue-50 py-12 px-4">
+    <div className="min-h-screen bg-cream py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-semibold text-ink mb-4">
             QR Code Generator
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-ink-body">
             Scan this QR code to visit danielcimo.com
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-cream-card rounded-2xl border border-cream-line p-8">
           <div className="flex flex-col items-center space-y-6">
             {isGenerating ? (
               <div className="animate-pulse">
@@ -69,24 +69,24 @@ export default function QRCodePage() {
                     alt="QR Code for danielcimo.com"
                     className="w-64 h-64 rounded-lg shadow-lg"
                   />
-                  <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <div className="absolute -bottom-2 -right-2 bg-gold text-charcoal px-3 py-1 rounded-full text-sm font-medium">
                     danielcimo.com
                   </div>
                 </div>
 
                 <div className="text-center space-y-4">
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-ink-soft">
                       This QR code links to:
                     </p>
-                    <p className="text-lg font-medium text-gray-900">
+                    <p className="text-lg font-medium text-ink">
                       https://danielcimo.com
                     </p>
                   </div>
 
                   <button
                     onClick={downloadQRCode}
-                    className="inline-flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-full font-medium transition-colors"
+                    className="inline-flex items-center space-x-2 bg-gold hover:bg-gold-hover text-charcoal px-6 py-3 rounded-full font-medium transition-colors"
                   >
                     <svg
                       className="w-5 h-5"
@@ -107,10 +107,10 @@ export default function QRCodePage() {
               </>
             ) : (
               <div className="text-center">
-                <p className="text-gray-500">Failed to generate QR code</p>
+                <p className="text-ink-soft">Failed to generate QR code</p>
                 <button
                   onClick={generateQRCode}
-                  className="mt-4 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-full font-medium transition-colors"
+                  className="mt-4 bg-gold hover:bg-gold-hover text-charcoal px-6 py-2 rounded-full font-medium transition-colors"
                 >
                   Try Again
                 </button>
@@ -122,7 +122,7 @@ export default function QRCodePage() {
         <div className="mt-8 text-center">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-amber-600 hover:text-amber-700 font-medium transition-colors"
+            className="inline-flex items-center space-x-2 text-gold-deep hover:text-gold-deeper font-medium transition-colors"
           >
             <svg
               className="w-4 h-4"

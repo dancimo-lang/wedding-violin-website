@@ -27,19 +27,18 @@ export default function ReviewsSection({
 }: ReviewsSectionProps) {
   const reviews = reviewsFor(page).filter((review) => !exclude.includes(review.id));
   if (reviews.length === 0) return null;
-  const light = variant === 'light';
-  const gold = variant === 'gold';
+  const onDark = variant === 'gold' || variant === 'dark';
   const cols = reviews.length === 1 ? 'max-w-3xl' : reviews.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-2 lg:grid-cols-3 max-w-6xl';
 
   return (
     <div className={className}>
       {title && (
-        <h2 className={`text-3xl font-bold mb-3 text-center ${gold ? 'text-[#f3ede0] font-semibold md:text-4xl' : light ? 'text-gray-900' : 'text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]'}`}>
+        <h2 className={`text-3xl md:text-4xl font-semibold mb-3 text-center ${onDark ? 'text-cream-bright' : 'text-ink'}`}>
           {title}
         </h2>
       )}
-      <p className={`text-center mb-8 ${gold ? 'text-[#d9d1c1]' : light ? 'text-gray-700' : 'text-white/90'}`}>
-        <span className={gold ? 'text-[#c9a961]' : 'text-amber-700'} aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
+      <p className={`text-center mb-8 ${onDark ? 'text-cream-muted' : 'text-ink-body'}`}>
+        <span className={onDark ? 'text-gold' : 'text-gold-deep'} aria-hidden="true">★</span> {GOOGLE_RATING.value} from {GOOGLE_RATING.count} Google reviews
       </p>
       {children}
       <div className={`grid grid-cols-1 gap-6 mx-auto ${cols}`}>
@@ -58,7 +57,7 @@ export default function ReviewsSection({
           href={GOOGLE_REVIEWS_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className={`font-semibold underline underline-offset-2 ${gold ? 'text-[#e6cf95] hover:text-[#f3ede0]' : light ? 'text-amber-800 hover:text-amber-900' : 'text-amber-200 hover:text-white'}`}
+          className={`font-semibold underline underline-offset-2 ${onDark ? 'text-gold-bright hover:text-cream-bright' : 'text-gold-deep hover:text-gold-deeper'}`}
         >
           Read all reviews on Google<span className="sr-only"> (opens in a new tab)</span>
         </a>

@@ -21,7 +21,7 @@ export const metadata = createPageMetadata({
 
 // The booking form has no dedicated private-event option; "other" is its "Other Event" choice.
 const QUOTE_HREF = '/booking?service=other#booking-form';
-const BUTTON = 'inline-block bg-[#c9a961] hover:bg-[#d8bc7c] text-[#14171f] px-8 py-4 rounded-full font-semibold text-lg transition-colors';
+const BUTTON = 'inline-block bg-gold hover:bg-gold-hover text-charcoal px-8 py-4 rounded-full font-semibold text-lg transition-colors';
 
 const events = [
   { title: 'Birthdays', icon: Cake },
@@ -42,7 +42,7 @@ const options = [
 
 export default function PrivateEventsPage() {
   return (
-    <div className={`bg-[#14171f] ${serifHeadings}`}>
+    <div className={`bg-charcoal ${serifHeadings}`}>
       <JsonLd
         data={generateServiceSchema({
           name: 'Private Event Violin',
@@ -51,11 +51,11 @@ export default function PrivateEventsPage() {
         })}
       />
 
-      <section className="pt-28 pb-16 md:pt-36 md:pb-20 border-b border-[#c9a961]/40">
+      <section className="pt-28 pb-16 md:pt-36 md:pb-20 border-b border-gold/40">
         <div className="container mx-auto px-4 text-center max-w-3xl">
-          <p className="text-sm uppercase tracking-widest text-[#e6cf95] mb-4">Private Events</p>
-          <h1 className="text-4xl md:text-5xl font-semibold text-[#f3ede0] mb-6">Live Violin for Your Event</h1>
-          <p className="text-lg text-[#d9d1c1] leading-relaxed mb-8">
+          <p className="text-sm uppercase tracking-widest text-gold-bright mb-4">Private Events</p>
+          <h1 className="text-4xl md:text-5xl font-semibold text-cream-bright mb-6">Live Violin for Your Event</h1>
+          <p className="text-lg text-cream-muted leading-relaxed mb-8">
             Birthdays, anniversaries, corporate events, memorials and proposals. Every event is different, so each one is quoted case by case.
           </p>
           <Link href={QUOTE_HREF} className={BUTTON}>
@@ -64,7 +64,7 @@ export default function PrivateEventsPage() {
         </div>
       </section>
 
-      <section aria-label="Event video" className="py-14 md:py-16 bg-[#14171f]">
+      <section aria-label="Event video" className="py-14 md:py-16 bg-charcoal">
         <div className="container mx-auto px-4">
           <HighlightVideo
             src="/videos/private-event-highlight.mp4"
@@ -77,57 +77,57 @@ export default function PrivateEventsPage() {
         </div>
       </section>
 
-      <section aria-labelledby="events-heading" className="py-20 md:py-24 bg-[#f4eddc]">
+      <section aria-labelledby="events-heading" className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4 max-w-5xl">
           <GoldDivider />
-          <h2 id="events-heading" className="text-3xl md:text-4xl font-semibold text-[#1d1a15] mb-10 text-center">
+          <h2 id="events-heading" className="text-3xl md:text-4xl font-semibold text-ink mb-10 text-center">
             Events I Play
           </h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <li>
               <Link
                 href="/services/proposals"
-                className="flex h-full items-center gap-4 bg-[#fbf7ee] border border-[#c9a961] rounded-lg p-6 hover:bg-white transition-colors"
+                className="flex h-full items-center gap-4 bg-cream-card border border-gold rounded-lg p-6 hover:bg-white transition-colors"
               >
-                <span className="w-12 h-12 border border-[#c9a961] rounded-full flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-6 h-6 text-[#7a5c1e]" aria-hidden="true" />
+                <span className="w-12 h-12 border border-gold rounded-full flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-6 h-6 text-gold-deep" aria-hidden="true" />
                 </span>
                 <span>
-                  <span className="block text-lg font-semibold text-[#1d1a15] font-[family-name:var(--font-playfair)]">Proposals</span>
-                  <span className="text-sm font-semibold text-[#7a5c1e] underline underline-offset-2">See proposals</span>
+                  <span className="block text-lg font-semibold text-ink font-[family-name:var(--font-playfair)]">Proposals</span>
+                  <span className="text-sm font-semibold text-gold-deep underline underline-offset-2">See proposals</span>
                 </span>
               </Link>
             </li>
             {events.map(({ title, icon: Icon }) => (
-              <li key={title} className="flex items-center gap-4 bg-[#fbf7ee] border border-[#e4d9c3] rounded-lg p-6">
-                <span className="w-12 h-12 border border-[#c9a961] rounded-full flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-6 h-6 text-[#7a5c1e]" aria-hidden="true" />
+              <li key={title} className="flex items-center gap-4 bg-cream-card border border-cream-line rounded-lg p-6">
+                <span className="w-12 h-12 border border-gold rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-6 h-6 text-gold-deep" aria-hidden="true" />
                 </span>
-                <span className="text-lg font-semibold text-[#1d1a15] font-[family-name:var(--font-playfair)]">{title}</span>
+                <span className="text-lg font-semibold text-ink font-[family-name:var(--font-playfair)]">{title}</span>
               </li>
             ))}
           </ul>
         </div>
       </section>
 
-      <section aria-labelledby="options-heading" className="py-20 md:py-24 bg-[#14171f]">
+      <section aria-labelledby="options-heading" className="py-20 md:py-24 bg-charcoal">
         <div className="container mx-auto px-4 max-w-5xl">
           <GoldDivider />
-          <h2 id="options-heading" className="text-3xl md:text-4xl font-semibold text-[#f3ede0] mb-12 text-center">
+          <h2 id="options-heading" className="text-3xl md:text-4xl font-semibold text-cream-bright mb-12 text-center">
             Options
           </h2>
           <ul className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {options.map(({ title, text, icon: Icon }) => (
-              <li key={title} className="bg-[#1d2230] border border-[#c9a961]/30 rounded-xl p-6">
-                <Icon className="w-8 h-8 text-[#c9a961] mb-4" aria-hidden="true" />
-                <h3 className="text-xl font-semibold text-[#f3ede0] mb-2">{title}</h3>
-                <p className="text-[#d9d1c1] text-sm leading-relaxed">{text}</p>
+              <li key={title} className="bg-charcoal-raised border border-gold/30 rounded-xl p-6">
+                <Icon className="w-8 h-8 text-gold mb-4" aria-hidden="true" />
+                <h3 className="text-xl font-semibold text-cream-bright mb-2">{title}</h3>
+                <p className="text-cream-muted text-sm leading-relaxed">{text}</p>
               </li>
             ))}
           </ul>
-          <p className="text-center text-[#d9d1c1] mt-12">
+          <p className="text-center text-cream-muted mt-12">
             Travel is free within San Luis Obispo County. Farther away, the{' '}
-            <Link href="/services/weddings#travel-fees" className="font-semibold text-[#e6cf95] underline underline-offset-2 hover:text-[#f3ede0]">
+            <Link href="/services/weddings#travel-fees" className="font-semibold text-gold-bright underline underline-offset-2 hover:text-cream-bright">
               travel fees
             </Link>{' '}
             apply.
@@ -135,7 +135,7 @@ export default function PrivateEventsPage() {
         </div>
       </section>
 
-      <section className="py-20 md:py-24 bg-[#14171f] border-t border-[#c9a961]/30">
+      <section className="py-20 md:py-24 bg-charcoal border-t border-gold/30">
         <div className="container mx-auto px-4">
           <GoldDivider />
           <ReviewsSection variant="gold" page="private-events" title="What Clients Say" />

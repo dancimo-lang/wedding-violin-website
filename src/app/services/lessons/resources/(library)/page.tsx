@@ -58,10 +58,10 @@ export default function ResourcesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-cream">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading tunes...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto mb-4"></div>
+          <p className="text-ink-body">Loading tunes...</p>
         </div>
       </div>
     );
@@ -83,14 +83,14 @@ export default function ResourcesPage() {
       />
 
       {/* Search and Filter Section */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Admin Link */}
             <div className="mb-6 flex justify-end">
               <Link
                 href="/admin/add-tune"
-                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                className="inline-flex items-center gap-2 bg-gold hover:bg-gold-hover text-charcoal px-4 py-2 rounded-full font-medium transition-colors text-sm"
               >
                 <BookOpen className="w-4 h-4" />
                 Add New Tune
@@ -105,18 +105,18 @@ export default function ResourcesPage() {
                 placeholder="Search tunes by name, composer, or tag..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900"
+                className="w-full pl-12 pr-4 py-4 rounded-xl border border-cream-line bg-cream-card focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent text-ink"
               />
             </div>
 
             {/* Filters */}
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <label className="block text-sm font-medium text-ink mb-2">Type</label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900"
+                  className="w-full px-4 py-2 rounded-lg border border-cream-line bg-cream-card focus:outline-none focus:ring-2 focus:ring-gold text-ink"
                 >
                   {types.map(type => (
                     <option key={type} value={type}>{type}</option>
@@ -124,11 +124,11 @@ export default function ResourcesPage() {
                 </select>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                <label className="block text-sm font-medium text-ink mb-2">Difficulty</label>
                 <select
                   value={selectedDifficulty}
                   onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900"
+                  className="w-full px-4 py-2 rounded-lg border border-cream-line bg-cream-card focus:outline-none focus:ring-2 focus:ring-gold text-ink"
                 >
                   {difficulties.map(diff => (
                     <option key={diff} value={diff}>{diff}</option>
@@ -138,7 +138,7 @@ export default function ResourcesPage() {
             </div>
 
             {/* Results Count */}
-            <p className="mt-4 text-gray-600 text-sm">
+            <p className="mt-4 text-ink-body text-sm">
               {filteredTunes.length} tune{filteredTunes.length !== 1 ? 's' : ''} found
             </p>
           </div>
@@ -146,13 +146,13 @@ export default function ResourcesPage() {
       </section>
 
       {/* Tunes List */}
-      <section className="py-12">
+      <section className="py-12 bg-cream">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {filteredTunes.length === 0 ? (
               <div className="text-center py-12">
                 <Music className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No tunes found matching your search.</p>
+                <p className="text-ink-soft text-lg">No tunes found matching your search.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -160,33 +160,33 @@ export default function ResourcesPage() {
                   <Link
                     key={tune.id}
                     href={`/services/lessons/resources/${tune.id}`}
-                    className="block bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-200 hover:border-amber-400"
+                    className="block bg-cream-card p-6 rounded-xl border border-cream-line hover:border-gold transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900">{tune.title}</h3>
-                          <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                          <h3 className="text-xl font-semibold text-ink">{tune.title}</h3>
+                          <span className="px-3 py-1 bg-cream text-gold-deep text-xs font-medium rounded-full border border-gold/40">
                             {tune.type}
                           </span>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                          <span className="px-3 py-1 bg-charcoal text-cream-bright text-xs font-medium rounded-full">
                             {tune.difficulty}
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">{tune.composer}</p>
-                        <p className="text-gray-500 text-sm line-clamp-2">{tune.description}</p>
+                        <p className="text-ink-body text-sm mb-2">{tune.composer}</p>
+                        <p className="text-ink-soft text-sm line-clamp-2">{tune.description}</p>
                         <div className="flex items-center gap-4 mt-3">
-                          <span className="text-xs text-gray-400">{tune.key}</span>
+                          <span className="text-xs text-ink-soft">{tune.key}</span>
                           <div className="flex gap-2">
                             {tune.tags.slice(0, 3).map(tag => (
-                              <span key={tag} className="text-xs text-gray-500">#{tag}</span>
+                              <span key={tag} className="text-xs text-ink-soft">#{tag}</span>
                             ))}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         {isPublishableCopy(tune.sheetMusicPath) && (
-                          <FileText className="w-5 h-5 text-amber-600" />
+                          <FileText className="w-5 h-5 text-gold-deep" />
                         )}
                         {isPublishableCopy(tune.youtubeId) && (
                           <Youtube className="w-5 h-5 text-red-600" />
