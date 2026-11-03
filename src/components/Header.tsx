@@ -45,13 +45,13 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm shadow-blue-500/20">
-      <nav className="container mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] bg-cream-card/95 backdrop-blur-md border-b border-cream-line">
+      <nav className="container mx-auto px-6 h-full">
+        <div className="flex items-center justify-between h-full">
           {/* Logo */}
           <Link href="/" className="flex items-center p-1">
             <span 
-              className="text-3xl text-gray-900"
+              className="text-3xl text-ink"
               style={{ fontFamily: "'MonteCarlo', cursive" }}
             >
               Daniel Cimo
@@ -68,8 +68,8 @@ export default function Header() {
                       href={item.href}
                       className={`transition-colors font-medium ${
                         isActive(item.href) 
-                          ? 'text-blue-600' 
-                          : 'text-gray-700 hover:text-gray-900'
+                          ? 'text-gold-deep' 
+                          : 'text-ink-body hover:text-ink'
                       }`}
                       onMouseEnter={handleServicesMouseEnter}
                       onMouseLeave={handleServicesMouseLeave}
@@ -81,15 +81,15 @@ export default function Header() {
                       onMouseEnter={handleServicesMouseEnter}
                       onMouseLeave={handleServicesMouseLeave}
                     >
-                      <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200 py-2 min-w-[180px]">
+                      <div className="bg-cream-card/95 backdrop-blur-md rounded-2xl shadow-lg border border-cream-line py-2 min-w-[180px]">
                         {item.children.map((child) => (
                           <Link
                             key={child.href}
                             href={child.href}
                             className={`block px-4 py-2 transition-colors rounded-lg mx-1 ${
                               isActive(child.href)
-                                ? 'bg-blue-50 text-blue-600'
-                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                ? 'bg-cream text-gold-deep'
+                                : 'text-ink-soft hover:bg-cream hover:text-ink'
                             }`}
                           >
                             {child.label}
@@ -103,8 +103,8 @@ export default function Header() {
                     href={item.href}
                     className={`transition-colors font-medium ${
                       isActive(item.href) 
-                        ? 'text-blue-600' 
-                        : 'text-gray-700 hover:text-gray-900'
+                        ? 'text-gold-deep' 
+                        : 'text-ink-body hover:text-ink'
                     }`}
                   >
                     {item.label}
@@ -122,7 +122,7 @@ export default function Header() {
                 href={site.social.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
+                className="text-ink-soft hover:text-gold-deep transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram size={20} />
@@ -131,7 +131,7 @@ export default function Header() {
                 href={site.social.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
+                className="text-ink-soft hover:text-gold-deep transition-colors"
                 aria-label="YouTube"
               >
                 <Youtube size={20} />
@@ -140,7 +140,7 @@ export default function Header() {
                 href={site.social.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
+                className="text-ink-soft hover:text-gold-deep transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook size={20} />
@@ -150,7 +150,7 @@ export default function Header() {
                   href={googleHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-600 hover:text-gray-900 transition-all"
+                  className="text-ink-soft hover:text-gold-deep transition-colors"
                   aria-label="Google Business Profile"
                 >
                   <Map size={20} />
@@ -161,7 +161,7 @@ export default function Header() {
             {/* Book Now Button */}
             <Link
               href="/booking#booking-form"
-              className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-md hover:shadow-lg"
+              className="bg-gold hover:bg-gold-hover text-charcoal px-6 py-2.5 rounded-full font-medium transition-colors"
             >
               Book Now
             </Link>
@@ -171,13 +171,13 @@ export default function Header() {
           <div className="flex lg:hidden items-center gap-3">
             <Link
               href="/booking#booking-form"
-              className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-md hover:shadow-lg"
+              className="bg-gold hover:bg-gold-hover text-charcoal px-4 py-2 rounded-full text-sm font-medium transition-colors"
             >
               Book Now
             </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-gray-700"
+              className="p-2 text-ink"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -187,7 +187,7 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden mt-4 pb-4 border-t border-gray-200 pt-4">
+          <div className="lg:hidden absolute left-0 right-0 top-full bg-cream-card border-b border-cream-line shadow-lg px-6 pb-4 pt-4">
             <div className="flex flex-col gap-2">
               {navigation.mainNav.map((item) => (
                 <div key={item.href}>
@@ -196,8 +196,8 @@ export default function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                     className={`block py-2 font-medium transition-colors ${
                       isActive(item.href)
-                        ? 'text-blue-600'
-                        : 'text-gray-700 hover:text-gray-900'
+                        ? 'text-gold-deep'
+                        : 'text-ink-body hover:text-ink'
                     }`}
                   >
                     {item.label}
@@ -211,8 +211,8 @@ export default function Header() {
                           onClick={() => setMobileMenuOpen(false)}
                           className={`block py-2 transition-colors ${
                             isActive(child.href)
-                              ? 'text-blue-600'
-                              : 'text-gray-600 hover:text-gray-900'
+                              ? 'text-gold-deep'
+                              : 'text-ink-soft hover:text-ink'
                           }`}
                         >
                           {child.label}
@@ -225,12 +225,12 @@ export default function Header() {
             </div>
 
             {/* Mobile Social Icons */}
-            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-cream-line">
               <a
                 href={site.social.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
+                className="text-ink-soft hover:text-gold-deep transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram size={24} />
@@ -239,7 +239,7 @@ export default function Header() {
                 href={site.social.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
+                className="text-ink-soft hover:text-gold-deep transition-colors"
                 aria-label="YouTube"
               >
                 <Youtube size={24} />
@@ -248,7 +248,7 @@ export default function Header() {
                 href={site.social.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-600 hover:text-gray-900 transition-all"
+                className="text-ink-soft hover:text-gold-deep transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook size={24} />
@@ -258,7 +258,7 @@ export default function Header() {
                   href={googleHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-600 hover:text-gray-900 transition-all"
+                  className="text-ink-soft hover:text-gold-deep transition-colors"
                   aria-label="Google Business Profile"
                 >
                   <Map size={24} />

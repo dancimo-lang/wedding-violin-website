@@ -4,6 +4,7 @@ import Hero from '@/components/Hero';
 import YouTubePlaylist from '@/components/YouTubePlaylist';
 import SoundCloudPlaylist from '@/components/SoundCloudPlaylist';
 import CTASection from '@/components/CTASection';
+import GoldDivider from '@/components/GoldDivider';
 import music from '@/data/music.json';
 import { isPublishableCopy } from '@/lib/publicContent';
 
@@ -41,15 +42,15 @@ export default function MusicPage() {
 
       {/* YouTube Video Section */}
       {showVideo && (
-      <section id="video-player" className="py-20">
+      <section id="video-player" className="py-20 md:py-24 bg-charcoal">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
+            <GoldDivider />
+            <h2 className="text-3xl md:text-4xl font-semibold text-cream-bright mb-8 text-center">
  Featured Performances
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
             <YouTubePlaylist playlistId={music.youtube.playlistId} />
-            <p className="text-center text-sm text-gray-400 mt-4">
+            <p className="text-center text-sm text-cream-dim mt-4">
               Experience the beauty and emotion of live violin performances
             </p>
           </div>
@@ -58,14 +59,14 @@ export default function MusicPage() {
       )}
 
       {/* Repertoire Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-black mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
+            <GoldDivider />
+            <h2 className="text-3xl md:text-4xl font-semibold text-ink mb-4">
               {music.repertoire.title}
-              <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-ink-body max-w-2xl mx-auto">
               From classical masterpieces to contemporary favorites, I offer a diverse repertoire tailored to your event.
             </p>
           </div>
@@ -74,18 +75,18 @@ export default function MusicPage() {
             {music.repertoire.categories.map((category, index) => (
               <div
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+                className="bg-cream-card p-6 rounded-xl border border-cream-line"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-ink mb-2">
                   {category.name}
                 </h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-ink-soft mb-4">
                   {category.description}
                 </p>
                 <ul className="space-y-1">
                   {category.examples.map((example, i) => (
-                    <li key={i} className="text-sm text-gray-600 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                    <li key={i} className="text-sm text-ink-body flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-gold rounded-full" />
                       {example}
                     </li>
                   ))}
@@ -97,24 +98,24 @@ export default function MusicPage() {
       </section>
 
       {/* Audio Samples Section */}
-      <section id="audio-player" className="py-20">
+      <section id="audio-player" className="py-20 md:py-24 bg-charcoal">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-8 text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] relative">
+            <GoldDivider />
+            <h2 className="text-3xl md:text-4xl font-semibold text-cream-bright mb-8 text-center">
               {music.audioSamples.title}
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></span>
             </h2>
             <SoundCloudPlaylist playlistUrl={music.soundcloud.embedUrl} />
             {publishedAudioSamples.length > 0 && (
               <ul className="mt-8 space-y-2">
                 {publishedAudioSamples.map((sample) => (
-                  <li key={sample} className="text-gray-200 text-center">
+                  <li key={sample} className="text-cream-muted text-center">
                     {sample}
                   </li>
                 ))}
               </ul>
             )}
-            <p className="text-center text-sm text-gray-400 mt-4">
+            <p className="text-center text-sm text-cream-dim mt-4">
               {music.soundcloud.note}
             </p>
           </div>

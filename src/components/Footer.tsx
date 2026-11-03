@@ -4,6 +4,7 @@ import site from '@/data/site.json';
 import navigation from '@/data/navigation.json';
 import { phoneSmsHref, phoneTelHref } from '@/lib/phone';
 import { publishedGoogleHref } from '@/lib/publicContent';
+import { btnGoldCompact } from '@/lib/theme';
 
 function GoogleIcon() {
   return (
@@ -34,47 +35,49 @@ function GoogleIcon() {
   );
 }
 
+const footerLink = 'hover:text-gold-bright transition-colors';
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const googleHref = publishedGoogleHref(site.social.google);
 
   return (
-    <footer className="bg-gradient-to-br from-blue-950 to-blue-900 text-blue-200 border-t border-blue-500/30">
+    <footer className="bg-charcoal text-cream-muted border-t border-gold/30">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-blue-50 text-xl font-semibold mb-2 drop-shadow-[0_0_15px_rgba(0,174,239,0.4)]">{site.name}</h3>
-            <p className="text-blue-300 text-sm mb-4 drop-shadow-[0_0_10px_rgba(0,174,239,0.3)]">{site.tagline}</p>
-            <p className="text-sm text-blue-300/80">{site.description}</p>
+            <h3 className="text-cream-bright text-xl font-semibold mb-2">{site.name}</h3>
+            <p className="text-gold-bright text-sm mb-4">{site.tagline}</p>
+            <p className="text-sm text-cream-dim">{site.description}</p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-blue-50 font-semibold mb-4 drop-shadow-[0_0_10px_rgba(0,174,239,0.3)]">Quick Links</h4>
+            <h4 className="text-cream-bright font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/services/weddings" className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_8px_rgba(0,174,239,0.5)]">
+                <Link href="/services/weddings" className={footerLink}>
                   Wedding Services
                 </Link>
               </li>
               <li>
-                <Link href="/services/lessons" className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_8px_rgba(0,174,239,0.5)]">
+                <Link href="/services/lessons" className={footerLink}>
                   Private Lessons
                 </Link>
               </li>
               <li>
-                <Link href="/services/recording" className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_8px_rgba(0,174,239,0.5)]">
+                <Link href="/services/recording" className={footerLink}>
                   Studio Recording
                 </Link>
               </li>
               <li>
-                <Link href="/music" className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_8px_rgba(0,174,239,0.5)]">
+                <Link href="/music" className={footerLink}>
                   Music & Video
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_8px_rgba(0,174,239,0.5)]">
+                <Link href="/about" className={footerLink}>
                   About Daniel
                 </Link>
               </li>
@@ -83,9 +86,9 @@ export default function Footer() {
 
           {/* Service Areas */}
           <div>
-            <h4 className="text-blue-50 font-semibold mb-4 drop-shadow-[0_0_10px_rgba(0,174,239,0.3)]">Service Areas</h4>
+            <h4 className="text-cream-bright font-semibold mb-4">Service Areas</h4>
             <div className="flex items-start gap-2 text-sm">
-              <MapPin size={16} className="mt-1 flex-shrink-0 text-blue-400 drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]" />
+              <MapPin size={16} className="mt-1 flex-shrink-0 text-gold" />
               <ul className="space-y-1">
                 {site.location.serviceAreas.map((area) => (
                   <li key={area}>{area}</li>
@@ -96,25 +99,25 @@ export default function Footer() {
 
           {/* Contact & Social */}
           <div>
-            <h4 className="text-blue-50 font-semibold mb-4 drop-shadow-[0_0_10px_rgba(0,174,239,0.3)]">Get in Touch</h4>
+            <h4 className="text-cream-bright font-semibold mb-4">Get in Touch</h4>
             <div className="space-y-3">
               <a
                 href={`mailto:${site.email}`}
-                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+                className={`flex items-center gap-2 ${footerLink}`}
               >
                 <Mail size={16} />
                 <span className="text-sm">{site.email}</span>
               </a>
               <a
                 href={phoneTelHref()}
-                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+                className={`flex items-center gap-2 ${footerLink}`}
               >
                 <Phone size={16} />
                 <span className="text-sm">{site.phone}</span>
               </a>
               <a
                 href={phoneSmsHref()}
-                className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+                className={`flex items-center gap-2 ${footerLink}`}
               >
                 <MessageSquare size={16} />
                 <span className="text-sm">Text</span>
@@ -124,7 +127,7 @@ export default function Footer() {
                   href={googleHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_10px_rgba(0,174,239,0.5)]"
+                  className={`flex items-center gap-2 ${footerLink}`}
                 >
                   <GoogleIcon />
                   <span className="text-sm">Reviews on Google</span>
@@ -136,7 +139,7 @@ export default function Footer() {
                   href={site.social.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_15px_rgba(0,174,239,0.7)]"
+                  className={footerLink}
                   aria-label="Instagram"
                 >
                   <Instagram size={24} />
@@ -145,7 +148,7 @@ export default function Footer() {
                   href={site.social.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_15px_rgba(0,174,239,0.7)]"
+                  className={footerLink}
                   aria-label="YouTube"
                 >
                   <Youtube size={24} />
@@ -154,7 +157,7 @@ export default function Footer() {
                   href={site.social.facebook}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-blue-300 transition-all hover:drop-shadow-[0_0_15px_rgba(0,174,239,0.7)]"
+                  className={footerLink}
                   aria-label="Facebook"
                 >
                   <Facebook size={24} />
@@ -163,7 +166,7 @@ export default function Footer() {
 
               <Link
                 href="/booking#booking-form"
-                className="inline-block mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-[0_0_20px_rgba(0,174,239,0.5)] hover:shadow-[0_0_30px_rgba(0,174,239,0.7)]"
+                className={`mt-4 ${btnGoldCompact}`}
               >
                 Book Now
               </Link>
@@ -172,8 +175,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-blue-500/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-blue-300/60">
+        <div className="border-t border-gold/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-cream-dim">
             © {currentYear} {site.name}. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">
@@ -181,7 +184,7 @@ export default function Footer() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-blue-300/60 hover:text-blue-300 transition-all hover:drop-shadow-[0_0_8px_rgba(0,174,239,0.5)]"
+                className="text-cream-dim hover:text-gold-bright transition-colors"
               >
                 {item.label}
               </Link>

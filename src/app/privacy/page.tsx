@@ -22,11 +22,11 @@ export default function PrivacyPage() {
   const disclaimer = isPublishableCopy(ownerDraft.disclaimer) ? ownerDraft.disclaimer : null;
 
   return (
-    <section className="py-20">
+    <section className="py-20 bg-cream">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto prose prose-lg">
           <h1>Privacy Policy</h1>
-          {lastUpdated && <p className="text-gray-500">Last updated: {lastUpdated}</p>}
+          {lastUpdated && <p className="text-ink-soft">Last updated: {lastUpdated}</p>}
           
           <h2>Information We Collect</h2>
           <p>
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
           </p>
 
           {disclaimer && (
-            <p className="text-sm text-gray-400 mt-8">{disclaimer}</p>
+            <p className="text-sm text-ink-soft mt-8">{disclaimer}</p>
           )}
         </div>
       </div>

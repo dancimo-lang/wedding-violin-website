@@ -61,7 +61,7 @@ export default function SingleVideo({
             type="button"
             onClick={() => setPlaying(true)}
             aria-label={`Play video: ${name}`}
-            className="group absolute inset-0 w-full h-full focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500"
+            className="group absolute inset-0 w-full h-full focus:outline-none focus-visible:ring-4 focus-visible:ring-gold"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- YouTube thumbnail, external and tiny */}
             <img
