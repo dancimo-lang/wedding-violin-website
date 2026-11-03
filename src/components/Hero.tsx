@@ -27,6 +27,8 @@ interface HeroProps {
   overlayClassName?: string;
   /** Left keeps the headline over one side of a wide photo. Mobile stays centered. */
   contentAlign?: 'center' | 'left';
+  /** Replaces the default min-height for this hero, for example a wide photo frame. */
+  frameClassName?: string;
   overlay?: boolean;
   size?: 'full' | 'large' | 'medium';
   splitLayout?: boolean;
@@ -54,6 +56,7 @@ export default function Hero({
   imageClassName,
   overlayClassName,
   contentAlign = 'center',
+  frameClassName,
   overlay = true,
   size = 'large',
   splitLayout = false,
@@ -66,12 +69,13 @@ export default function Hero({
     medium: 'min-h-[60vh]',
   };
 
-  const primaryCtaClass = btnGold;
-  const secondaryCtaClass = btnOutlineOnDark;
-  const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}`;
+  const shrink = contentAlign === 'left' ? ' shrink-0' : '';
+  const primaryCtaClass = btnGold + shrink;
+  const secondaryCtaClass = btnOutlineOnDark + shrink;
+  const tertiaryCtaClass = `gap-2 ${btnOutlineOnDark}${shrink}`;
 
   const actions = (
-    <div className={`flex flex-col sm:flex-row items-center gap-4 ${contentAlign === 'left' ? 'justify-center md:justify-start' : 'justify-center'}`}>
+    <div className={`flex flex-col sm:flex-row sm:flex-wrap items-center gap-4 ${contentAlign === 'left' ? 'justify-center md:justify-start' : 'justify-center'}`}>
       {ctaText && (
         ctaOnClick ? (
           <button onClick={ctaOnClick} className={primaryCtaClass}>
@@ -104,7 +108,7 @@ export default function Hero({
   );
 
   return (
-    <section className={`relative flex overflow-hidden bg-charcoal ${sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
+    <section className={`relative flex overflow-hidden bg-charcoal ${frameClassName ?? sizeClasses[size]} ${splitLayout ? '' : 'items-center justify-center'}`}>
       {videoSrc && (
         <video
           autoPlay
@@ -176,18 +180,18 @@ export default function Hero({
           </div>
         </div>
       ) : (
-        <div className={`relative z-10 container mx-auto px-4 text-center ${contentAlign === 'left' ? 'md:text-left' : ''} ${size === 'medium' ? 'mt-[20vh]' : size === 'large' ? (contentAlign === 'left' ? 'md:-mt-[10vh]' : '-mt-[20vh]') : ''}`}>
-          <div className={`max-w-4xl ${contentAlign === 'left' ? 'mx-auto md:mx-0 md:max-w-lg' : 'mx-auto'}`}>
+        <div className={`relative z-10 container mx-auto px-4 text-center ${contentAlign === 'left' ? 'md:text-left' : ''} ${size === 'medium' ? 'mt-[20vh]' : size === 'large' && contentAlign !== 'left' ? '-mt-[20vh]' : ''}`}>
+          <div className={`max-w-4xl ${contentAlign === 'left' ? 'mx-auto w-full md:mx-0 md:max-w-[19rem]' : 'mx-auto'}`}>
             {subtitle && (
-              <p className="text-white/90 font-medium tracking-wide uppercase mb-4 text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+              <p className={`text-white/90 font-medium tracking-wide uppercase text-sm md:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${contentAlign === 'left' ? 'mb-3' : 'mb-4'}`}>
                 {subtitle}
               </p>
             )}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white mb-6 leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+            <h1 className={`font-semibold text-white leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] ${contentAlign === 'left' ? 'text-4xl md:text-5xl mb-4' : 'text-4xl md:text-5xl lg:text-6xl mb-6'}`}>
               {title}
             </h1>
             {description && (
-              <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl">
+              <p className={`text-white/90 max-w-2xl drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] backdrop-blur-sm bg-black/30 px-6 py-3 rounded-2xl ${contentAlign === 'left' ? 'text-base md:text-lg mb-5 md:mx-0' : 'text-lg md:text-xl mb-8 mx-auto'}`}>
                 {description}
               </p>
             )}
