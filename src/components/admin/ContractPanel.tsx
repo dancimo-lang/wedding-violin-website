@@ -50,6 +50,9 @@ export function ContractPanel({
   const [cocktailStart, setCocktailStart] = useState('');
   const [cocktailEnd, setCocktailEnd] = useState('');
   const [preludeStart, setPreludeStart] = useState('');
+  const [preludeEnd, setPreludeEnd] = useState('');
+  const [receptionStart, setReceptionStart] = useState('');
+  const [receptionStartTouched, setReceptionStartTouched] = useState(false);
   const [receptionEnd, setReceptionEnd] = useState('');
   const [otherDetails, setOtherDetails] = useState('');
   const [travelFee, setTravelFee] = useState('0');
@@ -146,6 +149,9 @@ export function ContractPanel({
         setVenueAddress(next.venueAddress);
         setCeremonyStart(next.ceremonyStart);
         setCeremonyEnd(next.ceremonyEnd);
+        setPreludeEnd('');
+        setReceptionStart('');
+        setReceptionStartTouched(false);
         setReceptionEnd('');
         setTravelFee('0');
         setAdditionalFees('0');
@@ -165,6 +171,7 @@ export function ContractPanel({
 
   const fullWedding = packageId === 'FULL';
   const privateEvent = packageId === 'EVENT';
+  const receptionStartValue = fullWedding && !receptionStartTouched ? cocktailEnd : receptionStart;
   const summary = useMemo(() => {
     return computeFees({
       packageId,
@@ -191,8 +198,9 @@ export function ContractPanel({
           cocktailStart,
           cocktailEnd,
           preludeStart,
+          ...(preludeEnd.trim() ? { preludeEnd } : {}),
           otherDetails,
-          ...(privateEvent ? {} : fullWedding ? { receptionEnd } : {}),
+          ...(fullWedding ? { receptionStart: receptionStartValue, receptionEnd } : {}),
           additionalFeesDescription,
           ...(privateEvent ? { eventType, performanceDescription } : {}),
         }),
@@ -213,9 +221,11 @@ export function ContractPanel({
     otherDetails,
     fullWedding,
     performanceDescription,
+    preludeEnd,
     preludeStart,
     privateEvent,
     receptionEnd,
+    receptionStartValue,
     summary,
     venueAddress,
     venueName,
@@ -232,7 +242,9 @@ export function ContractPanel({
     cocktailStart,
     cocktailEnd,
     preludeStart,
+    preludeEnd,
     otherDetails,
+    receptionStart: fullWedding ? receptionStartValue : '',
     receptionEnd: fullWedding ? receptionEnd : '',
   };
   const missingDetailMessage = missingCoupleDetailMessage(detailSource);
@@ -242,6 +254,9 @@ export function ContractPanel({
     ceremonyEnd,
     cocktailStart,
     cocktailEnd,
+    preludeStart,
+    preludeEnd,
+    receptionStart: fullWedding ? receptionStartValue : '',
     receptionEnd: fullWedding ? receptionEnd : '',
   });
 
@@ -279,7 +294,9 @@ export function ContractPanel({
         cocktailStart,
         cocktailEnd,
         preludeStart,
+        preludeEnd,
         otherDetails,
+        receptionStart: fullWedding ? receptionStartValue : '',
         receptionEnd: fullWedding ? receptionEnd : '',
         ...(privateEvent
           ? { performanceFee, eventType: eventType.trim(), performanceDescription: performanceDescription.trim(), cocktailStart: '', cocktailEnd: '', preludeStart: '' }
@@ -410,7 +427,8 @@ export function ContractPanel({
           )}
           {!fullWedding && !privateEvent && (
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Prelude begins" value={preludeStart} onChange={setPreludeStart} type="time" />
+              <Field label="Prelude begins (optional)" value={preludeStart} onChange={setPreludeStart} type="time" />
+              <Field label="Prelude ends (optional)" value={preludeEnd} onChange={setPreludeEnd} type="time" />
               <Field label="Ceremony end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />
               <Field label="Cocktail hour begins" value={cocktailStart} onChange={setCocktailStart} type="time" />
               <Field label="Cocktail hour ends" value={cocktailEnd} onChange={setCocktailEnd} type="time" />
@@ -422,19 +440,30 @@ export function ContractPanel({
           )}
           {!fullWedding && !privateEvent && (
             <p className="text-sm text-gray-600">
-              Ceremony end is saved with the agreement. The agreement text has no ceremony-end line, so that time is not printed until wording is added.
+              Prelude is optional. Cocktail hour is required for ceremony-and-cocktail packages. On a ceremony-only package it prints only when you enter those times.
             </p>
           )}
           {fullWedding && (
             <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Prelude begins (optional)" value={preludeStart} onChange={setPreludeStart} type="time" />
+              <Field label="Prelude ends (optional)" value={preludeEnd} onChange={setPreludeEnd} type="time" />
               <Field label="Cocktail hour begins" value={cocktailStart} onChange={setCocktailStart} type="time" />
               <Field label="Cocktail hour ends" value={cocktailEnd} onChange={setCocktailEnd} type="time" />
+              <Field
+                label="Reception start"
+                value={receptionStartValue}
+                onChange={(value) => {
+                  setReceptionStartTouched(true);
+                  setReceptionStart(value);
+                }}
+                type="time"
+              />
               <Field label="Reception end (when the evening ends)" value={receptionEnd} onChange={setReceptionEnd} type="time" />
             </div>
           )}
           {fullWedding && (
             <p className="text-sm text-gray-600">
-              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount. Ceremony start and ceremony end print together on the Event Time line. Cocktail hour times and reception end are saved with the agreement. The agreement text has no lines for those yet, so they are not printed.
+              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount. The schedule prints Ceremony Prelude, Ceremony, Cocktail Hour, and Reception. Prelude can be left blank. Reception start starts as the cocktail-hour end and can be changed.
             </p>
           )}
           <div className="grid gap-4 md:grid-cols-3">

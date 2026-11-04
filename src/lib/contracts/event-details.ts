@@ -1,4 +1,4 @@
-import type { PackageId } from './packages';
+import { packageIncludesCocktailHour, type PackageId } from './packages';
 import { formatClock, type CoupleDetailKey, type StoredRenderFields } from './render';
 
 /** Owner-entered details the send form knows about, including ones with no contract line yet. */
@@ -11,12 +11,13 @@ export type CoupleDetailSource = {
   cocktailEnd?: string;
   ceremonyEnd?: string;
   preludeStart?: string;
+  preludeEnd?: string;
   otherDetails?: string;
-  /** Full wedding only. Saved on the agreement. The template has no line for it yet. */
+  receptionStart?: string;
   receptionEnd?: string;
 };
 
-type DetailKey = CoupleDetailKey | 'receptionEnd';
+type DetailKey = CoupleDetailKey | 'preludeEnd' | 'receptionStart' | 'receptionEnd';
 
 const LABELS: Record<DetailKey, string> = {
   venueName: 'Venue name',
@@ -24,9 +25,11 @@ const LABELS: Record<DetailKey, string> = {
   ceremonyStart: 'Ceremony start time',
   ceremonyEnd: 'Ceremony end time',
   preludeStart: 'Prelude music start time',
+  preludeEnd: 'Prelude end time',
   cocktailStart: 'Cocktail hour start time',
   cocktailEnd: 'Cocktail hour end time',
   otherDetails: 'Other agreed performance details',
+  receptionStart: 'Reception start time',
   receptionEnd: 'Reception end time',
 };
 
@@ -35,29 +38,22 @@ const EVENT_LABELS: Partial<Record<DetailKey, string>> = {
   ceremonyEnd: 'Event end time',
 };
 
-/**
- * Details that block sending. The client cannot fill these in.
- * Wedding music is packages A–D. Cocktail times are required on every one of
- * those packages, including ceremony-only A and C, because they share this agreement.
- * Full wedding also requires reception end. Private events require the start only.
- */
-const REQUIRED_KEYS: Record<'wedding-music' | 'FULL' | 'EVENT', readonly DetailKey[]> = {
-  'wedding-music': ['venueName', 'venueAddress', 'ceremonyStart', 'ceremonyEnd', 'cocktailStart', 'cocktailEnd'],
-  FULL: ['venueName', 'venueAddress', 'ceremonyStart', 'ceremonyEnd', 'cocktailStart', 'cocktailEnd', 'receptionEnd'],
-  EVENT: ['venueName', 'venueAddress', 'ceremonyStart'],
-};
+const SHARED_REQUIRED: readonly DetailKey[] = ['venueName', 'venueAddress', 'ceremonyStart', 'ceremonyEnd'];
+const COCKTAIL_REQUIRED: readonly DetailKey[] = ['cocktailStart', 'cocktailEnd'];
+const RECEPTION_REQUIRED: readonly DetailKey[] = ['receptionStart', 'receptionEnd'];
 
-/** Optional lines that already appear in the agreement. A blank one stays blank. */
-const OPTIONAL_KEYS: Record<'wedding-music' | 'FULL' | 'EVENT', readonly DetailKey[]> = {
-  'wedding-music': ['preludeStart'],
-  FULL: [],
-  EVENT: ['ceremonyEnd'],
-};
+/** Details that block sending. Prelude never blocks. Ceremony-only packages do not require cocktail times. */
+function requiredKeys(packageId: PackageId): readonly DetailKey[] {
+  if (packageId === 'EVENT') return ['venueName', 'venueAddress', 'ceremonyStart'];
+  if (packageId === 'FULL') return [...SHARED_REQUIRED, ...COCKTAIL_REQUIRED, ...RECEPTION_REQUIRED];
+  if (packageIncludesCocktailHour(packageId)) return [...SHARED_REQUIRED, ...COCKTAIL_REQUIRED];
+  return SHARED_REQUIRED;
+}
 
-function groupOf(packageId: PackageId): 'wedding-music' | 'FULL' | 'EVENT' {
-  if (packageId === 'FULL') return 'FULL';
-  if (packageId === 'EVENT') return 'EVENT';
-  return 'wedding-music';
+/** Optional lines. A blank prelude is left off the wedding-music schedule. Private-event end stays a blank line. */
+function optionalKeys(packageId: PackageId): readonly DetailKey[] {
+  if (packageId === 'EVENT') return ['ceremonyEnd'];
+  return [];
 }
 
 function labelFor(packageId: PackageId, key: DetailKey): string {
@@ -84,7 +80,7 @@ function missingLabels(source: CoupleDetailSource, keys: readonly DetailKey[]): 
  * The client cannot supply these, so a blank would stay blank.
  */
 export function missingCoupleDetailMessage(source: CoupleDetailSource): string {
-  const labels = missingLabels(source, REQUIRED_KEYS[groupOf(source.packageId)]);
+  const labels = missingLabels(source, requiredKeys(source.packageId));
   if (labels.length === 0) return '';
   const list = formatList(labels);
   if (labels.length === 1) {
@@ -97,7 +93,7 @@ export function missingCoupleDetailMessage(source: CoupleDetailSource): string {
  * Already-sent agreements. Blank required details do not stop the client from signing.
  */
 export function sentContractBlankDetailMessage(source: CoupleDetailSource): string {
-  const labels = missingLabels(source, REQUIRED_KEYS[groupOf(source.packageId)]);
+  const labels = missingLabels(source, requiredKeys(source.packageId));
   if (labels.length === 0) return '';
   const list = formatList(labels);
   if (labels.length === 1) {
@@ -108,7 +104,7 @@ export function sentContractBlankDetailMessage(source: CoupleDetailSource): stri
 
 /** Optional lines that will stay blank. Does not block sending. */
 export function optionalBlankDetailMessage(source: CoupleDetailSource): string {
-  const labels = missingLabels(source, OPTIONAL_KEYS[groupOf(source.packageId)]);
+  const labels = missingLabels(source, optionalKeys(source.packageId));
   if (labels.length === 0) return '';
   const list = formatList(labels);
   if (labels.length === 1) {

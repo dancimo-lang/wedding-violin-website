@@ -160,10 +160,12 @@ export async function POST(request: Request) {
   const cocktailStart = clockOrBlank(body.cocktailStart);
   const cocktailEnd = clockOrBlank(body.cocktailEnd);
   const preludeStart = clockOrBlank(body.preludeStart);
+  const preludeEnd = clockOrBlank(body.preludeEnd);
+  const receptionStart = clockOrBlank(body.receptionStart);
   const receptionEnd = clockOrBlank(body.receptionEnd);
   const weddingDate = plain(body.weddingDate, 10);
   if (
-    [client1Name, client2Name, venueName, venueAddress, otherDetails, ceremonyStart, ceremonyEnd, cocktailStart, cocktailEnd, preludeStart, receptionEnd, weddingDate].includes(
+    [client1Name, client2Name, venueName, venueAddress, otherDetails, ceremonyStart, ceremonyEnd, cocktailStart, cocktailEnd, preludeStart, preludeEnd, receptionStart, receptionEnd, weddingDate].includes(
       null,
     )
   ) {
@@ -182,7 +184,9 @@ export async function POST(request: Request) {
     cocktailStart: cocktailStart || '',
     cocktailEnd: cocktailEnd || '',
     preludeStart: preludeStart || '',
+    preludeEnd: preludeEnd || '',
     otherDetails: otherDetails || '',
+    receptionStart: packageId === 'FULL' ? receptionStart || '' : '',
     receptionEnd: packageId === 'FULL' ? receptionEnd || '' : '',
   };
   const missingDetails = missingCoupleDetailMessage(detailSource);
@@ -192,6 +196,9 @@ export async function POST(request: Request) {
     ceremonyEnd: detailSource.ceremonyEnd,
     cocktailStart: detailSource.cocktailStart,
     cocktailEnd: detailSource.cocktailEnd,
+    preludeStart: detailSource.preludeStart,
+    preludeEnd: detailSource.preludeEnd,
+    receptionStart: detailSource.receptionStart,
     receptionEnd: detailSource.receptionEnd,
   });
   if (timeOrder) return json({ error: timeOrder }, 400);
@@ -224,7 +231,9 @@ export async function POST(request: Request) {
     cocktailStart: cocktailStart || '',
     cocktailEnd: cocktailEnd || '',
     preludeStart: preludeStart || '',
+    ...(preludeEnd ? { preludeEnd } : {}),
     otherDetails: otherDetails || '',
+    ...(packageId === 'FULL' && receptionStart ? { receptionStart } : {}),
     ...(packageId === 'FULL' && receptionEnd ? { receptionEnd } : {}),
     additionalFeesDescription: cleanAdditionalFeesDescription(body.additionalFeesDescription),
     ...(privateEvent ? { eventType, performanceDescription } : {}),
