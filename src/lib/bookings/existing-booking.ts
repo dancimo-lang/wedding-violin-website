@@ -1,11 +1,12 @@
 /**
- * Pure rules for adding a wedding that was booked and paid outside the site.
- * No email, contract, or payment request is created from these rows.
+ * Pure rules for adding a wedding that was booked outside the site.
+ * These rows send no email and create no agreement. Money still owed is
+ * saved as an open payment so the couple can pay it later.
  */
-import { finalPaymentDueDate, isIsoDate, splitRetainer } from '../contracts/money';
+import { finalPaymentDueDate, formatMoney, isIsoDate } from '../contracts/money';
 import { PACKAGES, PACKAGE_IDS, type PackageId } from '../contracts/packages';
 
-export const EXISTING_PAYMENT_STATUSES = ['paid_in_full', 'retainer_paid', 'nothing_paid'] as const;
+export const EXISTING_PAYMENT_STATUSES = ['paid_in_full', 'partial', 'nothing_paid', 'retainer_paid'] as const;
 export type ExistingPaymentStatus = (typeof EXISTING_PAYMENT_STATUSES)[number];
 
 export const EXISTING_PAYMENT_METHODS = ['zelle', 'cash', 'check', 'venmo', 'card', 'other'] as const;
@@ -22,8 +23,9 @@ export const PAYMENT_METHOD_LABELS: Record<ExistingPaymentMethod, string> = {
 
 export const PAYMENT_STATUS_LABELS: Record<ExistingPaymentStatus, string> = {
   paid_in_full: 'Paid in full',
-  retainer_paid: 'Retainer paid, balance due',
+  partial: 'Partly paid',
   nothing_paid: 'Nothing paid yet',
+  retainer_paid: 'Retainer paid, balance due',
 };
 
 export type ExistingPackageChoice = PackageId | 'OTHER';
@@ -39,6 +41,10 @@ export type ExistingBookingMarker = {
   payment_status: ExistingPaymentStatus;
   payment_method: ExistingPaymentMethod | null;
   package: ExistingPackageChoice;
+  paid_cents: number;
+  balance_due_on: string | null;
+  /** Unguessable link token for /pay. Null when nothing is owed. Not a booking code. */
+  payment_token: string | null;
 };
 
 /** True when any marker row for the booking says it must stay off Google. */
@@ -58,6 +64,27 @@ export function packageLabel(choice: ExistingPackageChoice): string {
   return choice === 'OTHER' ? 'Other / custom' : PACKAGES[choice].title;
 }
 
+export function paymentStatusFor(paidCents: number, totalCents: number): ExistingPaymentStatus {
+  if (paidCents <= 0) return 'nothing_paid';
+  if (paidCents >= totalCents) return 'paid_in_full';
+  return 'partial';
+}
+
+/** Memo on the manual payment row created for money received before the site. */
+export function outsidePaymentMemo(methodLabel: string): string {
+  return `Paid outside the site (${methodLabel}). Added manually as an existing booking.`;
+}
+
+/** True only for the manual rows this form created. Real Zelle or card payments are not these. */
+export function isReplaceableOutsidePayment(row: {
+  method: string | null;
+  memo: string | null;
+  status: string | null;
+}): boolean {
+  if (row.method !== 'manual' || row.status !== 'Completed' || typeof row.memo !== 'string') return false;
+  return row.memo.startsWith('Paid outside the site (') && row.memo.endsWith('Added manually as an existing booking.');
+}
+
 export type ObligationPlan = {
   kind: 'retainer' | 'balance';
   amountCents: number;
@@ -75,33 +102,39 @@ export type PaymentPlan = {
   obligations: ObligationPlan[];
 };
 
-/** Split the total with the site's retainer rule and mark what was already received. */
+/**
+ * Record the amount already received and one open obligation for whatever is left.
+ * A blank due date uses 30 days before the wedding. Nothing is split to 50% unless
+ * that is the amount the owner entered.
+ */
 export function planExistingPayments(
   totalCents: number,
   weddingDate: string,
-  status: ExistingPaymentStatus,
+  paidCents: number,
+  balanceDueDate?: string | null,
 ): PaymentPlan | { error: string } {
-  const split = splitRetainer(totalCents);
-  if (!split) return { error: 'Enter a total price of $0 or more.' };
+  if (!Number.isInteger(totalCents) || totalCents < 0) return { error: 'Enter a total price of $0 or more.' };
+  if (!Number.isInteger(paidCents) || paidCents < 0) return { error: 'Enter the amount already paid, or 0.' };
+  if (paidCents > totalCents) return { error: 'The amount already paid cannot be more than the total.' };
   if (!isIsoDate(weddingDate)) return { error: 'Enter the wedding date.' };
-  const balanceDueDate = finalPaymentDueDate(weddingDate);
-  const retainerPaid = status !== 'nothing_paid';
-  const balancePaid = status === 'paid_in_full';
+  const requested = typeof balanceDueDate === 'string' ? balanceDueDate.trim() : '';
+  const due = requested || finalPaymentDueDate(weddingDate);
+  if (!due || !isIsoDate(due)) return { error: 'Enter the date the balance is due.' };
+  const owedCents = totalCents - paidCents;
   const obligations: ObligationPlan[] = [];
-  if (split.retainerCents > 0) {
-    obligations.push({ kind: 'retainer', amountCents: split.retainerCents, dueOn: null, paid: retainerPaid });
+  if (paidCents === 0 && owedCents > 0) {
+    obligations.push({ kind: 'retainer', amountCents: owedCents, dueOn: due, paid: false });
+  } else {
+    if (paidCents > 0) obligations.push({ kind: 'retainer', amountCents: paidCents, dueOn: null, paid: true });
+    if (owedCents > 0) obligations.push({ kind: 'balance', amountCents: owedCents, dueOn: due, paid: false });
   }
-  if (split.balanceCents > 0) {
-    obligations.push({ kind: 'balance', amountCents: split.balanceCents, dueOn: balanceDueDate, paid: balancePaid });
-  }
-  const paidCents = obligations.filter((o) => o.paid).reduce((sum, o) => sum + o.amountCents, 0);
   return {
     totalCents,
-    retainerCents: split.retainerCents,
-    balanceCents: split.balanceCents,
+    retainerCents: paidCents > 0 ? paidCents : owedCents,
+    balanceCents: paidCents > 0 ? owedCents : 0,
     paidCents,
-    owedCents: totalCents - paidCents,
-    balanceDueDate,
+    owedCents,
+    balanceDueDate: due,
     obligations,
   };
 }
@@ -118,6 +151,8 @@ export type ExistingBookingInput = {
   venueAddress: string | null;
   packageChoice: ExistingPackageChoice;
   totalCents: number;
+  paidCents: number;
+  balanceDueDate: string | null;
   paymentStatus: ExistingPaymentStatus;
   paymentMethod: ExistingPaymentMethod | null;
   notes: string | null;
@@ -168,8 +203,12 @@ export function parseExistingBooking(body: Record<string, unknown>): ExistingBoo
   const packageChoice = pkg as ExistingPackageChoice;
   const totalCents = dollarsToCents(body.totalPrice);
   if (totalCents == null) return { error: 'Enter the total price in dollars.' };
-  const status = typeof body.paymentStatus === 'string' ? body.paymentStatus : '';
-  if (!(EXISTING_PAYMENT_STATUSES as readonly string[]).includes(status)) return { error: 'Choose a payment status.' };
+  const paidCents = dollarsToCents(body.amountPaid);
+  if (paidCents == null) return { error: 'Enter the amount already paid, or 0.' };
+  if (paidCents > totalCents) return { error: 'The amount already paid cannot be more than the total.' };
+  const dueRaw = text(body.balanceDueDate, 10);
+  if (dueRaw === undefined) return { error: 'Enter the date the balance is due.' };
+  if (dueRaw && !isIsoDate(dueRaw)) return { error: 'Enter the date the balance is due.' };
   const methodRaw = typeof body.paymentMethod === 'string' && body.paymentMethod ? body.paymentMethod : null;
   if (methodRaw && !(EXISTING_PAYMENT_METHODS as readonly string[]).includes(methodRaw)) return { error: 'Choose a payment method.' };
   const notes = text(body.notes, 3500);
@@ -186,7 +225,9 @@ export function parseExistingBooking(body: Record<string, unknown>): ExistingBoo
     venueAddress,
     packageChoice,
     totalCents,
-    paymentStatus: status as ExistingPaymentStatus,
+    paidCents,
+    balanceDueDate: dueRaw,
+    paymentStatus: paymentStatusFor(paidCents, totalCents),
     paymentMethod: methodRaw as ExistingPaymentMethod | null,
     notes,
     addToGoogle: body.addToGoogle === true,
@@ -195,9 +236,13 @@ export function parseExistingBooking(body: Record<string, unknown>): ExistingBoo
 
 /** Text saved to bookings.special_requests so the record says where it came from. */
 export function existingBookingNotes(input: ExistingBookingInput): string {
-  const method = input.paymentMethod ? ` via ${PAYMENT_METHOD_LABELS[input.paymentMethod]}` : '';
+  const method = input.paidCents > 0 && input.paymentMethod ? ` via ${PAYMENT_METHOD_LABELS[input.paymentMethod]}` : '';
+  const owed =
+    input.totalCents - input.paidCents === 0
+      ? 'Nothing is still owed.'
+      : `$${formatMoney(input.totalCents - input.paidCents)} is still owed${input.balanceDueDate ? `, due ${input.balanceDueDate}` : ''}.`;
   const lines = [
-    `Added manually as an existing booking. Paid outside the site: ${PAYMENT_STATUS_LABELS[input.paymentStatus]}${input.paymentStatus === 'nothing_paid' ? '' : method}.`,
+    `Added manually as an existing booking. Paid outside the site: $${formatMoney(input.paidCents)} of $${formatMoney(input.totalCents)}${method}. ${owed}`,
   ];
   if (input.notes) lines.push(input.notes);
   return lines.join('\n\n');

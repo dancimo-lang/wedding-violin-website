@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import {
   EXISTING_BOOKING_SOURCE,
   existingBookingNotes,
+  outsidePaymentMemo,
   packageLabel,
   parseExistingBooking,
   planExistingPayments,
@@ -9,6 +10,7 @@ import {
   type ExistingBookingMarker,
 } from '@/lib/bookings/existing-booking';
 import { generateBookingCode, isBookingCode } from '@/lib/contracts/booking-code';
+import { generateContractToken } from '@/lib/contracts/token';
 import { runGoogleSync } from '@/lib/google/run';
 import { requireAdminApi } from '@/lib/require-admin-api';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -16,9 +18,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 /**
- * Adds a wedding that was booked and paid outside the site.
+ * Adds a wedding that was booked outside the site.
  * Sends no email, creates no contract, and starts no Stripe or Zelle request.
- * Paid halves are recorded as manual payments so the admin shows no money owed.
+ * Money already received is a manual payment. Whatever is still owed is an open
+ * payment with a booking code, so the couple can pay it from a link the owner copies.
  */
 export async function POST(request: Request) {
   const auth = await requireAdminApi();
@@ -32,8 +35,9 @@ export async function POST(request: Request) {
   }
   const input = parseExistingBooking(body);
   if ('error' in input) return NextResponse.json({ error: input.error }, { status: 400 });
-  const plan = planExistingPayments(input.totalCents, input.weddingDate, input.paymentStatus);
+  const plan = planExistingPayments(input.totalCents, input.weddingDate, input.paidCents, input.balanceDueDate);
   if ('error' in plan) return NextResponse.json({ error: plan.error }, { status: 400 });
+  const noted = { ...input, balanceDueDate: plan.balanceDueDate };
 
   let admin: AdminClient;
   try {
@@ -75,7 +79,7 @@ export async function POST(request: Request) {
       total_price: (plan.totalCents / 100).toFixed(2),
       retainer_amount: (plan.retainerCents / 100).toFixed(2),
       balance_due_date: plan.balanceDueDate,
-      special_requests: existingBookingNotes(input),
+      special_requests: existingBookingNotes(noted),
     },
   });
   const bookingId = (synced as { booking_id?: string } | null)?.booking_id ?? null;
@@ -93,6 +97,9 @@ export async function POST(request: Request) {
     payment_status: input.paymentStatus,
     payment_method: input.paymentMethod,
     package: input.packageChoice,
+    paid_cents: plan.paidCents,
+    balance_due_on: plan.balanceDueDate,
+    payment_token: plan.owedCents > 0 ? generateContractToken() : null,
   };
   const { error: markerError } = await admin.from('activity_events').insert({
     booking_id: bookingId,
@@ -152,7 +159,7 @@ export async function POST(request: Request) {
           p_stripe_session_id: null,
           p_stripe_payment_intent_id: null,
           p_payer_name: input.client1Name,
-          p_memo: `Paid outside the site (${method}). Added manually as an existing booking.`,
+          p_memo: outsidePaymentMemo(method),
           p_fee_cents: 0,
           p_paid_at: new Date().toISOString(),
           p_external_paid_on: null,
