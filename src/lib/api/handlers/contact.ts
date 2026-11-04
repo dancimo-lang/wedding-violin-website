@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const eventDate = optionalText(body.eventDate, 10);
     const partnerName = optionalText(body.partnerName, 200);
     const venueName = optionalText(body.venueName, 200);
+    const venueAddress = optionalText(body.venueAddress, 500);
     const eventStart = optionalText(body.eventStart, 8);
     const howFound = optionalText(body.howFound, 50);
     const guestCountRaw = optionalText(body.guestCount, 6);
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
       !dateLooksValid ||
       partnerName === 'invalid' ||
       venueName === 'invalid' ||
+      venueAddress === 'invalid' ||
       eventStart === 'invalid' ||
       !timeLooksValid ||
       howFound === 'invalid' ||
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
       eventDate,
       eventStart,
       venueName,
+      venueAddress,
       guestCount,
       howFound,
       message,
@@ -206,6 +209,7 @@ export async function POST(request: NextRequest) {
         inquiry_source: 'website',
         event_date: eventDate,
         venue_name: venueName,
+        venue_address: venueAddress,
         service_type: service,
         requested_services: service,
         package_interest: packageInterest,

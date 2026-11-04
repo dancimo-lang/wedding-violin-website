@@ -27,6 +27,7 @@ import { getPaymentView, postCheckout, postStripeWebhook } from './handlers/paym
 import { postZelle } from './handlers/payments-zelle';
 import { GET as getPdf } from './handlers/pdf';
 import { GET as getVenues } from './handlers/venues';
+import { GET as getPublicVenues } from './handlers/venues-public';
 import { POST as restoreTunes } from './handlers/restore-tunes';
 import { GET as getPasswordRecovery } from './handlers/password-recovery';
 import { POST as postSignOut } from './handlers/signout';
@@ -54,6 +55,7 @@ const handlers: Record<string, ApiHandler> = {
   'delete-lead': ({ request, params }) => deleteLead(request, params.id ?? ''),
   'contract-send': mount(postContractSend),
   'admin-venues': mount(getVenues),
+  'public-venues': mount(getPublicVenues),
   'contract-void': ({ request, params }) => postVoid(request, params.id ?? ''),
   'contract-resend': ({ request, params }) => postResend(request, params.id ?? ''),
   'contract-countersign': ({ request, params }) => postCountersign(request, params.id ?? ''),

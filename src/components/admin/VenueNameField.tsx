@@ -4,7 +4,8 @@ import { useEffect, useId, useState } from 'react';
 import { fieldClass } from '@/lib/leads';
 import type { VenueSuggestion } from '@/lib/venues/photon';
 
-const labelClass = 'block text-sm font-semibold text-gray-900';
+const adminLabelClass = 'block text-sm font-semibold text-gray-900';
+const adminInputClass = `${fieldClass} mt-1 font-normal`;
 
 export function VenueNameField({
   name,
@@ -13,6 +14,13 @@ export function VenueNameField({
   onAddress,
   nameRequired = false,
   addressRequired = false,
+  endpoint = '/api/admin/venues',
+  nameLabel = 'Venue name',
+  addressLabel = 'Venue address',
+  optional = false,
+  labelClassName = adminLabelClass,
+  inputClassName = adminInputClass,
+  layoutClassName = 'grid gap-4 md:grid-cols-2',
 }: {
   name: string;
   address: string;
@@ -20,6 +28,13 @@ export function VenueNameField({
   onAddress: (value: string) => void;
   nameRequired?: boolean;
   addressRequired?: boolean;
+  endpoint?: string;
+  nameLabel?: string;
+  addressLabel?: string;
+  optional?: boolean;
+  labelClassName?: string;
+  inputClassName?: string;
+  layoutClassName?: string;
 }) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
@@ -34,7 +49,7 @@ export function VenueNameField({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (!cancelled) setStatus('searching');
-      fetch(`/api/admin/venues?q=${encodeURIComponent(query)}`, { cache: 'no-store', credentials: 'same-origin' })
+      fetch(`${endpoint}?q=${encodeURIComponent(query)}`, { cache: 'no-store', credentials: 'same-origin' })
         .then(async (response) => {
           if (!response.ok) return [];
           const payload = (await response.json()) as { results?: VenueSuggestion[] };
@@ -56,7 +71,7 @@ export function VenueNameField({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query]);
+  }, [endpoint, query]);
 
   const choose = (suggestion: VenueSuggestion) => {
     onName(suggestion.name);
@@ -66,16 +81,19 @@ export function VenueNameField({
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className={layoutClassName}>
       <div className={open ? 'relative z-40' : 'relative'}>
-        <label className={labelClass} htmlFor={`${listId}-name`}>
+        <label className={labelClassName} htmlFor={`${listId}-name`}>
           <span className="flex items-baseline justify-between gap-2">
-            Venue name
+            <span>
+              {nameLabel}
+              {optional ? <span className="text-gray-600"> (optional)</span> : null}
+            </span>
             {nameRequired ? <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Required</span> : null}
           </span>
           <input
             id={`${listId}-name`}
-            className={`${fieldClass} mt-1 font-normal`}
+            className={inputClassName}
             value={name}
             autoComplete="off"
             role="combobox"
@@ -117,12 +135,21 @@ export function VenueNameField({
           </ul>
         ) : null}
       </div>
-      <label className={labelClass}>
+      <label className={labelClassName} htmlFor={`${listId}-address`}>
         <span className="flex items-baseline justify-between gap-2">
-          Venue address
+          <span>
+            {addressLabel}
+            {optional ? <span className="text-gray-600"> (optional)</span> : null}
+          </span>
           {addressRequired ? <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Required</span> : null}
         </span>
-        <input className={`${fieldClass} mt-1 font-normal`} value={address} onChange={(event) => onAddress(event.target.value)} autoComplete="street-address" />
+        <input
+          id={`${listId}-address`}
+          className={inputClassName}
+          value={address}
+          onChange={(event) => onAddress(event.target.value)}
+          autoComplete="street-address"
+        />
       </label>
     </div>
   );

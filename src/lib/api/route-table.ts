@@ -27,6 +27,7 @@ export const apiRouteCatalog: readonly ApiRouteSpec[] = [
   { id: 'delete-lead', methods: ['DELETE'], segments: ['admin', 'leads', param('id')] },
   { id: 'contract-send', methods: ['POST'], segments: ['admin', 'contracts'] },
   { id: 'admin-venues', methods: ['GET'], segments: ['admin', 'venues'] },
+  { id: 'public-venues', methods: ['GET'], segments: ['venues'] },
   { id: 'contract-void', methods: ['POST'], segments: ['admin', 'contracts', param('id'), 'void'] },
   { id: 'contract-resend', methods: ['POST'], segments: ['admin', 'contracts', param('id'), 'resend'] },
   { id: 'contract-countersign', methods: ['POST'], segments: ['admin', 'contracts', param('id'), 'countersign'] },
