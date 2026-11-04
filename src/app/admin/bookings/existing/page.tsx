@@ -6,14 +6,11 @@ import { useRouter } from 'next/navigation';
 import { PACKAGES, PACKAGE_IDS } from '@/lib/contracts/packages';
 import {
   EXISTING_PAYMENT_METHODS,
-  EXISTING_PAYMENT_STATUSES,
   PAYMENT_METHOD_LABELS,
-  PAYMENT_STATUS_LABELS,
   packagePriceCents,
   planExistingPayments,
   dollarsToCents,
   type ExistingPackageChoice,
-  type ExistingPaymentStatus,
 } from '@/lib/bookings/existing-booking';
 
 const fieldClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900';
@@ -35,7 +32,8 @@ export default function AddExistingBookingPage() {
   const [venueAddress, setVenueAddress] = useState('');
   const [pkg, setPkg] = useState<ExistingPackageChoice>('A');
   const [totalPrice, setTotalPrice] = useState('450');
-  const [paymentStatus, setPaymentStatus] = useState<ExistingPaymentStatus>('paid_in_full');
+  const [amountPaid, setAmountPaid] = useState('0');
+  const [balanceDueDate, setBalanceDueDate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [notes, setNotes] = useState('');
   const [addToGoogle, setAddToGoogle] = useState(false);
@@ -44,10 +42,11 @@ export default function AddExistingBookingPage() {
 
   const summary = useMemo(() => {
     const cents = dollarsToCents(totalPrice);
-    if (cents == null || !weddingDate) return null;
-    const plan = planExistingPayments(cents, weddingDate, paymentStatus);
+    const paid = dollarsToCents(amountPaid);
+    if (cents == null || paid == null || !weddingDate) return null;
+    const plan = planExistingPayments(cents, weddingDate, paid, balanceDueDate || null);
     return 'error' in plan ? null : plan;
-  }, [paymentStatus, totalPrice, weddingDate]);
+  }, [amountPaid, balanceDueDate, totalPrice, weddingDate]);
 
   const choosePackage = (value: ExistingPackageChoice) => {
     setPkg(value);
@@ -77,7 +76,8 @@ export default function AddExistingBookingPage() {
           venueAddress,
           package: pkg,
           totalPrice,
-          paymentStatus,
+          amountPaid,
+          balanceDueDate,
           paymentMethod,
           notes,
           addToGoogle,
@@ -106,7 +106,7 @@ export default function AddExistingBookingPage() {
       <h2 className="text-3xl font-bold text-gray-900 mt-2 mb-2">Add existing booking</h2>
       <p className="text-sm text-gray-600 mb-6">
         For a wedding already booked outside the site. It is saved as Confirmed and blocks the date.
-        No email, agreement, or payment request is sent.
+        No email or agreement is sent. Money still owed is saved so the couple can pay it.
       </p>
       <form onSubmit={save} className="bg-white rounded-xl shadow p-6 space-y-4">
         <div className="grid sm:grid-cols-2 gap-3">
@@ -150,12 +150,12 @@ export default function AddExistingBookingPage() {
           <label className="block text-sm text-gray-700">Total price ($)
             <input inputMode="decimal" className={fieldClass} value={totalPrice} onChange={(e) => setTotalPrice(e.target.value)} />
           </label>
-          <label className="block text-sm text-gray-700">Payment status
-            <select className={fieldClass} value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as ExistingPaymentStatus)}>
-              {EXISTING_PAYMENT_STATUSES.map((status) => (
-                <option key={status} value={status}>{PAYMENT_STATUS_LABELS[status]}</option>
-              ))}
-            </select>
+          <label className="block text-sm text-gray-700">Amount already paid ($)
+            <input inputMode="decimal" className={fieldClass} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} />
+          </label>
+          <label className="block text-sm text-gray-700">Balance due date
+            <input type="date" className={fieldClass} value={balanceDueDate} onChange={(e) => setBalanceDueDate(e.target.value)} />
+            <span className="mt-1 block text-xs text-gray-500">Leave blank for 30 days before the wedding.</span>
           </label>
           <label className="block text-sm text-gray-700">Payment method received
             <select className={fieldClass} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
@@ -176,8 +176,8 @@ export default function AddExistingBookingPage() {
         {summary && (
           <p className="text-sm text-gray-700">
             {summary.owedCents === 0
-              ? 'Nothing owed.'
-              : `Owed: ${dollars(summary.owedCents)}${paymentStatus === 'retainer_paid' && summary.balanceDueDate ? `, due ${summary.balanceDueDate}` : ''}.`}
+              ? `Paid ${dollars(summary.paidCents)}. Nothing is still owed.`
+              : `Paid ${dollars(summary.paidCents)}. Still owed ${dollars(summary.owedCents)}${summary.balanceDueDate ? `, due ${summary.balanceDueDate}` : ''}. A payable record will be saved.`}
           </p>
         )}
         <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-60">

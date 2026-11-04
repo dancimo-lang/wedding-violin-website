@@ -15,6 +15,7 @@ type PaymentRow = {
 type OpenRow = {
   id: string;
   kind: string;
+  amountCents?: number;
   amountLabel: string;
   bookingCode: string;
 };
@@ -22,6 +23,8 @@ type OpenRow = {
 export function BookingPayments({ bookingId }: { bookingId: string }) {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [open, setOpen] = useState<OpenRow[]>([]);
+  const [bookingCode, setBookingCode] = useState('');
+  const [loaded, setLoaded] = useState(false);
   const [obligationId, setObligationId] = useState('');
   const [method, setMethod] = useState('zelle');
   const [transactionNumber, setTransactionNumber] = useState('');
@@ -33,14 +36,17 @@ export function BookingPayments({ bookingId }: { bookingId: string }) {
 
   const load = async () => {
     const response = await fetch(`/api/admin/payments?bookingId=${encodeURIComponent(bookingId)}`, { cache: 'no-store' });
-    const payload = (await response.json()) as { payments?: PaymentRow[]; openObligations?: OpenRow[]; error?: string };
+    const payload = (await response.json()) as { payments?: PaymentRow[]; openObligations?: OpenRow[]; bookingCode?: string; error?: string };
     if (!response.ok) {
       setError(payload.error || 'Payments could not be loaded.');
+      setLoaded(true);
       return;
     }
     setPayments(payload.payments ?? []);
     const nextOpen = payload.openObligations ?? [];
     setOpen(nextOpen);
+    setBookingCode(typeof payload.bookingCode === 'string' ? payload.bookingCode : '');
+    setLoaded(true);
     setObligationId((current) => (nextOpen.some((row) => row.id === current) ? current : nextOpen[0]?.id || ''));
   };
 
@@ -48,19 +54,25 @@ export function BookingPayments({ bookingId }: { bookingId: string }) {
     let cancelled = false;
     fetch(`/api/admin/payments?bookingId=${encodeURIComponent(bookingId)}`, { cache: 'no-store' })
       .then(async (response) => {
-        const payload = (await response.json()) as { payments?: PaymentRow[]; openObligations?: OpenRow[]; error?: string };
+        const payload = (await response.json()) as { payments?: PaymentRow[]; openObligations?: OpenRow[]; bookingCode?: string; error?: string };
         if (cancelled) return;
         if (!response.ok) {
           setError(payload.error || 'Payments could not be loaded.');
+          setLoaded(true);
           return;
         }
         setPayments(payload.payments ?? []);
         const nextOpen = payload.openObligations ?? [];
         setOpen(nextOpen);
+        setBookingCode(typeof payload.bookingCode === 'string' ? payload.bookingCode : '');
+        setLoaded(true);
         setObligationId(nextOpen[0]?.id || '');
       })
       .catch(() => {
-        if (!cancelled) setError('Payments could not be loaded.');
+        if (!cancelled) {
+          setError('Payments could not be loaded.');
+          setLoaded(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -102,6 +114,13 @@ export function BookingPayments({ bookingId }: { bookingId: string }) {
   return (
     <section className="mt-8 rounded-xl bg-white p-6 shadow">
       <h3 className="text-xl font-bold text-gray-900">Payments</h3>
+      {bookingCode ? <p className="mt-1 text-sm text-gray-700">Booking code {bookingCode}</p> : null}
+      {loaded && open.length > 0 ? (
+        <p className="mt-1 text-sm text-gray-700">
+          Still owed $
+          {(open.reduce((sum, row) => sum + (typeof row.amountCents === 'number' ? row.amountCents : 0), 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </p>
+      ) : null}
       {payments.length === 0 ? <p className="mt-3 text-sm text-gray-600">No payments recorded yet.</p> : null}
       {payments.length > 0 ? (
         <div className="mt-4 overflow-x-auto">
@@ -133,7 +152,8 @@ export function BookingPayments({ bookingId }: { bookingId: string }) {
       ) : null}
 
       <h4 className="mt-6 font-semibold text-gray-900">Record a payment</h4>
-      {open.length === 0 ? <p className="mt-2 text-sm text-gray-600">Nothing is open on this booking.</p> : null}
+      {!loaded ? <p className="mt-2 text-sm text-gray-600">Loading payments...</p> : null}
+      {loaded && !error && open.length === 0 ? <p className="mt-2 text-sm text-gray-600">Nothing is open on this booking.</p> : null}
       {open.length > 0 ? (
         <form
           className="mt-3 grid gap-3 md:grid-cols-2"

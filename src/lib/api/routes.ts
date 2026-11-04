@@ -6,6 +6,7 @@ import { GET as getAvailabilityDates } from './handlers/availability-dates';
 import { POST as postBookingStatus } from './handlers/booking-status';
 import { DELETE as deleteLead } from './handlers/delete-lead';
 import { POST as postExistingBooking } from './handlers/existing-booking';
+import { existingBookingPayment } from './handlers/existing-booking-payment';
 import {
   getPdf as getContractPdf,
   POST as postContractSend,
@@ -48,6 +49,7 @@ export type ApiRoute = ApiRouteSpec & { handle: ApiHandler };
 const handlers: Record<string, ApiHandler> = {
   'booking-status': mount(postBookingStatus),
   'existing-booking': mount(postExistingBooking),
+  'existing-booking-payment': ({ request }) => existingBookingPayment(request),
   'delete-lead': ({ request, params }) => deleteLead(request, params.id ?? ''),
   'contract-send': mount(postContractSend),
   'contract-void': ({ request, params }) => postVoid(request, params.id ?? ''),
