@@ -310,7 +310,7 @@ What it adds:
 Environment variables, in addition to the Resend key you already use:
 
 - `CONTRACT_FROM_EMAIL` or `RESEND_FROM`. If neither is set, agreement email uses `RESEND_FROM_EMAIL`.
-- `CONTRACT_REPLY_TO`. Optional. Defaults to `dancimo@gmail.com`.
+- `CONTRACT_REPLY_TO`. Optional. Defaults to `hello@danielcimo.com`.
 - `CONTACT_EMAIL`. The signed PDF is also sent here. Defaults to `dancimo@gmail.com`.
 - `CONTRACT_PUBLIC_ORIGIN`. Optional. Set it to `https://danielcimo.com` if a signing link is built with the wrong host.
 

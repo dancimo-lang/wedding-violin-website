@@ -373,7 +373,7 @@ test('the same agreement text always hashes the same way, and signing locks it',
   assert.equal(first, second);
   assert.equal(hashContractText(first), hashContractText(second));
   // Agreements created before package-specific text still hash to this checklist document.
-  assert.equal(hashContractText(first), 'a8c2659bf8dfa7272110624a5a1659c908b5004e5f9c6da6bf0b8c91f10a72a3');
+  assert.equal(hashContractText(first), '9bbd0cebd60e26dd8ba6c75bd85dcc96af0efb4cc7d315a403f9edc538534520');
 
   const opted = renderContract(sampleFields, { ...signedOverlay, photoOptOut: true });
   assert.notEqual(hashContractText(first), hashContractText(opted));
@@ -463,7 +463,7 @@ test('blank event lines stay blank, and a couple-supplied note does not change t
   const noted = normalizeStoredFields({ ...sampleFields, coupleSupplied: ['venueName', 'not-a-field', 'ceremonyStart'] });
   assert.deepEqual(noted?.coupleSupplied, ['venueName', 'ceremonyStart']);
   assert.equal(renderContract(noted ?? sampleFields, signedOverlay), renderContract(sampleFields, signedOverlay));
-  assert.equal(hashContractText(renderContract(sampleFields, signedOverlay)), 'a8c2659bf8dfa7272110624a5a1659c908b5004e5f9c6da6bf0b8c91f10a72a3');
+  assert.equal(hashContractText(renderContract(sampleFields, signedOverlay)), '9bbd0cebd60e26dd8ba6c75bd85dcc96af0efb4cc7d315a403f9edc538534520');
 
   const dropped = normalizeStoredFields({ ...sampleFields, venueName: '   ', coupleSupplied: ['venueName'] });
   assert.equal(dropped?.coupleSupplied, undefined);
@@ -661,7 +661,7 @@ test('contract mail uses the contract sender, then the existing Resend sender', 
   assert.equal(contractFromAddress({ RESEND_FROM: 'from@example.com', RESEND_FROM_EMAIL: 'legacy@example.com' }), 'from@example.com');
   assert.equal(contractFromAddress({ RESEND_FROM_EMAIL: 'legacy@example.com' }), 'legacy@example.com');
   assert.equal(contractFromAddress({}), null);
-  assert.equal(contractReplyTo({}), 'dancimo@gmail.com');
+  assert.equal(contractReplyTo({}), 'hello@danielcimo.com');
   assert.equal(contractReplyTo({ CONTRACT_REPLY_TO: 'office@example.com' }), 'office@example.com');
 });
 

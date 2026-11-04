@@ -82,10 +82,10 @@ export default function BookingPage() {
               <p className="text-ink-body">
                 Prefer email?{' '}
                 <a
-                  href="mailto:dancimo@gmail.com"
+                  href={`mailto:${site.email}`}
                   className="text-gold-deep font-medium hover:text-gold-deeper hover:underline"
                 >
-                  dancimo@gmail.com
+                  {site.email}
                 </a>
               </p>
               <p className="text-ink-body mt-2">
