@@ -22,6 +22,7 @@ import {
 import { paymentPageUrl, siteOrigin } from './urls';
 import { zelleQrSources } from './zelle-qr';
 import { zelleRecipientContact, zelleRecipientName } from './zelle-config';
+import { existingBookingPayTarget } from './existing-access';
 import {
   adminOrNull,
   isUuid,
@@ -63,22 +64,25 @@ export async function paymentView(
   const admin = adminOrNull();
   if (!admin) return { status: 500, body: { error: 'Payments are not available.' } };
   const contract = await signedContract(admin, token);
-  if (!contract || !contract.booking_id || !contract.booking_code) {
+  const existing = contract?.booking_id && contract.booking_code ? null : await existingBookingPayTarget(admin, token);
+  const bookingId = contract?.booking_id ?? existing?.bookingId ?? null;
+  const bookingCode = contract?.booking_code ?? existing?.bookingCode ?? null;
+  if (!bookingId || !bookingCode) {
     return { status: 404, body: { error: 'This payment link is not valid.' } };
   }
   const [{ data, error }, { data: sessionRows }, { data: processingRows }] = await Promise.all([
     admin
       .from('payment_obligations')
       .select('id, booking_id, booking_code, kind, amount_cents, status, due_on')
-      .eq('booking_id', contract.booking_id)
+      .eq('booking_id', bookingId)
       .neq('status', 'void'),
     admin
       .from('stripe_checkout_sessions')
       .select('id, obligation_id, status, updated_at')
-      .eq('booking_id', contract.booking_id)
+      .eq('booking_id', bookingId)
       .order('updated_at', { ascending: false })
       .limit(20),
-    admin.from('payments').select('obligation_id').eq('booking_id', contract.booking_id).eq('status', 'Processing'),
+    admin.from('payments').select('obligation_id').eq('booking_id', bookingId).eq('status', 'Processing'),
   ]);
   if (error) return { status: 500, body: { error: 'Payments are not available.' } };
   const fees = readFeeSettings();
@@ -112,7 +116,7 @@ export async function paymentView(
   return {
     status: 200,
     body: buildPaymentView({
-      bookingCode: contract.booking_code,
+      bookingCode,
       obligations,
       recipientName: zelleRecipientName(),
       recipientContact: zelleRecipientContact(),
@@ -150,14 +154,16 @@ export async function startCheckout(input: {
   const admin = adminOrNull();
   if (!admin) return { status: 500, body: { error: 'Payments are not available.' } };
   const contract = await signedContract(admin, input.token);
-  if (!contract?.booking_id) return { status: 404, body: { error: 'This payment link is not valid.' } };
+  const existing = contract?.booking_id ? null : await existingBookingPayTarget(admin, input.token);
+  const bookingId = contract?.booking_id ?? existing?.bookingId ?? null;
+  if (!bookingId) return { status: 404, body: { error: 'This payment link is not valid.' } };
 
   const { data: obligation } = await admin
     .from('payment_obligations')
     .select('id, booking_id, booking_code, kind, amount_cents, status')
     .eq('id', input.obligationId)
     .maybeSingle();
-  if (!obligation || obligation.booking_id !== contract.booking_id || obligation.status !== 'open') {
+  if (!obligation || obligation.booking_id !== bookingId || obligation.status !== 'open') {
     return { status: 409, body: { error: 'That payment is not open.' } };
   }
   if (await processingExists(admin, input.obligationId)) {
@@ -226,7 +232,7 @@ export async function startCheckout(input: {
     bookingCode: String(obligation.booking_code),
     kind,
     obligationId: input.obligationId,
-    bookingId: contract.booking_id,
+    bookingId,
     successUrl: returnUrls.successUrl,
     cancelUrl: returnUrls.cancelUrl,
     idempotencyKey: checkoutIdempotencyKey({
@@ -241,7 +247,7 @@ export async function startCheckout(input: {
 
   const { error } = await admin.from('stripe_checkout_sessions').insert({
     id: created.id,
-    booking_id: contract.booking_id,
+    booking_id: bookingId,
     obligation_id: input.obligationId,
     method,
     amount_cents: Number(obligation.amount_cents),
@@ -485,9 +491,10 @@ export async function ingestStripeWebhook(input: {
             request: input.request,
           });
     const notifyKind = plan.action === 'paid' ? (kind === 'retainer' ? 'confirmation' : 'receipt') : plan.action === 'processing' ? 'processing' : 'failed';
-    if (('sent' in mailed && mailed.sent) || mailed.skipped) {
+    const delivered = ('sent' in mailed && mailed.sent) || mailed.skipped;
+    if (delivered && !mailed.redirected) {
       await admin.from('stripe_checkout_sessions').update({ notified_kind: notifyKind }).eq('id', session.id);
-    } else {
+    } else if (!delivered) {
       return { status: 500, body: { ok: false, error: 'The payment email could not be sent.' } };
     }
   }
@@ -515,10 +522,12 @@ async function ensurePaidNotice(admin: Admin, session: SessionRow, request?: Req
     request,
   });
   if (!mailed.sent && !mailed.skipped) return 'failed';
-  await admin
-    .from('stripe_checkout_sessions')
-    .update({ notified_kind: kind === 'retainer' ? 'confirmation' : 'receipt' })
-    .eq('id', session.id);
+  if (!mailed.redirected) {
+    await admin
+      .from('stripe_checkout_sessions')
+      .update({ notified_kind: kind === 'retainer' ? 'confirmation' : 'receipt' })
+      .eq('id', session.id);
+  }
   return mailed.sent ? 'sent' : 'skipped';
 }
 

@@ -155,7 +155,7 @@ async function applyRecorded(
     title: string;
     request?: Request;
   },
-): Promise<{ emailSent: boolean; emailSkipped: boolean }> {
+): Promise<{ emailSent: boolean; emailSkipped: boolean; testSiteEmail?: true }> {
   await notePayment(admin, {
     leadId: input.leadId,
     bookingId: input.bookingId,
@@ -170,7 +170,11 @@ async function applyRecorded(
     amountCents: input.amountCents,
     request: input.request,
   });
-  return { emailSent: mailed.sent, emailSkipped: mailed.skipped };
+  return {
+    emailSent: mailed.sent,
+    emailSkipped: mailed.skipped,
+    ...(mailed.redirected ? { testSiteEmail: true as const } : {}),
+  };
 }
 
 export async function assignReceipt(input: {
@@ -237,7 +241,7 @@ export async function assignReceipt(input: {
     title: 'Zelle payment assigned',
     request: input.request,
   });
-  if (!mail.emailSent && !mail.emailSkipped) {
+  if (mail.testSiteEmail || (!mail.emailSent && !mail.emailSkipped)) {
     await admin.from('zelle_receipts').update({ couple_notified_at: null }).eq('id', input.receiptId);
   }
   return { status: 200, body: { ok: true, ...mail } };

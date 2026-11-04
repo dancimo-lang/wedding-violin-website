@@ -10,6 +10,7 @@ import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Ti
 import { friendlyWriteError, postBookingStatus } from '@/lib/booking-status-client';
 import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import { BookingPayments } from '@/components/admin/BookingPayments';
+import { ExistingPaymentRecord } from '@/components/admin/ExistingPaymentRecord';
 import { ContractPanel } from '@/components/admin/ContractPanel';
 import { fieldClass } from '@/lib/leads';
 import {
@@ -587,6 +588,7 @@ export default function BookingDetailPage() {
         </div>
       </div>
       <ContractPanel bookingId={booking.id} leadId={booking.lead_id} />
+      <ExistingPaymentRecord bookingId={booking.id} />
       <BookingPayments bookingId={booking.id} />
       <div className="mt-6">
         <BookingConflicts booking={booking} occupancies={occupancies} settings={settings} googleBusy={googleLabels} externalState={externalState} />

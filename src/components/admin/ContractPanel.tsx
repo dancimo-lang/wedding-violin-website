@@ -270,7 +270,7 @@ export function ContractPanel({
           : {}),
       }),
     });
-    const payload = (await response.json()) as { error?: string; emailed?: boolean; signingUrl?: string; bookingCode?: string };
+    const payload = (await response.json()) as { error?: string; emailed?: boolean; signingUrl?: string; bookingCode?: string; testSiteEmail?: boolean };
     if (!response.ok) {
       setError(payload.error || 'Could not send this agreement.');
       setBusy(false);
@@ -279,7 +279,9 @@ export function ContractPanel({
     setSigningUrl(payload.signingUrl || '');
     setNotice(
       payload.emailed
-        ? `Signing link emailed. Booking code ${payload.bookingCode}.`
+        ? payload.testSiteEmail
+          ? `Signing link emailed to you only (test site). Booking code ${payload.bookingCode}.`
+          : `Signing link emailed. Booking code ${payload.bookingCode}.`
         : `Agreement saved, but the email was not sent. Booking code ${payload.bookingCode}. Copy the signing link below.`,
     );
     setCreating(false);
@@ -296,11 +298,17 @@ export function ContractPanel({
       headers: { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const payload = (await response.json()) as { error?: string; emailed?: boolean; signingUrl?: string };
+    const payload = (await response.json()) as { error?: string; emailed?: boolean; signingUrl?: string; testSiteEmail?: boolean };
     if (!response.ok) setError(payload.error || 'Could not update this agreement.');
     else {
       if (payload.signingUrl) setSigningUrl(payload.signingUrl);
-      setNotice(payload.emailed === false ? 'The email was not sent. Copy the signing link below.' : 'Saved.');
+      setNotice(
+        payload.emailed === false
+          ? 'The email was not sent. Copy the signing link below.'
+          : payload.testSiteEmail
+            ? 'Saved. The signing email went only to you (test site).'
+            : 'Saved.',
+      );
       await reloadContracts(source);
     }
     setBusy(false);
