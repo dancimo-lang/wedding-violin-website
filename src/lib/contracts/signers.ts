@@ -48,9 +48,10 @@ function addDays(iso: string, days: number): string {
 }
 
 /**
- * Each signer enters their own signing date. It must be a real date and not later
- * than tomorrow or earlier than a year ago (relative to the business day), which
- * allows for a signer in another time zone. The server timestamp is kept separately.
+ * Checks a signing day against the business day. Signing no longer asks the client
+ * to type a date; the server records the business day. A supplied day may still be
+ * tomorrow through a year ago, which allows for another time zone. The server
+ * timestamp is kept separately.
  */
 export function validateSigningDates(input: SigningDates, todayIso: string): string | null {
   const check = (value: string, label: string): string | null => {

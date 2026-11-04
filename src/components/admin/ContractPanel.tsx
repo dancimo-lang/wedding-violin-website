@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CONTRACT_LIST_COLUMNS, type ContractListRow } from '@/lib/contracts/columns';
 import { computeFees, formatMoney, type FeeSummary } from '@/lib/contracts/money';
 import { guessPackageId, PACKAGES, type PackageId } from '@/lib/contracts/packages';
-import { coupleSuppliedSummary, missingCoupleDetailMessage } from '@/lib/contracts/event-details';
+import { coupleSuppliedSummary, missingCoupleDetailMessage, optionalBlankDetailMessage, sentContractBlankDetailMessage } from '@/lib/contracts/event-details';
 import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, UNSIGNED } from '@/lib/contracts/render';
 import { ContractText } from '@/components/contracts/ContractText';
 import { fieldClass } from '@/lib/leads';
@@ -50,6 +50,7 @@ export function ContractPanel({
   const [cocktailStart, setCocktailStart] = useState('');
   const [cocktailEnd, setCocktailEnd] = useState('');
   const [preludeStart, setPreludeStart] = useState('');
+  const [receptionEnd, setReceptionEnd] = useState('');
   const [otherDetails, setOtherDetails] = useState('');
   const [travelFee, setTravelFee] = useState('0');
   const [additionalFees, setAdditionalFees] = useState('0');
@@ -145,6 +146,7 @@ export function ContractPanel({
         setVenueAddress(next.venueAddress);
         setCeremonyStart(next.ceremonyStart);
         setCeremonyEnd(next.ceremonyEnd);
+        setReceptionEnd('');
         setTravelFee('0');
         setAdditionalFees('0');
         setAdditionalFeesDescription('');
@@ -190,6 +192,7 @@ export function ContractPanel({
           cocktailEnd,
           preludeStart,
           otherDetails,
+          ...(privateEvent ? {} : fullWedding ? { receptionEnd } : {}),
           additionalFeesDescription,
           ...(privateEvent ? { eventType, performanceDescription } : {}),
         }),
@@ -208,9 +211,11 @@ export function ContractPanel({
     cocktailStart,
     eventType,
     otherDetails,
+    fullWedding,
     performanceDescription,
     preludeStart,
     privateEvent,
+    receptionEnd,
     summary,
     venueAddress,
     venueName,
@@ -218,7 +223,7 @@ export function ContractPanel({
   ]);
 
   const blocking = contracts.find((row) => row.status === 'sent' || row.status === 'viewed' || row.status === 'signed');
-  const missingDetailMessage = missingCoupleDetailMessage({
+  const detailSource = {
     packageId,
     ceremonyEnd,
     venueName,
@@ -226,16 +231,26 @@ export function ContractPanel({
     ceremonyStart,
     cocktailStart,
     cocktailEnd,
-  });
+    preludeStart,
+    otherDetails,
+    receptionEnd: fullWedding ? receptionEnd : '',
+  };
+  const missingDetailMessage = missingCoupleDetailMessage(detailSource);
+  const optionalBlankMessage = optionalBlankDetailMessage(detailSource);
   const timeOrderMessage = performanceTimeOrderMessage({
     ceremonyStart,
     ceremonyEnd,
-    cocktailStart: fullWedding || privateEvent ? '' : cocktailStart,
-    cocktailEnd: fullWedding || privateEvent ? '' : cocktailEnd,
+    cocktailStart,
+    cocktailEnd,
+    receptionEnd: fullWedding ? receptionEnd : '',
   });
 
   const send = async () => {
     if (!source) return;
+    if (missingDetailMessage) {
+      setError(missingDetailMessage);
+      return;
+    }
     if (timeOrderMessage) {
       setError(timeOrderMessage);
       return;
@@ -265,6 +280,7 @@ export function ContractPanel({
         cocktailEnd,
         preludeStart,
         otherDetails,
+        receptionEnd: fullWedding ? receptionEnd : '',
         ...(privateEvent
           ? { performanceFee, eventType: eventType.trim(), performanceDescription: performanceDescription.trim(), cocktailStart: '', cocktailEnd: '', preludeStart: '' }
           : {}),
@@ -379,6 +395,7 @@ export function ContractPanel({
             <Field label="Client 2, if any" value={client2Name} onChange={setClient2Name} />
             <Field label={privateEvent ? 'Event date' : 'Wedding date'} value={weddingDate} onChange={setWeddingDate} type="date" />
             <Field label={privateEvent ? 'Event start' : 'Ceremony start'} value={ceremonyStart} onChange={setCeremonyStart} type="time" />
+            {fullWedding && <Field label="Ceremony end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />}
             <Field label="Venue name" value={venueName} onChange={setVenueName} />
             <Field label="Venue address" value={venueAddress} onChange={setVenueAddress} />
           </div>
@@ -403,9 +420,21 @@ export function ContractPanel({
               </label>
             </div>
           )}
+          {!fullWedding && !privateEvent && (
+            <p className="text-sm text-gray-600">
+              Ceremony end is saved with the agreement. The agreement text has no ceremony-end line, so that time is not printed until wording is added.
+            </p>
+          )}
+          {fullWedding && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Cocktail hour begins" value={cocktailStart} onChange={setCocktailStart} type="time" />
+              <Field label="Cocktail hour ends" value={cocktailEnd} onChange={setCocktailEnd} type="time" />
+              <Field label="Reception end (when the evening ends)" value={receptionEnd} onChange={setReceptionEnd} type="time" />
+            </div>
+          )}
           {fullWedding && (
             <p className="text-sm text-gray-600">
-              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount.
+              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount. Ceremony start and ceremony end print together on the Event Time line. Cocktail hour times and reception end are saved with the agreement. The agreement text has no lines for those yet, so they are not printed.
             </p>
           )}
           <div className="grid gap-4 md:grid-cols-3">
@@ -426,9 +455,10 @@ export function ContractPanel({
           <FeeReadout summary={'error' in summary ? null : summary} error={'error' in summary ? summary.error : ''} packageFee={'error' in summary ? PACKAGES[packageId].feeCents : summary.packageFeeCents} quotedPrice={source?.quotedPrice ?? null} />
           {preview && <ContractText className="max-h-96 overflow-auto md:max-h-96" text={preview} />}
           {missingDetailMessage ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-900">{missingDetailMessage}</p> : null}
+          {optionalBlankMessage ? <p className="rounded-lg bg-gray-50 px-4 py-3 text-gray-700">{optionalBlankMessage}</p> : null}
           {timeOrderMessage ? <p className="rounded-lg bg-red-50 px-4 py-3 text-red-700">{timeOrderMessage}</p> : null}
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy || !preview || Boolean(timeOrderMessage)} onClick={() => void send()} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:bg-blue-400">
+            <button type="button" disabled={busy || !preview || Boolean(timeOrderMessage) || Boolean(missingDetailMessage)} onClick={() => void send()} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:bg-blue-400">
               {busy ? 'Sending...' : 'Send for signature'}
             </button>
             <button type="button" onClick={() => setCreating(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-gray-800">
@@ -520,7 +550,7 @@ function ContractStatus({
 }) {
   const open = row.status === 'sent' || row.status === 'viewed';
   const stored = normalizeStoredFields(row.render_fields);
-  const waitingMessage = open && stored ? missingCoupleDetailMessage(stored) : '';
+  const waitingMessage = open && stored ? sentContractBlankDetailMessage(stored) : '';
   const suppliedMessage = row.status === 'signed' ? coupleSuppliedSummary(stored) : '';
   return (
     <div className="mt-4 space-y-3 text-sm text-gray-800">

@@ -7,7 +7,10 @@ import { DUO_DJ_OVERTIME, packageDefinition, weddingMusicOvertimeClause, type Co
 
 export const BLANK = '__________________________________';
 
-/** Event details the couple may fill when the admin left them blank. Rendering ignores this list. */
+/**
+ * Event-detail keys. Older signed agreements may list which of these the couple
+ * supplied. Rendering ignores that list.
+ */
 export const COUPLE_DETAIL_KEYS = [
   'venueName',
   'venueAddress',
@@ -45,6 +48,11 @@ export type StoredRenderFields = {
   cocktailEnd: string;
   preludeStart: string;
   otherDetails: string;
+  /**
+   * Full wedding only: when the reception or evening ends.
+   * The agreement text has no line for this yet, so rendering ignores it.
+   */
+  receptionEnd?: string;
   packageFeeCents: number;
   travelFeeCents: number;
   additionalFeesCents: number;
@@ -64,7 +72,7 @@ export type StoredRenderFields = {
   eventType?: string;
   /** Private event agreements: the services the admin described. */
   performanceDescription?: string;
-  /** Signing date each client typed or picked (YYYY-MM-DD). Set at signing. */
+  /** Signing date for each client (YYYY-MM-DD). Set to the business day when they sign. */
   client1SignedOnIso?: string;
   client2SignedOnIso?: string;
 };
@@ -153,6 +161,7 @@ export function performanceTimeOrderMessage(
     ceremonyEnd: string;
     cocktailStart: string;
     cocktailEnd: string;
+    receptionEnd?: string;
   },
   closing = 'Fix the times before sending this agreement.',
 ): string {
@@ -161,11 +170,17 @@ export function performanceTimeOrderMessage(
   const ceremonyEnd = clockMinutes(input.ceremonyEnd);
   const cocktailStart = clockMinutes(input.cocktailStart);
   const cocktailEnd = clockMinutes(input.cocktailEnd);
+  const receptionEnd = input.receptionEnd ? clockMinutes(input.receptionEnd) : null;
   if (ceremonyStart != null && ceremonyEnd != null && ceremonyEnd < ceremonyStart) {
     lines.push('Ceremony end is before ceremony start.');
   }
   if (cocktailStart != null && cocktailEnd != null && cocktailEnd < cocktailStart) {
     lines.push('Cocktail hour end is before cocktail hour start.');
+  }
+  if (receptionEnd != null && ceremonyEnd != null && receptionEnd < ceremonyEnd) {
+    lines.push('Reception end is before ceremony end.');
+  } else if (receptionEnd != null && ceremonyStart != null && receptionEnd < ceremonyStart) {
+    lines.push('Reception end is before ceremony start.');
   }
   if (lines.length === 0) return '';
   return `${lines.join(' ')} ${closing}`;
@@ -492,6 +507,7 @@ export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields
     cocktailEnd: fields.cocktailEnd,
     preludeStart: fields.preludeStart,
     otherDetails: fields.otherDetails,
+    ...(fields.receptionEnd?.trim() ? { receptionEnd: fields.receptionEnd.trim() } : {}),
     packageFeeCents: summary.packageFeeCents,
     travelFeeCents: summary.travelFeeCents,
     additionalFeesCents: summary.additionalFeesCents,
@@ -521,6 +537,9 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
     otherDetails: row.otherDetails ?? '',
     finalPaymentDueDate: row.finalPaymentDueDate ?? '',
   };
+  if (typeof row.receptionEnd === 'string' && row.receptionEnd.trim()) {
+    normalized.receptionEnd = row.receptionEnd.trim();
+  }
   const supplied = readCoupleSupplied(row.coupleSupplied, normalized);
   if (supplied) normalized.coupleSupplied = supplied;
   else delete normalized.coupleSupplied;
@@ -529,7 +548,7 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
 
 function readCoupleSupplied(value: unknown, fields: StoredRenderFields): CoupleDetailKey[] | undefined {
   if (!Array.isArray(value)) return undefined;
-  const supplied = COUPLE_DETAIL_KEYS.filter((key) => value.includes(key) && fields[key].trim());
+  const supplied = COUPLE_DETAIL_KEYS.filter((key) => value.includes(key) && (fields[key] ?? '').trim());
   return supplied.length > 0 ? supplied : undefined;
 }
 

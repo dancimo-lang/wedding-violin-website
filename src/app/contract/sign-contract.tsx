@@ -2,24 +2,16 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { PaymentOptions } from '@/components/payments/PaymentOptions';
+import { formatLongDate, formatMoney } from '@/lib/contracts/money';
 import {
-  applyCoupleEventDetails,
-  coupleDetailPayload,
-  coupleEventTimeMessage,
-  coupleFillableDetails,
-  emptyCoupleDetailDraft,
-  type CoupleDetailField,
-} from '@/lib/contracts/event-details';
-import { formatMoney } from '@/lib/contracts/money';
-import {
+  BLANK,
   normalizeStoredFields,
   renderContract,
   slotMarker,
   UNSIGNED,
-  type CoupleDetailKey,
   type StoredRenderFields,
 } from '@/lib/contracts/render';
-import { validateSignature, validateSigningDates } from '@/lib/contracts/signers';
+import { validateSignature } from '@/lib/contracts/signers';
 import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import { ContractText } from '@/components/contracts/ContractText';
 
@@ -88,10 +80,7 @@ export function SignContract() {
   const [loadError, setLoadError] = useState('');
   const [client1Name, setClient1Name] = useState('');
   const [client2Name, setClient2Name] = useState('');
-  const [client1Date, setClient1Date] = useState('');
-  const [client2Date, setClient2Date] = useState('');
   const [adopted, setAdopted] = useState<Record<SignerKey, boolean>>({ c1: false, c2: false });
-  const [eventDetails, setEventDetails] = useState(() => emptyCoupleDetailDraft());
   const [photoOptOut, setPhotoOptOut] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
@@ -115,14 +104,11 @@ export function SignContract() {
       }
       setView(payload);
       setPhotoOptOut(payload.photoOptOut);
-      setEventDetails(emptyCoupleDetailDraft());
-      // The printed-name boxes start with the names entered in admin; the
-      // signature itself appears only after each signer adopts it.
+      // The printed-name boxes start with the names entered in admin. The client
+      // can still edit them. The signature itself appears only after each signer adopts it.
       const stored = payload.canSign && payload.renderFields ? normalizeStoredFields(payload.renderFields) : null;
       setClient1Name(payload.canSign ? stored?.client1Name?.trim() || '' : payload.client1Name || '');
       setClient2Name(payload.canSign && hasClient2Block(stored) ? stored?.client2Name?.trim() || '' : '');
-      setClient1Date('');
-      setClient2Date('');
       setAdopted({ c1: false, c2: false });
     }
     load().catch(() => {
@@ -137,16 +123,13 @@ export function SignContract() {
     () => (view?.renderFields ? normalizeStoredFields(view.renderFields) : null),
     [view],
   );
-  const fillable = useMemo(() => (fields ? coupleFillableDetails(fields) : []), [fields]);
-  const timeMessage = fields ? coupleEventTimeMessage(fields, eventDetails) : '';
+  const signingDayLabel = formatLongDate(todayInTimeZone(BUSINESS_TIME_ZONE));
 
-  // The agreement with every blank the client can fill drawn as an inline input.
+  // Event details stay as the owner sent them. Only the signature lines are inputs.
   const interactiveText = useMemo(() => {
     if (!fields || !view?.canSign) return view?.text ?? '';
-    const withSlots: StoredRenderFields = { ...fields };
-    for (const field of fillable) withSlots[field.key] = slotMarker(`detail:${field.key}`);
     try {
-      return renderContract(withSlots, {
+      return renderContract(fields, {
         ...UNSIGNED,
         client1SignedName: 'x',
         client2SignedName: 'x',
@@ -155,7 +138,7 @@ export function SignContract() {
     } catch {
       return view.text;
     }
-  }, [fields, fillable, view]);
+  }, [fields, view]);
 
   const finished = signedFacts ?? (view && !view.canSign ? view : null);
   const interactive = Boolean(view?.canSign && !signedFacts);
@@ -164,40 +147,14 @@ export function SignContract() {
   const musicianSignedAt = finished?.musicianSignedAt ?? null;
 
   const names: Record<SignerKey, string> = { c1: client1Name, c2: client2Name };
-  const dates: Record<SignerKey, string> = { c1: client1Date, c2: client2Date };
   const setName = (key: SignerKey, value: string) => {
     if (key === 'c1') setClient1Name(value);
     else setClient2Name(value);
     // Changing the name takes back the signature until it is adopted again.
     setAdopted((current) => ({ ...current, [key]: false }));
   };
-  const setDate = (key: SignerKey, value: string) => (key === 'c1' ? setClient1Date(value) : setClient2Date(value));
-
-  const missingFor = (field: CoupleDetailField) => showMissing && !field.optional && !eventDetails[field.key].trim();
 
   const renderSlot = (name: string): ReactNode => {
-    if (name.startsWith('detail:')) {
-      const key = name.slice('detail:'.length) as CoupleDetailKey;
-      const field = fillable.find((item) => item.key === key);
-      if (!field) return null;
-      const label = `${field.label}${field.optional ? ' (optional)' : ' (required)'}`;
-      return (
-        <input
-          className="contract-inline-input"
-          type={field.kind === 'time' ? 'time' : 'text'}
-          aria-label={label}
-          title={label}
-          placeholder={field.kind === 'time' ? undefined : field.optional ? 'Optional' : 'Required'}
-          required={!field.optional}
-          aria-invalid={missingFor(field) || undefined}
-          maxLength={field.kind === 'time' ? undefined : field.max}
-          style={field.key === 'venueAddress' || field.key === 'otherDetails' ? { width: '100%' } : undefined}
-          value={eventDetails[key]}
-          onChange={(event) => setEventDetails((current) => ({ ...current, [key]: event.target.value }))}
-          autoComplete={key === 'venueName' ? 'organization' : key === 'venueAddress' ? 'street-address' : 'off'}
-        />
-      );
-    }
     if (name === 'photo') {
       return (
         <input
@@ -232,17 +189,9 @@ export function SignContract() {
       );
     }
     if (name === slots.date) {
-      return (
-        <input
-          className="contract-inline-input"
-          type="date"
-          aria-label={`${label} signing date`}
-          required={required}
-          aria-invalid={(showMissing && required && !dates[signer]) || undefined}
-          value={dates[signer]}
-          onChange={(event) => setDate(signer, event.target.value)}
-        />
-      );
+      const showDate = signer === 'c1' || Boolean(names[signer].trim());
+      if (!showDate) return BLANK;
+      return <span aria-label={`${label} signing date`}>{signingDayLabel}</span>;
     }
     const typed = names[signer].trim();
     if (adopted[signer] && typed) {
@@ -276,14 +225,6 @@ export function SignContract() {
   const sign = async () => {
     if (!token) return;
     setShowMissing(true);
-    const detailPayload = fields ? coupleDetailPayload(fields, eventDetails) : {};
-    if (fields) {
-      const details = applyCoupleEventDetails(fields, detailPayload);
-      if (!details.ok) {
-        setSignError(details.error);
-        return;
-      }
-    }
     const nameProblem = validateSignature({ client1Name, client2Name, agreed: true });
     if (nameProblem) {
       setSignError(nameProblem);
@@ -295,14 +236,6 @@ export function SignContract() {
     }
     if (client2Name.trim() && !adopted.c2) {
       setSignError('Client 2: click "Click to sign" in the signature section to sign.');
-      return;
-    }
-    const dateProblem = validateSigningDates(
-      { client1Name, client2Name, client1SignedOn: client1Date, client2SignedOn: client2Date },
-      todayInTimeZone(BUSINESS_TIME_ZONE),
-    );
-    if (dateProblem) {
-      setSignError(dateProblem);
       return;
     }
     const problem = validateSignature({ client1Name, client2Name, agreed });
@@ -320,11 +253,8 @@ export function SignContract() {
           token,
           client1Name,
           client2Name,
-          client1SignedOn: client1Date,
-          client2SignedOn: client2Name.trim() ? client2Date : '',
           photoOptOut,
           agreed,
-          eventDetails: detailPayload,
         }),
       });
       const payload = (await response.json()) as ViewResponse & { text?: string };
@@ -380,9 +310,10 @@ export function SignContract() {
               )}
               {interactive && (
                 <p className="mt-6 rounded-lg bg-blue-50 px-4 py-3 text-sm">
-                  Read the agreement below. Fill in any highlighted blanks, then sign in section{' '}
-                  {fields?.templateId === 'full-wedding' ? 'Signatures' : '13'}: type your full legal name, click to sign,
-                  and enter today&apos;s date. <a href="#sign-here" className="font-semibold underline">Go to signing</a>
+                  Read the agreement below, then sign in section{' '}
+                  {fields?.templateId === 'full-wedding' ? 'Signatures' : '13'}: type your full legal name and click to
+                  sign. The date is filled in as today.{' '}
+                  <a href="#sign-here" className="font-semibold underline">Go to signing</a>
                 </p>
               )}
               {interactive ? (
@@ -395,11 +326,6 @@ export function SignContract() {
                   }}
                 >
                   <ContractText className="md:max-h-none md:overflow-visible" text={documentText} renderSlot={renderSlot} />
-                  {timeMessage ? (
-                    <p className="text-sm text-red-700" role="alert">
-                      {timeMessage}
-                    </p>
-                  ) : null}
                   <label className="flex items-start gap-3 text-base">
                     <input
                       type="checkbox"
@@ -416,7 +342,7 @@ export function SignContract() {
                   )}
                   <button
                     type="submit"
-                    disabled={signing || Boolean(timeMessage)}
+                    disabled={signing}
                     className="w-full rounded-lg bg-blue-700 px-4 py-3 text-base font-semibold text-white disabled:bg-blue-400 sm:w-auto"
                   >
                     {signing ? 'Signing...' : 'Sign agreement'}
