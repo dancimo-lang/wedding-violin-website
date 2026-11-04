@@ -1,3 +1,6 @@
+import { emptyAgreement, readAgreement, type AgreementDetails } from '@/lib/contracts/agreement-details';
+import { guessPackageId, isPackageId } from '@/lib/contracts/packages';
+
 export const LEAD_STATUSES = [
   'New Inquiry',
   'Needs Information',
@@ -57,6 +60,7 @@ export type LeadDraft = {
   paymentStatus: string;
   nextFollowUp: string;
   performersNeeded: string;
+  agreement: AgreementDetails;
 };
 
 export type ClientRecord = {
@@ -91,6 +95,7 @@ export function emptyLeadDraft(): LeadDraft {
     paymentStatus: 'Unpaid',
     nextFollowUp: '',
     performersNeeded: '1',
+    agreement: { ...emptyAgreement(), packageId: 'A' },
   };
 }
 
@@ -203,6 +208,7 @@ export function draftFromRecords(
 ): LeadDraft {
   const text = (key: string) => (typeof lead[key] === 'string' || typeof lead[key] === 'number' ? String(lead[key] ?? '') : '');
   const time = (key: string) => text(key).slice(0, 5);
+  const agreement = agreementFromLead(lead);
   return {
     clientName: client?.name || '',
     clientEmail: client?.email || '',
@@ -214,8 +220,8 @@ export function draftFromRecords(
     venueName: text('venue_name'),
     venueAddress: text('venue_address'),
     requestedServices: text('requested_services') || text('service_type'),
-    performanceStart: time('performance_start_time'),
-    performanceEnd: time('performance_end_time'),
+    performanceStart: agreement.ceremonyStart || time('performance_start_time'),
+    performanceEnd: agreement.ceremonyEnd || time('performance_end_time'),
     estimatedDuration: text('estimated_duration_hours'),
     guestCount: text('guest_count'),
     budget: text('budget_range') || text('budget_amount'),
@@ -226,5 +232,20 @@ export function draftFromRecords(
     paymentStatus: text('payment_status') || 'Unpaid',
     nextFollowUp: text('next_follow_up_date'),
     performersNeeded: text('performers_needed') || '1',
+    agreement,
+  };
+}
+
+function agreementFromLead(lead: Record<string, unknown>): AgreementDetails {
+  const stored = readAgreement(lead.inquiry_details);
+  if (isPackageId(stored.packageId)) return stored;
+  const quoted = lead.quoted_price;
+  return {
+    ...stored,
+    packageId: guessPackageId({
+      packageInterest: typeof lead.package_interest === 'string' ? lead.package_interest : '',
+      service: typeof lead.requested_services === 'string' ? lead.requested_services : typeof lead.service_type === 'string' ? lead.service_type : '',
+      quotedPrice: typeof quoted === 'number' ? quoted : null,
+    }),
   };
 }

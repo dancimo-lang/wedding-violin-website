@@ -9,6 +9,7 @@ import { ConflictList, Timeline, type ActivityItem } from '@/components/admin/Ti
 import { LeadFields, SubmittedDetails } from '@/components/admin/LeadFields';
 import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBusyRow } from '@/lib/google/browser';
 import { postBookingStatus } from '@/lib/booking-status-client';
+import { agreementForStorage, calendarPerformanceTimes, formValueFromDraft, mergeAgreement } from '@/lib/contracts/agreement-details';
 import { draftFromRecords, leadWritePayload, type ClientRecord, type LeadDraft } from '@/lib/leads';
 import {
   blockToOccupancy,
@@ -56,6 +57,8 @@ export default function LeadDetailPage() {
   const [loadedId, setLoadedId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [savedRevision, setSavedRevision] = useState(0);
 
   useEffect(() => {
     if (!recordId) return;
@@ -136,11 +139,12 @@ export default function LeadDetailPage() {
 
   const conflicts = useMemo(() => {
     if (!draft?.eventDate) return [];
+    const span = calendarPerformanceTimes(formValueFromDraft(draft));
     const assessment = evaluateAvailability(
       {
         date: draft.eventDate,
-        startTime: draft.performanceStart,
-        endTime: draft.performanceEnd,
+        startTime: span.start,
+        endTime: span.end,
         venue: venueRef(draft.venueAddress, draft.venueName),
         excludeId: booking?.id,
       },
@@ -163,22 +167,24 @@ export default function LeadDetailPage() {
   };
 
   const save = async () => {
-    if (!draft || !clientId || !original) return;
-    const payload = leadWritePayload(draft);
-    if (!payload.ok) {
-      setError(payload.error);
-      return;
-    }
+    if (!draft || !clientId || !original || saving) return;
     setSaving(true);
     setError('');
-    const { status, ...leadFields } = payload.lead;
-    const { error: clientError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
-    const { error: leadError } = await supabase().from('leads').update(leadFields).eq('id', leadId);
-    if (clientError || leadError) {
+    setNotice('');
+    const written = await writeLeadRecord(draft, clientId, leadId);
+    if (!written.ok) {
+      setError(written.error);
+      setSaving(false);
+      return;
+    }
+    if (written.clientError || written.leadError) {
       setError('Could not save this lead.');
       setSaving(false);
       return;
     }
+    setDetails(written.inquiry_details);
+    const payload = written.payload;
+    const status = written.status;
     let nextDraft = draft;
     let nextBooking = booking;
     if (original.status !== status) {
@@ -190,6 +196,7 @@ export default function LeadDetailPage() {
       });
       if (!result.ok) {
         setError(result.error);
+        setSavedRevision((value) => value + 1);
         setSaving(false);
         return;
       }
@@ -219,7 +226,12 @@ export default function LeadDetailPage() {
       });
       await refreshEvents();
     }
+    if (nextBooking && nextBooking.status !== 'Cancelled') {
+      await syncBookingEvent(nextBooking.id, payload.lead);
+    }
     setOriginal(nextDraft);
+    setNotice('Saved. Create contract below uses these saved details.');
+    setSavedRevision((value) => value + 1);
     setSaving(false);
   };
 
@@ -235,20 +247,21 @@ export default function LeadDetailPage() {
     }
     setSaving(true);
     setError('');
-    const payload = leadWritePayload(draft);
-    if (!payload.ok) {
-      setError(payload.error);
+    setNotice('');
+    const written = await writeLeadRecord(draft, clientId, leadId);
+    if (!written.ok) {
+      setError(written.error);
       setSaving(false);
       return;
     }
-    const { status: leadStatus, ...leadFields } = payload.lead;
-    const { error: clientError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
-    const { error: leadError } = await supabase().from('leads').update(leadFields).eq('id', leadId);
-    if (clientError || leadError) {
+    if (written.clientError || written.leadError) {
       setError('Could not save this lead.');
       setSaving(false);
       return;
     }
+    setDetails(written.inquiry_details);
+    const payload = written.payload;
+    const leadStatus = written.status;
     const fields = {
       client_id: clientId,
       lead_id: leadId,
@@ -278,6 +291,8 @@ export default function LeadDetailPage() {
       });
     }
     await refreshEvents();
+    setNotice('Saved. Create contract below uses these saved details.');
+    setSavedRevision((value) => value + 1);
     setSaving(false);
   };
 
@@ -341,9 +356,10 @@ export default function LeadDetailPage() {
         </div>
       </div>
       {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
+      {notice && <div className="bg-green-50 text-green-800 px-4 py-3 rounded-lg mb-6">{notice}</div>}
       <ConflictList reasons={conflicts} googleBusy={googleLabels} />
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <LeadFields draft={draft} onChange={setDraft} />
+      <div id="record-details" className="bg-white rounded-xl shadow p-6 mb-6">
+        <LeadFields draft={draft} onChange={setDraft} leadId={leadId} bookingId={booking?.id} />
         <div className="flex flex-wrap gap-2 mt-6">
           <AdminButton type="button" variant="secondary" onClick={() => placeHold('Tentative')}>Place tentative hold</AdminButton>
           <AdminButton type="button" onClick={() => placeHold('Confirmed')}>Confirm and block calendar</AdminButton>
@@ -363,7 +379,7 @@ export default function LeadDetailPage() {
           Confirming a booking blocks that time and marks this lead Confirmed. Cancelling keeps the timeline, frees the date, and marks the lead Lost unless another booking is still on the calendar. A tentative hold stays visible and makes the public date check ask for a personal confirmation. Times are Pacific Time.
         </p>
       </div>
-      <ContractPanel leadId={leadId} />
+      <ContractPanel leadId={leadId} savedRevision={savedRevision} />
       <SubmittedDetails details={details} />
       <Timeline
         events={events}
@@ -390,6 +406,44 @@ export default function LeadDetailPage() {
       />
     </div>
   );
+}
+
+async function writeLeadRecord(draft: LeadDraft, clientId: string, leadId: string) {
+  const payload = leadWritePayload(draft);
+  if (!payload.ok) return payload;
+  const { data: row } = await supabase().from('leads').select('inquiry_details').eq('id', leadId).maybeSingle();
+  const form = formValueFromDraft(draft);
+  const span = calendarPerformanceTimes(form);
+  const inquiry_details = mergeAgreement(row?.inquiry_details, agreementForStorage(form));
+  const { status, ...leadFields } = payload.lead;
+  leadFields.performance_start_time = span.start || null;
+  leadFields.performance_end_time = span.end || null;
+  const { error: clientError } = await supabase().from('clients').update(payload.client).eq('id', clientId);
+  const { error: leadError } = await supabase().from('leads').update({ ...leadFields, inquiry_details }).eq('id', leadId);
+  return { ok: true as const, payload, status, inquiry_details, clientError, leadError };
+}
+
+async function syncBookingEvent(
+  bookingId: string,
+  lead: {
+    event_date: string | null;
+    venue_name: string | null;
+    venue_address: string | null;
+    performance_start_time: string | null;
+    performance_end_time: string | null;
+  },
+) {
+  await supabase()
+    .from('bookings')
+    .update({
+      event_date: lead.event_date,
+      venue_name: lead.venue_name,
+      venue_address: lead.venue_address,
+      performance_start_time: lead.performance_start_time,
+      performance_end_time: lead.performance_end_time,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId);
 }
 
 function bookingFieldsFromLead(

@@ -1,4 +1,5 @@
-import { VenueNameField } from '@/components/admin/VenueNameField';
+import { AgreementFields, FieldLabel, FormSection } from '@/components/admin/AgreementFields';
+import { AGREEMENT_FIELD_IDS, applyFormValue, formValueFromDraft } from '@/lib/contracts/agreement-details';
 import {
   CONTRACT_STATUSES,
   fieldClass,
@@ -9,124 +10,161 @@ import {
   type LeadDraft,
 } from '@/lib/leads';
 
+const inputClass = `${fieldClass} mt-1 font-normal`;
+
 export function LeadFields({
   draft,
   onChange,
+  leadId,
+  bookingId,
 }: {
   draft: LeadDraft;
   onChange: (next: LeadDraft) => void;
+  leadId?: string | null;
+  bookingId?: string | null;
 }) {
-  const set = (key: keyof LeadDraft, value: string) => onChange({ ...draft, [key]: value });
+  const set = <K extends keyof LeadDraft>(key: K, value: LeadDraft[K]) => onChange({ ...draft, [key]: value });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <Field label="Client name *">
-        <input className={fieldClass} value={draft.clientName} onChange={(event) => set('clientName', event.target.value)} />
-      </Field>
-      <Field label="Email">
-        <input type="email" className={fieldClass} value={draft.clientEmail} onChange={(event) => set('clientEmail', event.target.value)} />
-      </Field>
-      <Field label="Phone">
-        <input className={fieldClass} value={draft.clientPhone} onChange={(event) => set('clientPhone', event.target.value)} />
-      </Field>
-      <Field label="Partner's name">
-        <input className={fieldClass} value={draft.partnerName} onChange={(event) => set('partnerName', event.target.value)} />
-      </Field>
-      <Field label="How this lead was received *">
-        <select className={fieldClass} value={draft.inquirySource} onChange={(event) => set('inquirySource', event.target.value)}>
-          {INQUIRY_SOURCES.map((source) => (
-            <option key={source.value} value={source.value}>{source.label}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Lead status *">
-        <select className={fieldClass} value={draft.status} onChange={(event) => set('status', event.target.value)}>
-          {LEAD_STATUSES.map((status) => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Event date">
-        <input type="date" className={fieldClass} value={draft.eventDate} onChange={(event) => set('eventDate', event.target.value)} />
-      </Field>
-      <Field label="Musicians needed">
-        <input type="number" min={1} max={12} className={fieldClass} value={draft.performersNeeded} onChange={(event) => set('performersNeeded', event.target.value)} />
-      </Field>
-      <Field label="Performance start">
-        <input type="time" className={fieldClass} value={draft.performanceStart} onChange={(event) => set('performanceStart', event.target.value)} />
-      </Field>
-      <Field label="Performance end">
-        <input type="time" className={fieldClass} value={draft.performanceEnd} onChange={(event) => set('performanceEnd', event.target.value)} />
-      </Field>
-      <Field label="Estimated duration (hours)">
-        <input className={fieldClass} value={draft.estimatedDuration} onChange={(event) => set('estimatedDuration', event.target.value)} placeholder="Filled from the times if left blank" />
-      </Field>
-      <Field label="Guest count">
-        <input className={fieldClass} value={draft.guestCount} onChange={(event) => set('guestCount', event.target.value)} />
-      </Field>
-      <div className="md:col-span-2">
-        <VenueNameField
-          name={draft.venueName}
-          address={draft.venueAddress}
-          onName={(value) => set('venueName', value)}
-          onAddress={(value) => set('venueAddress', value)}
-          labelClassName="block text-sm font-medium text-gray-700 mb-2"
-          inputClassName={fieldClass}
-        />
-      </div>
-      <Field label="Requested services" wide>
-        <textarea className={fieldClass} rows={2} value={draft.requestedServices} onChange={(event) => set('requestedServices', event.target.value)} placeholder="Ceremony violin, cocktail hour, reception" />
-      </Field>
-      <Field label="Budget">
-        <input className={fieldClass} value={draft.budget} onChange={(event) => set('budget', event.target.value)} placeholder="Optional" />
-      </Field>
-      <Field label="How they found Daniel">
-        <input className={fieldClass} list="how-found" value={draft.howFound} onChange={(event) => set('howFound', event.target.value)} />
-        <datalist id="how-found">
-          {HOW_FOUND_OPTIONS.map((option) => (
-            <option key={option} value={option} />
-          ))}
-        </datalist>
-      </Field>
-      <Field label="Quoted price">
-        <input className={fieldClass} value={draft.quotedPrice} onChange={(event) => set('quotedPrice', event.target.value)} placeholder="Optional" />
-      </Field>
-      <Field label="Next follow-up">
-        <input type="date" className={fieldClass} value={draft.nextFollowUp} onChange={(event) => set('nextFollowUp', event.target.value)} />
-      </Field>
-      <Field label="Contract status">
-        <select className={fieldClass} value={draft.contractStatus} onChange={(event) => set('contractStatus', event.target.value)}>
-          {CONTRACT_STATUSES.map((status) => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Payment status">
-        <select className={fieldClass} value={draft.paymentStatus} onChange={(event) => set('paymentStatus', event.target.value)}>
-          {PAYMENT_STATUSES.map((status) => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Inquiry notes" wide>
-        <textarea className={fieldClass} rows={4} value={draft.message} onChange={(event) => set('message', event.target.value)} />
-      </Field>
+    <div className="space-y-4">
+      <AgreementFields
+        value={formValueFromDraft(draft)}
+        onChange={(next) => onChange(applyFormValue(draft, next))}
+        leadId={leadId}
+        bookingId={bookingId}
+        afterPackage={
+          <FormSection title="Client">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FieldLabel label="Client 1" required>
+                <input
+                  id={AGREEMENT_FIELD_IDS.client1}
+                  className={inputClass}
+                  maxLength={200}
+                  value={draft.clientName}
+                  onChange={(event) => set('clientName', event.target.value)}
+                />
+              </FieldLabel>
+              <FieldLabel label="Client 2, if any">
+                <input
+                  id={AGREEMENT_FIELD_IDS.client2}
+                  className={inputClass}
+                  maxLength={200}
+                  value={draft.partnerName}
+                  onChange={(event) => set('partnerName', event.target.value)}
+                />
+              </FieldLabel>
+              <FieldLabel label="Email" required>
+                <input
+                  id={AGREEMENT_FIELD_IDS.email}
+                  type="email"
+                  className={inputClass}
+                  value={draft.clientEmail}
+                  onChange={(event) => set('clientEmail', event.target.value)}
+                />
+              </FieldLabel>
+              <FieldLabel label="Phone">
+                <input className={inputClass} value={draft.clientPhone} onChange={(event) => set('clientPhone', event.target.value)} />
+              </FieldLabel>
+            </div>
+          </FormSection>
+        }
+      />
+      <FormSection title="Follow-up">
+        <div className="grid gap-4 md:grid-cols-2">
+          <FieldLabel label="How this lead was received" required>
+            <select className={inputClass} value={draft.inquirySource} onChange={(event) => set('inquirySource', event.target.value)}>
+              {INQUIRY_SOURCES.map((source) => (
+                <option key={source.value} value={source.value}>{source.label}</option>
+              ))}
+            </select>
+          </FieldLabel>
+          <FieldLabel label="Lead status" required>
+            <select className={inputClass} value={draft.status} onChange={(event) => set('status', event.target.value)}>
+              {LEAD_STATUSES.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </FieldLabel>
+          <FieldLabel label="Musicians needed">
+            <input
+              type="number"
+              min={1}
+              max={12}
+              className={inputClass}
+              value={draft.performersNeeded}
+              onChange={(event) => set('performersNeeded', event.target.value)}
+            />
+          </FieldLabel>
+          <FieldLabel label="Estimated duration (hours)">
+            <input
+              className={inputClass}
+              value={draft.estimatedDuration}
+              placeholder="Filled from the ceremony times if left blank"
+              onChange={(event) => set('estimatedDuration', event.target.value)}
+            />
+          </FieldLabel>
+          <FieldLabel label="Guest count">
+            <input className={inputClass} value={draft.guestCount} onChange={(event) => set('guestCount', event.target.value)} />
+          </FieldLabel>
+          <FieldLabel label="Budget">
+            <input className={inputClass} value={draft.budget} placeholder="Optional" onChange={(event) => set('budget', event.target.value)} />
+          </FieldLabel>
+          <FieldLabel label="How they found Daniel">
+            <input className={inputClass} list="how-found" value={draft.howFound} onChange={(event) => set('howFound', event.target.value)} />
+            <datalist id="how-found">
+              {HOW_FOUND_OPTIONS.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          </FieldLabel>
+          <FieldLabel label="Quoted price">
+            <input className={inputClass} value={draft.quotedPrice} placeholder="Optional" onChange={(event) => set('quotedPrice', event.target.value)} />
+          </FieldLabel>
+          <FieldLabel label="Next follow-up">
+            <input type="date" className={inputClass} value={draft.nextFollowUp} onChange={(event) => set('nextFollowUp', event.target.value)} />
+          </FieldLabel>
+          <FieldLabel label="Contract status">
+            <select className={inputClass} value={draft.contractStatus} onChange={(event) => set('contractStatus', event.target.value)}>
+              {CONTRACT_STATUSES.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </FieldLabel>
+          <FieldLabel label="Payment status">
+            <select className={inputClass} value={draft.paymentStatus} onChange={(event) => set('paymentStatus', event.target.value)}>
+              {PAYMENT_STATUSES.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </FieldLabel>
+          <div className="md:col-span-2">
+            <FieldLabel label="Requested services">
+              <textarea
+                className={inputClass}
+                rows={2}
+                value={draft.requestedServices}
+                placeholder="Ceremony violin, cocktail hour, reception"
+                onChange={(event) => set('requestedServices', event.target.value)}
+              />
+            </FieldLabel>
+          </div>
+          <div className="md:col-span-2">
+            <FieldLabel label="Inquiry notes">
+              <textarea className={inputClass} rows={4} value={draft.message} onChange={(event) => set('message', event.target.value)} />
+            </FieldLabel>
+          </div>
+        </div>
+      </FormSection>
     </div>
-  );
-}
-
-function Field({ label, children, wide = false }: { label: string; children: React.ReactNode; wide?: boolean }) {
-  return (
-    <label className={wide ? 'md:col-span-2 block' : 'block'}>
-      <span className="block text-sm font-medium text-gray-700 mb-2">{label}</span>
-      {children}
-    </label>
   );
 }
 
 export function SubmittedDetails({ details }: { details: unknown }) {
   if (!details || typeof details !== 'object' || Array.isArray(details)) return null;
-  const entries = Object.entries(details as Record<string, unknown>).filter(([, value]) => value != null && value !== '');
+  const entries = Object.entries(details as Record<string, unknown>).filter(([key, value]) => {
+    if (key === 'agreement') return false;
+    return (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') && value !== '';
+  });
   if (entries.length === 0) return null;
   return (
     <div className="bg-white rounded-xl shadow p-6 mb-6">

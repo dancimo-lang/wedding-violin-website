@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { AdminButton } from '@/components/admin/AdminButton';
 import { LeadFields } from '@/components/admin/LeadFields';
 import { postBookingStatus } from '@/lib/booking-status-client';
+import { agreementForStorage, formValueFromDraft, mergeAgreement } from '@/lib/contracts/agreement-details';
 import { emptyLeadDraft, leadWritePayload, type LeadDraft } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
@@ -74,16 +75,19 @@ export default function NewLeadPage() {
         ...payload.lead,
         status: booked ? 'Awaiting Response' : payload.lead.status,
         client_id: clientId,
-        inquiry_details: {
-          source: payload.lead.inquiry_source,
-          name: payload.client.name,
-          email: payload.client.email,
-          phone: payload.client.phone,
-          partner: payload.client.partner_name,
-          services: payload.lead.requested_services,
-          eventDate: payload.lead.event_date,
-          message: payload.lead.message,
-        },
+        inquiry_details: mergeAgreement(
+          {
+            source: payload.lead.inquiry_source,
+            name: payload.client.name,
+            email: payload.client.email,
+            phone: payload.client.phone,
+            partner: payload.client.partner_name,
+            services: payload.lead.requested_services,
+            eventDate: payload.lead.event_date,
+            message: payload.lead.message,
+          },
+          agreementForStorage(formValueFromDraft(draft)),
+        ),
       })
       .select('id')
       .single();
@@ -149,7 +153,7 @@ export default function NewLeadPage() {
           {savedId && <Link href={`/admin/leads/${savedId}`} className="underline">Open the lead</Link>}
         </div>
       )}
-      <div className="bg-white rounded-xl shadow p-6">
+      <div id="record-details" className="bg-white rounded-xl shadow p-6">
         <LeadFields draft={draft} onChange={setDraft} />
       </div>
     </form>

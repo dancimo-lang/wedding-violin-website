@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAdminRecordId } from '@/lib/admin-record';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -12,8 +11,20 @@ import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBu
 import { BookingPayments } from '@/components/admin/BookingPayments';
 import { ExistingPaymentRecord } from '@/components/admin/ExistingPaymentRecord';
 import { ContractPanel } from '@/components/admin/ContractPanel';
+import { AgreementFields, FieldLabel, FormSection } from '@/components/admin/AgreementFields';
 import { AdminButton } from '@/components/admin/AdminButton';
-import { VenueNameField } from '@/components/admin/VenueNameField';
+import {
+  AGREEMENT_FIELD_IDS,
+  agreementForStorage,
+  calendarPerformanceTimes,
+  emptyAgreement,
+  mergeAgreement,
+  readAgreement,
+  type AgreementDetails,
+  type AgreementFormValue,
+} from '@/lib/contracts/agreement-details';
+import { loadAgreementNote, saveAgreementNote } from '@/lib/contracts/agreement-store';
+import { guessPackageId, isPackageId } from '@/lib/contracts/packages';
 import { fieldClass } from '@/lib/leads';
 import {
   blockToOccupancy,
@@ -68,8 +79,9 @@ function optionalNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+const inputClass = `${fieldClass} mt-1 font-normal`;
+
 export default function BookingDetailPage() {
-  const router = useRouter();
   const recordId = useAdminRecordId('bookings');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [client, setClient] = useState<ClientInfo | null>(null);
@@ -84,6 +96,10 @@ export default function BookingDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [savedRevision, setSavedRevision] = useState(0);
+  const [agreement, setAgreement] = useState<AgreementDetails>(emptyAgreement());
+  const [clientDraft, setClientDraft] = useState({ name: '', email: '', phone: '', partner: '' });
 
   useEffect(() => {
     if (!recordId) return;
@@ -103,9 +119,18 @@ export default function BookingDetailPage() {
         setError('Failed to load booking');
       } else {
         const { clients, ...row } = data as Booking & { clients: ClientInfo | ClientInfo[] | null };
-        setClient(firstClient(clients));
-        setBooking(row as Booking);
-        setSavedStatus((data as Booking).status);
+        const clientInfo = firstClient(clients);
+        setClient(clientInfo);
+        setClientDraft({
+          name: clientInfo?.name || '',
+          email: clientInfo?.email || '',
+          phone: clientInfo?.phone || '',
+          partner: clientInfo?.partner_name || '',
+        });
+        const bookingRow = row as Booking;
+        setBooking(bookingRow);
+        setSavedStatus(bookingRow.status);
+        setAgreement(await loadBookingAgreement(bookingRow));
       }
       const { data: activity } = await supabase()
         .from('activity_events')
@@ -193,10 +218,62 @@ export default function BookingDetailPage() {
     performers_needed: current.performers_needed || 1,
   });
 
+  const agreementValue: AgreementFormValue = {
+    ...agreement,
+    packageId: isPackageId(agreement.packageId) ? agreement.packageId : 'A',
+    eventDate: booking?.event_date || '',
+    ceremonyStart: agreement.ceremonyStart || timeValue(booking?.performance_start_time || null),
+    ceremonyEnd: agreement.ceremonyEnd || timeValue(booking?.performance_end_time || null),
+    venueName: booking?.venue_name || '',
+    venueAddress: booking?.venue_address || '',
+  };
+
+  const onAgreementChange = (next: AgreementFormValue) => {
+    if (!booking) return;
+    const span = calendarPerformanceTimes(next);
+    setBooking({
+      ...booking,
+      event_date: next.eventDate,
+      venue_name: next.venueName,
+      venue_address: next.venueAddress,
+      performance_start_time: span.start || null,
+      performance_end_time: span.end || null,
+    });
+    setAgreement({
+      packageId: next.packageId,
+      ceremonyStart: next.ceremonyStart,
+      ceremonyEnd: next.ceremonyEnd,
+      preludeStart: next.preludeStart,
+      preludeEnd: next.preludeEnd,
+      cocktailStart: next.cocktailStart,
+      cocktailEnd: next.cocktailEnd,
+      receptionStart: next.receptionStart,
+      receptionEnd: next.receptionEnd,
+      otherDetails: next.otherDetails,
+      travelFee: next.travelFee,
+      additionalFees: next.additionalFees,
+      additionalFeesDescription: next.additionalFeesDescription,
+      discount: next.discount,
+      eventType: next.eventType,
+      performanceDescription: next.performanceDescription,
+      performanceFee: next.performanceFee,
+    });
+  };
+
   const handleSave = async () => {
     if (!booking) return;
+    const email = clientDraft.email.trim().toLowerCase();
+    if (!clientDraft.name.trim()) {
+      setError('Enter the client name.');
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Enter a valid email, or leave it blank.');
+      return;
+    }
     setSaving(true);
     setError('');
+    setNotice('');
 
     if (savedStatus !== booking.status) {
       const result = await postBookingStatus({
@@ -211,23 +288,53 @@ export default function BookingDetailPage() {
         setSaving(false);
         return;
       }
-      router.push('/admin/bookings');
+      setSavedStatus(booking.status);
+    } else {
+      const { error: saveError } = await supabase()
+        .from('bookings')
+        .update({
+          ...bookingFields(booking),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+      if (saveError) {
+        setError(friendlyWriteError(saveError.message, 'Failed to save booking'));
+        setSaving(false);
+        return;
+      }
+    }
+
+    const { error: clientError } = await supabase()
+      .from('clients')
+      .update({
+        name: clientDraft.name.trim(),
+        email: email || null,
+        phone: clientDraft.phone.trim() || null,
+        partner_name: clientDraft.partner.trim() || null,
+      })
+      .eq('id', booking.client_id);
+    if (clientError) {
+      setError('Could not save the client.');
+      setSaving(false);
       return;
     }
+    setClient({
+      name: clientDraft.name.trim(),
+      email: email || null,
+      phone: clientDraft.phone.trim() || null,
+      partner_name: clientDraft.partner.trim() || null,
+    });
 
-    const { error: saveError } = await supabase()
-      .from('bookings')
-      .update({
-        ...bookingFields(booking),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', booking.id);
-
-    if (saveError) {
-      setError(friendlyWriteError(saveError.message, 'Failed to save booking'));
-    } else {
-      router.push('/admin/bookings');
+    const stored = agreementForStorage(agreementValue);
+    setAgreement(stored);
+    const agreementError = await persistBookingAgreement(booking, stored);
+    if (agreementError) {
+      setError(agreementError);
+      setSaving(false);
+      return;
     }
+    setNotice('Saved. Create contract below uses these saved details.');
+    setSavedRevision((value) => value + 1);
     setSaving(false);
   };
 
@@ -327,6 +434,7 @@ export default function BookingDetailPage() {
           {error}
         </div>
       )}
+      {notice && <div className="bg-green-50 text-green-800 px-4 py-3 rounded-lg mb-6">{notice}</div>}
 
       {booking.status === 'Cancelled' && (
         <div className="mb-6 rounded-lg bg-gray-100 px-4 py-3 text-gray-700">
@@ -358,205 +466,143 @@ export default function BookingDetailPage() {
         </div>
       )}
 
-      <div className={`rounded-xl shadow p-6 ${booking.status === 'Cancelled' ? 'bg-gray-50 text-gray-600' : 'bg-white'}`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            {booking.status === 'Cancelled' ? (
-              <p className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700">Cancelled</p>
-            ) : (
-              <select
-                value={booking.status}
-                onChange={(e) => setBooking({ ...booking, status: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-              >
-                {BOOKING_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Event Date *
-            </label>
-            <input
-              type="date"
-              value={booking.event_date}
-              onChange={(e) => setBooking({ ...booking, event_date: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Musicians needed
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={booking.performers_needed || 1}
-              onChange={(e) => setBooking({ ...booking, performers_needed: Number(e.target.value) })}
-              className={fieldClass}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Service Type *
-            </label>
-            <input
-              type="text"
-              value={booking.service_type}
-              onChange={(e) => setBooking({ ...booking, service_type: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Total Price ($) *
-            </label>
-            <input
-              type="number"
-              value={booking.total_price}
-              onChange={(e) => setBooking({ ...booking, total_price: Number(e.target.value) })}
-              step="0.01"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <VenueNameField
-              name={booking.venue_name || ''}
-              address={booking.venue_address || ''}
-              onName={(value) => setBooking({ ...booking, venue_name: value })}
-              onAddress={(value) => setBooking({ ...booking, venue_address: value })}
-              nameLabel="Venue Name"
-              addressLabel="Venue Address"
-              labelClassName="block text-sm font-medium text-gray-700 mb-2"
-              inputClassName="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Performance Start Time
-            </label>
-            <input
-              type="time"
-              value={timeValue(booking.performance_start_time)}
-              onChange={(e) => setBooking({ ...booking, performance_start_time: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Performance End Time
-            </label>
-            <input
-              type="time"
-              value={timeValue(booking.performance_end_time)}
-              onChange={(e) => setBooking({ ...booking, performance_end_time: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Setup Time
-            </label>
-            <input
-              type="time"
-              value={timeValue(booking.setup_time)}
-              onChange={(e) => setBooking({ ...booking, setup_time: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Breakdown Time
-            </label>
-            <input
-              type="time"
-              value={timeValue(booking.breakdown_time)}
-              onChange={(e) => setBooking({ ...booking, breakdown_time: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Travel Buffer (hours)
-            </label>
-            <input
-              type="number"
-              value={booking.travel_buffer_hours ?? ''}
-              onChange={(e) => setBooking({ ...booking, travel_buffer_hours: optionalNumber(e.target.value) })}
-              step="0.5"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Retainer Amount ($)
-            </label>
-            <input
-              type="number"
-              value={booking.retainer_amount ?? ''}
-              onChange={(e) => setBooking({ ...booking, retainer_amount: optionalNumber(e.target.value) })}
-              step="0.01"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Retainer Due Date
-            </label>
-            <input
-              type="date"
-              value={booking.retainer_due_date || ''}
-              onChange={(e) => setBooking({ ...booking, retainer_due_date: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Balance Due Date
-            </label>
-            <input
-              type="date"
-              value={booking.balance_due_date || ''}
-              onChange={(e) => setBooking({ ...booking, balance_due_date: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Special Requests
-            </label>
-            <textarea
-              value={booking.special_requests || ''}
-              onChange={(e) => setBooking({ ...booking, special_requests: e.target.value })}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
+      <div id="record-details" className={`rounded-xl shadow p-6 ${booking.status === 'Cancelled' ? 'bg-gray-50 text-gray-600' : 'bg-white'}`}>
+        <AgreementFields
+          value={agreementValue}
+          onChange={onAgreementChange}
+          leadId={booking.lead_id}
+          bookingId={booking.id}
+          afterPackage={
+            <FormSection title="Client">
+              <div className="grid gap-4 md:grid-cols-2">
+                <FieldLabel label="Client 1" required>
+                  <input
+                    id={AGREEMENT_FIELD_IDS.client1}
+                    className={inputClass}
+                    maxLength={200}
+                    value={clientDraft.name}
+                    onChange={(event) => setClientDraft({ ...clientDraft, name: event.target.value })}
+                  />
+                </FieldLabel>
+                <FieldLabel label="Client 2, if any">
+                  <input
+                    id={AGREEMENT_FIELD_IDS.client2}
+                    className={inputClass}
+                    maxLength={200}
+                    value={clientDraft.partner}
+                    onChange={(event) => setClientDraft({ ...clientDraft, partner: event.target.value })}
+                  />
+                </FieldLabel>
+                <FieldLabel label="Email" required>
+                  <input
+                    id={AGREEMENT_FIELD_IDS.email}
+                    type="email"
+                    className={inputClass}
+                    value={clientDraft.email}
+                    onChange={(event) => setClientDraft({ ...clientDraft, email: event.target.value })}
+                  />
+                </FieldLabel>
+                <FieldLabel label="Phone">
+                  <input
+                    className={inputClass}
+                    value={clientDraft.phone}
+                    onChange={(event) => setClientDraft({ ...clientDraft, phone: event.target.value })}
+                  />
+                </FieldLabel>
+              </div>
+            </FormSection>
+          }
+        />
+        <div className="mt-4">
+          <FormSection title="Booking">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FieldLabel label="Status">
+                {booking.status === 'Cancelled' ? (
+                  <p className="mt-1 px-4 py-2 rounded-lg bg-gray-200 font-normal text-gray-700">Cancelled</p>
+                ) : (
+                  <select
+                    value={booking.status}
+                    onChange={(event) => setBooking({ ...booking, status: event.target.value })}
+                    className={inputClass}
+                  >
+                    {BOOKING_STATUSES.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                )}
+              </FieldLabel>
+              <FieldLabel label="Musicians needed">
+                <input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={booking.performers_needed || 1}
+                  onChange={(event) => setBooking({ ...booking, performers_needed: Number(event.target.value) })}
+                  className={inputClass}
+                />
+              </FieldLabel>
+              <FieldLabel label="Service type" required>
+                <input
+                  type="text"
+                  value={booking.service_type}
+                  onChange={(event) => setBooking({ ...booking, service_type: event.target.value })}
+                  className={inputClass}
+                />
+              </FieldLabel>
+              <FieldLabel label="Total price ($)" required>
+                <input
+                  type="number"
+                  value={booking.total_price}
+                  onChange={(event) => setBooking({ ...booking, total_price: Number(event.target.value) })}
+                  step="0.01"
+                  className={inputClass}
+                />
+              </FieldLabel>
+              <FieldLabel label="Setup time">
+                <input type="time" value={timeValue(booking.setup_time)} onChange={(event) => setBooking({ ...booking, setup_time: event.target.value })} className={inputClass} />
+              </FieldLabel>
+              <FieldLabel label="Breakdown time">
+                <input type="time" value={timeValue(booking.breakdown_time)} onChange={(event) => setBooking({ ...booking, breakdown_time: event.target.value })} className={inputClass} />
+              </FieldLabel>
+              <FieldLabel label="Travel buffer (hours)">
+                <input
+                  type="number"
+                  value={booking.travel_buffer_hours ?? ''}
+                  onChange={(event) => setBooking({ ...booking, travel_buffer_hours: optionalNumber(event.target.value) })}
+                  step="0.5"
+                  className={inputClass}
+                />
+              </FieldLabel>
+              <FieldLabel label="Retainer amount ($)">
+                <input
+                  type="number"
+                  value={booking.retainer_amount ?? ''}
+                  onChange={(event) => setBooking({ ...booking, retainer_amount: optionalNumber(event.target.value) })}
+                  step="0.01"
+                  className={inputClass}
+                />
+              </FieldLabel>
+              <FieldLabel label="Retainer due date">
+                <input type="date" value={booking.retainer_due_date || ''} onChange={(event) => setBooking({ ...booking, retainer_due_date: event.target.value })} className={inputClass} />
+              </FieldLabel>
+              <FieldLabel label="Balance due date">
+                <input type="date" value={booking.balance_due_date || ''} onChange={(event) => setBooking({ ...booking, balance_due_date: event.target.value })} className={inputClass} />
+              </FieldLabel>
+              <div className="md:col-span-2">
+                <FieldLabel label="Special requests">
+                  <textarea
+                    value={booking.special_requests || ''}
+                    onChange={(event) => setBooking({ ...booking, special_requests: event.target.value })}
+                    rows={4}
+                    className={inputClass}
+                  />
+                </FieldLabel>
+              </div>
+            </div>
+          </FormSection>
         </div>
       </div>
-      <ContractPanel bookingId={booking.id} leadId={booking.lead_id} />
+      <ContractPanel bookingId={booking.id} leadId={booking.lead_id} savedRevision={savedRevision} />
       <ExistingPaymentRecord bookingId={booking.id} />
       <BookingPayments bookingId={booking.id} />
       <div className="mt-6">
@@ -617,4 +663,59 @@ function BookingConflicts({
   const roster = rosterWarning(booking.performers_needed || 1, settings);
   const reasons = roster ? [...assessment.reasons, roster] : assessment.reasons;
   return <ConflictList reasons={booking.status === 'Cancelled' ? [] : reasons} googleBusy={googleBusy} />;
+}
+
+async function loadBookingAgreement(booking: Booking): Promise<AgreementDetails> {
+  if (booking.lead_id) {
+    const { data: lead } = await supabase()
+      .from('leads')
+      .select('inquiry_details, package_interest, requested_services, service_type, quoted_price')
+      .eq('id', booking.lead_id)
+      .maybeSingle();
+    const stored = readAgreement(lead?.inquiry_details);
+    if (isPackageId(stored.packageId)) return stored;
+    const quoted = lead?.quoted_price;
+    return {
+      ...stored,
+      packageId: guessPackageId({
+        packageInterest: typeof lead?.package_interest === 'string' ? lead.package_interest : '',
+        service:
+          (typeof lead?.requested_services === 'string' && lead.requested_services) ||
+          (typeof lead?.service_type === 'string' && lead.service_type) ||
+          booking.service_type,
+        quotedPrice: typeof quoted === 'number' ? quoted : booking.total_price,
+      }),
+    };
+  }
+  const stored = await loadAgreementNote(supabase(), booking.id);
+  if (isPackageId(stored.packageId)) return stored;
+  return {
+    ...stored,
+    packageId: guessPackageId({ service: booking.service_type, quotedPrice: booking.total_price }),
+  };
+}
+
+async function persistBookingAgreement(booking: Booking, details: AgreementDetails): Promise<string | null> {
+  if (booking.lead_id) {
+    const { data: lead, error: readError } = await supabase()
+      .from('leads')
+      .select('inquiry_details')
+      .eq('id', booking.lead_id)
+      .maybeSingle();
+    if (readError) return 'Could not save these details on the lead.';
+    const { error } = await supabase()
+      .from('leads')
+      .update({
+        event_date: booking.event_date || null,
+        venue_name: booking.venue_name,
+        venue_address: booking.venue_address,
+        performance_start_time: booking.performance_start_time,
+        performance_end_time: booking.performance_end_time,
+        inquiry_details: mergeAgreement(lead?.inquiry_details, details),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', booking.lead_id);
+    return error ? 'Could not save these details on the lead.' : null;
+  }
+  return saveAgreementNote(supabase(), booking.id, details);
 }

@@ -21,6 +21,8 @@ export function VenueNameField({
   labelClassName = adminLabelClass,
   inputClassName = adminInputClass,
   layoutClassName = 'grid gap-4 md:grid-cols-2',
+  nameInputId,
+  addressInputId,
 }: {
   name: string;
   address: string;
@@ -35,8 +37,12 @@ export function VenueNameField({
   labelClassName?: string;
   inputClassName?: string;
   layoutClassName?: string;
+  nameInputId?: string;
+  addressInputId?: string;
 }) {
   const listId = useId();
+  const nameId = nameInputId || `${listId}-name`;
+  const addressId = addressInputId || `${listId}-address`;
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<'idle' | 'searching' | 'empty' | 'ready'>('idle');
@@ -83,7 +89,7 @@ export function VenueNameField({
   return (
     <div className={layoutClassName}>
       <div className={open ? 'relative z-40' : 'relative'}>
-        <label className={labelClassName} htmlFor={`${listId}-name`}>
+        <label className={labelClassName} htmlFor={nameId}>
           <span className="flex items-baseline justify-between gap-2">
             <span>
               {nameLabel}
@@ -92,7 +98,7 @@ export function VenueNameField({
             {nameRequired ? <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Required</span> : null}
           </span>
           <input
-            id={`${listId}-name`}
+            id={nameId}
             className={inputClassName}
             value={name}
             autoComplete="off"
@@ -135,7 +141,7 @@ export function VenueNameField({
           </ul>
         ) : null}
       </div>
-      <label className={labelClassName} htmlFor={`${listId}-address`}>
+      <label className={labelClassName} htmlFor={addressId}>
         <span className="flex items-baseline justify-between gap-2">
           <span>
             {addressLabel}
@@ -144,7 +150,7 @@ export function VenueNameField({
           {addressRequired ? <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Required</span> : null}
         </span>
         <input
-          id={`${listId}-address`}
+          id={addressId}
           className={inputClassName}
           value={address}
           onChange={(event) => onAddress(event.target.value)}

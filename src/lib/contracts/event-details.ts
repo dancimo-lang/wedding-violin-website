@@ -17,7 +17,7 @@ export type CoupleDetailSource = {
   receptionEnd?: string;
 };
 
-type DetailKey = CoupleDetailKey | 'preludeEnd' | 'receptionStart' | 'receptionEnd';
+export type DetailKey = CoupleDetailKey | 'preludeEnd' | 'receptionStart' | 'receptionEnd';
 
 const LABELS: Record<DetailKey, string> = {
   venueName: 'Venue name',
@@ -73,6 +73,13 @@ function formatList(items: string[]): string {
 
 function missingLabels(source: CoupleDetailSource, keys: readonly DetailKey[]): string[] {
   return keys.filter((key) => !readDetail(source, key)).map((key) => labelFor(source.packageId, key));
+}
+
+/** Required details that are still blank, with the same labels the send error uses. */
+export function missingRequiredDetails(source: CoupleDetailSource): { key: DetailKey; label: string }[] {
+  return requiredKeys(source.packageId)
+    .filter((key) => !readDetail(source, key))
+    .map((key) => ({ key, label: labelFor(source.packageId, key) }));
 }
 
 /**
