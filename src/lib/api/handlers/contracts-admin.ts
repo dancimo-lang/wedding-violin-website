@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/require-admin-api';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateBookingCode, isBookingCode } from '@/lib/contracts/booking-code';
-import { contractOwnerEmail } from '@/lib/contracts/mail';
+import { clientFacingActivityBody, clientMailWasRedirected, contractOwnerEmail } from '@/lib/contracts/mail';
 import { centsToDollarString, computeFees, formatLongDate, formatMoney, parseDollarInput } from '@/lib/contracts/money';
 import { agreementNoun, isPackageId, packageDefinition } from '@/lib/contracts/packages';
 import { cleanAdditionalFeesDescription, feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
@@ -387,7 +387,7 @@ export async function POST(request: Request) {
       booking_id: booking.id,
       event_type: 'email',
       title: 'Signing link emailed',
-      body: `Sent to ${email}.`,
+      body: clientFacingActivityBody(email, `Sent to ${email}.`),
       metadata: { contract_id: contractId },
       created_by: auth.session.id,
     }).then(undefined, () => undefined);
@@ -408,6 +408,7 @@ export async function POST(request: Request) {
     bookingCode,
     emailed,
     signingUrl: url,
+    ...(clientMailWasRedirected(email) ? { testSiteEmail: true } : {}),
   });
 }
 
@@ -628,11 +629,16 @@ export async function postResend(request: Request, id: string) {
     booking_id: row.booking_id,
     event_type: 'email',
     title: emailed ? 'Signing link resent' : 'Signing link could not be emailed',
-    body: client.email,
+    body: emailed ? clientFacingActivityBody(client.email, client.email) : client.email,
     metadata: { contract_id: row.id },
     created_by: auth.session.id,
   });
-  return json({ ok: true, emailed, signingUrl: url });
+  return json({
+    ok: true,
+    emailed,
+    signingUrl: url,
+    ...(clientMailWasRedirected(client.email) ? { testSiteEmail: true } : {}),
+  });
 }
 
 export async function postCountersign(request: Request, id: string) {

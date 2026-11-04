@@ -1,7 +1,7 @@
 import 'server-only';
 import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { contractFromAddress, contractReplyTo } from './mail';
+import { contractFromAddress, contractReplyTo, guardClientFacingEmail } from './mail';
 import { renderContractPdf } from './pdf';
 import type { SignatureTimes } from './signature-style';
 
@@ -42,14 +42,15 @@ export async function sendContractMail(input: {
   const key = process.env.RESEND_API_KEY;
   const from = contractFromAddress();
   if (!key || !from) return false;
+  const guarded = guardClientFacingEmail({ to: input.to, subject: input.subject, html: input.html });
   try {
     const resend = new Resend(key);
     const { error } = await resend.emails.send({
       from,
-      to: input.to,
+      to: guarded.to,
       replyTo: contractReplyTo(),
-      subject: input.subject,
-      html: input.html,
+      subject: guarded.subject,
+      html: guarded.html,
       attachments: input.attachments,
     });
     if (error) {

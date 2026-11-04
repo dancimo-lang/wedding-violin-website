@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import site from '@/data/site.json';
+import { isProductionEmailEnvironment } from '@/lib/contracts/mail';
 import { AdminShell } from './admin-shell';
 
 const title = `${site.name} - ${site.tagline}`;
@@ -21,5 +22,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+  return <AdminShell testSite={!isProductionEmailEnvironment()}>{children}</AdminShell>;
 }

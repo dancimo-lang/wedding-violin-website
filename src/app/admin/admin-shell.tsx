@@ -14,7 +14,7 @@ const navItems = [
   { href: '/admin/add-tune', label: 'Add Tune' },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, testSite = false }: { children: React.ReactNode; testSite?: boolean }) {
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,6 +37,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50 admin-readable">
+      {testSite ? (
+        <p role="status" className="bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-950">
+          Test site: emails go only to you
+        </p>
+      ) : null}
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
