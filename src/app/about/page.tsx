@@ -35,8 +35,8 @@ export default function AboutPage() {
         mobileDescription={mobileLead}
         ctaText={about.cta.booking.buttonText}
         ctaHref={about.cta.booking.href}
-        secondaryCtaText={about.cta.lessons.buttonText}
-        secondaryCtaHref={about.cta.lessons.href}
+        secondaryCtaText="Wedding Music"
+        secondaryCtaHref="/services/weddings"
         splitLayout={true}
         splitAlign="center"
         leftSideImage={undefined}
