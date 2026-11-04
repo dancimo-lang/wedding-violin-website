@@ -26,8 +26,10 @@ test('a Photon place becomes a venue name and a street address', () => {
   assert.equal(parsed[0]?.name, 'Mission San Luis Obispo');
 });
 
-test('a failed venue search returns nothing', async () => {
-  const results = await searchPhoton('Madonna', async () => new Response('no', { status: 500 }));
-  assert.deepEqual(results, []);
+test('a failed photon response is an error so the caller can try another geocoder', async () => {
+  await assert.rejects(
+    () => searchPhoton('Madonna blocked', async () => new Response('no', { status: 403 })),
+    /Photon responded 403/,
+  );
   assert.deepEqual(await searchPhoton('ab'), []);
 });

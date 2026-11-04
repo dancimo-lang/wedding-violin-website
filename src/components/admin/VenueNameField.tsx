@@ -24,25 +24,32 @@ export function VenueNameField({
   const listId = useId();
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
   const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'searching' | 'empty' | 'ready'>('idle');
 
   const query = name.trim();
-  const visible = query.length >= 3 ? suggestions : [];
+  const visible = query.length >= 3 && status === 'ready' ? suggestions : [];
 
   useEffect(() => {
     if (query.length < 3) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      fetch(`/api/admin/venues?q=${encodeURIComponent(query)}`, { cache: 'no-store' })
+      if (!cancelled) setStatus('searching');
+      fetch(`/api/admin/venues?q=${encodeURIComponent(query)}`, { cache: 'no-store', credentials: 'same-origin' })
         .then(async (response) => {
           if (!response.ok) return [];
           const payload = (await response.json()) as { results?: VenueSuggestion[] };
           return Array.isArray(payload.results) ? payload.results : [];
         })
         .then((results) => {
-          if (!cancelled) setSuggestions(results.slice(0, 5));
+          if (cancelled) return;
+          const next = results.slice(0, 5);
+          setSuggestions(next);
+          setStatus(next.length > 0 ? 'ready' : 'empty');
         })
         .catch(() => {
-          if (!cancelled) setSuggestions([]);
+          if (cancelled) return;
+          setSuggestions([]);
+          setStatus('empty');
         });
     }, 400);
     return () => {
@@ -60,7 +67,7 @@ export function VenueNameField({
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="relative">
+      <div className={open ? 'relative z-40' : 'relative'}>
         <label className={labelClass} htmlFor={`${listId}-name`}>
           <span className="flex items-baseline justify-between gap-2">
             Venue name
@@ -75,8 +82,10 @@ export function VenueNameField({
             aria-expanded={open && visible.length > 0}
             aria-controls={listId}
             onChange={(event) => {
-              onName(event.target.value);
+              const next = event.target.value;
+              onName(next);
               setOpen(true);
+              setStatus(next.trim().length >= 3 ? 'searching' : 'idle');
             }}
             onFocus={() => setOpen(true)}
             onBlur={() => {
@@ -84,6 +93,12 @@ export function VenueNameField({
             }}
           />
         </label>
+        {query.length >= 3 && status === 'searching' ? (
+          <p className="mt-1 text-xs font-normal text-gray-600">Searching…</p>
+        ) : null}
+        {query.length >= 3 && status === 'empty' ? (
+          <p className="mt-1 text-xs font-normal text-gray-600">No matches, type the address</p>
+        ) : null}
         {open && visible.length > 0 ? (
           <ul id={listId} role="listbox" className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-gray-300 bg-white shadow-lg">
             {visible.map((suggestion) => (

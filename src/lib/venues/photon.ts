@@ -13,6 +13,8 @@ type PhotonProperties = {
   street?: unknown;
   housenumber?: unknown;
   city?: unknown;
+  locality?: unknown;
+  district?: unknown;
   state?: unknown;
   postcode?: unknown;
   country?: unknown;
@@ -30,7 +32,7 @@ export function formatPhotonFeature(properties: PhotonProperties | null | undefi
   if (!properties) return null;
   const name = text(properties.name);
   const street = [text(properties.housenumber), text(properties.street)].filter(Boolean).join(' ');
-  const city = text(properties.city);
+  const city = text(properties.city) || text(properties.locality) || text(properties.district);
   const state = text(properties.state);
   const postcode = text(properties.postcode);
   const locality = [city, state].filter(Boolean).join(', ');
@@ -71,9 +73,12 @@ export async function searchPhoton(query: string, fetchImpl: typeof fetch = fetc
   url.searchParams.set('lang', 'en');
   const response = await fetchImpl(url, {
     headers: { Accept: 'application/json', 'User-Agent': PHOTON_USER_AGENT },
-    signal: AbortSignal.timeout(4000),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(8000),
   });
-  if (!response.ok) return [];
+  if (!response.ok) {
+    throw new Error(`Photon responded ${response.status}`);
+  }
   const results = parsePhotonResponse(await response.json());
   cache.set(key, { expires: Date.now() + CACHE_MS, results });
   return results;

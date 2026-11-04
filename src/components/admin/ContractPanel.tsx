@@ -480,7 +480,7 @@ export function ContractPanel({
               </p>
             ) : null}
           </FormSection>
-          <FormSection title="Venue">
+          <FormSection title="Venue" className="relative z-30">
             <VenueNameField
               name={venueName}
               address={venueAddress}
@@ -572,9 +572,9 @@ function dollars(value: string) {
   return Number(whole) * 100 + Number(frac.padEnd(2, '0'));
 }
 
-function FormSection({ title, children }: { title: string; children: ReactNode }) {
+function FormSection({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+    <section className={`rounded-xl border border-gray-200 bg-gray-50 p-4 ${className}`}>
       <h4 className="border-b border-gray-200 pb-2 text-base font-semibold text-gray-900">{title}</h4>
       <div className="mt-4 space-y-4">{children}</div>
     </section>
