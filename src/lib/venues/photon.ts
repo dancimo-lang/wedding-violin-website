@@ -15,6 +15,7 @@ type PhotonProperties = {
   city?: unknown;
   locality?: unknown;
   district?: unknown;
+  county?: unknown;
   state?: unknown;
   postcode?: unknown;
   country?: unknown;
@@ -32,7 +33,7 @@ export function formatPhotonFeature(properties: PhotonProperties | null | undefi
   if (!properties) return null;
   const name = text(properties.name);
   const street = [text(properties.housenumber), text(properties.street)].filter(Boolean).join(' ');
-  const city = text(properties.city) || text(properties.locality) || text(properties.district);
+  const city = text(properties.city) || text(properties.locality) || text(properties.district) || text(properties.county);
   const state = text(properties.state);
   const postcode = text(properties.postcode);
   const locality = [city, state].filter(Boolean).join(', ');

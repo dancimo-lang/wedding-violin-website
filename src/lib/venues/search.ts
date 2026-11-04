@@ -13,6 +13,10 @@ type NominatimAddress = {
   town?: unknown;
   village?: unknown;
   hamlet?: unknown;
+  municipality?: unknown;
+  city_district?: unknown;
+  suburb?: unknown;
+  county?: unknown;
   state?: unknown;
   postcode?: unknown;
 };
@@ -32,7 +36,15 @@ export function formatNominatimPlace(place: { name?: unknown; address?: Nominati
   if (!place) return null;
   const address = place.address ?? {};
   const street = [text(address.house_number), text(address.road)].filter(Boolean).join(' ');
-  const city = text(address.city) || text(address.town) || text(address.village) || text(address.hamlet);
+  const city =
+    text(address.city) ||
+    text(address.town) ||
+    text(address.village) ||
+    text(address.hamlet) ||
+    text(address.municipality) ||
+    text(address.city_district) ||
+    text(address.suburb) ||
+    text(address.county);
   const state = text(address.state);
   const postcode = text(address.postcode);
   const locality = [city, state].filter(Boolean).join(', ');

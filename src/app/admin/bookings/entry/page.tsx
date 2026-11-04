@@ -13,6 +13,7 @@ import { BookingPayments } from '@/components/admin/BookingPayments';
 import { ExistingPaymentRecord } from '@/components/admin/ExistingPaymentRecord';
 import { ContractPanel } from '@/components/admin/ContractPanel';
 import { AdminButton } from '@/components/admin/AdminButton';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import { fieldClass } from '@/lib/leads';
 import {
   blockToOccupancy,
@@ -431,27 +432,16 @@ export default function BookingDetailPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Venue Name
-            </label>
-            <input
-              type="text"
-              value={booking.venue_name || ''}
-              onChange={(e) => setBooking({ ...booking, venue_name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Venue Address
-            </label>
-            <input
-              type="text"
-              value={booking.venue_address || ''}
-              onChange={(e) => setBooking({ ...booking, venue_address: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+          <div className="md:col-span-2">
+            <VenueNameField
+              name={booking.venue_name || ''}
+              address={booking.venue_address || ''}
+              onName={(value) => setBooking({ ...booking, venue_name: value })}
+              onAddress={(value) => setBooking({ ...booking, venue_address: value })}
+              nameLabel="Venue Name"
+              addressLabel="Venue Address"
+              labelClassName="block text-sm font-medium text-gray-700 mb-2"
+              inputClassName="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
             />
           </div>
 

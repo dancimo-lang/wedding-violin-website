@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AdminButton } from '@/components/admin/AdminButton';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import { useRouter } from 'next/navigation';
 import { PACKAGES, PACKAGE_IDS } from '@/lib/contracts/packages';
 import {
@@ -134,12 +135,17 @@ export default function AddExistingBookingPage() {
               <input type="time" className={fieldClass} value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </label>
           </div>
-          <label className="block text-sm text-gray-700">Venue name
-            <input className={fieldClass} value={venueName} onChange={(e) => setVenueName(e.target.value)} />
-          </label>
-          <label className="block text-sm text-gray-700">Venue address
-            <input className={fieldClass} value={venueAddress} onChange={(e) => setVenueAddress(e.target.value)} />
-          </label>
+          <div className="sm:col-span-2">
+            <VenueNameField
+              name={venueName}
+              address={venueAddress}
+              onName={setVenueName}
+              onAddress={setVenueAddress}
+              labelClassName="block text-sm text-gray-700"
+              inputClassName={fieldClass}
+              layoutClassName="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            />
+          </div>
           <label className="block text-sm text-gray-700">Package
             <select className={fieldClass} value={pkg} onChange={(e) => choosePackage(e.target.value as ExistingPackageChoice)}>
               {PACKAGE_IDS.map((id) => (

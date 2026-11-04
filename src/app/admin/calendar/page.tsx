@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AdminButton, adminButtonClass } from '@/components/admin/AdminButton';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import { createClient } from '@/lib/supabase/client';
 import { fieldClass } from '@/lib/leads';
 import { postBookingStatus } from '@/lib/booking-status-client';
@@ -476,8 +477,15 @@ function HoldForm({
         <input type="time" className={fieldClass} value={start} onChange={(event) => setStart(event.target.value)} />
         <input type="time" className={fieldClass} value={end} onChange={(event) => setEnd(event.target.value)} />
       </div>
-      <input className={fieldClass} placeholder="Venue name" value={venue} onChange={(event) => setVenue(event.target.value)} />
-      <input className={fieldClass} placeholder="Venue address" value={address} onChange={(event) => setAddress(event.target.value)} />
+      <VenueNameField
+        name={venue}
+        address={address}
+        onName={setVenue}
+        onAddress={setAddress}
+        labelClassName="block text-sm text-gray-700"
+        inputClassName={fieldClass}
+        layoutClassName="grid grid-cols-1 gap-3 sm:grid-cols-2"
+      />
       <input className={fieldClass} placeholder="Service" value={service} onChange={(event) => setService(event.target.value)} />
       <div className="grid grid-cols-2 gap-2">
         <input type="number" min={1} max={12} className={fieldClass} value={performers} onChange={(event) => setPerformers(event.target.value)} />

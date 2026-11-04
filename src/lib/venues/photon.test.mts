@@ -14,6 +14,16 @@ test('a Photon place becomes a venue name and a street address', () => {
     }),
     { name: 'Madonna Inn', address: '100 Madonna Road, San Luis Obispo, California 93405' },
   );
+  assert.deepEqual(
+    formatPhotonFeature({
+      name: 'Ridge',
+      street: 'Mesa Verde Road',
+      county: 'Santa Barbara',
+      state: 'California',
+      postcode: '93464',
+    }),
+    { name: 'Ridge', address: 'Mesa Verde Road, Santa Barbara, California 93464' },
+  );
   assert.equal(formatPhotonFeature({}), null);
   const parsed = parsePhotonResponse({
     features: [

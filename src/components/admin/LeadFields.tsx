@@ -1,3 +1,4 @@
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import {
   CONTRACT_STATUSES,
   fieldClass,
@@ -63,12 +64,16 @@ export function LeadFields({
       <Field label="Guest count">
         <input className={fieldClass} value={draft.guestCount} onChange={(event) => set('guestCount', event.target.value)} />
       </Field>
-      <Field label="Venue name">
-        <input className={fieldClass} value={draft.venueName} onChange={(event) => set('venueName', event.target.value)} />
-      </Field>
-      <Field label="Venue address">
-        <input className={fieldClass} value={draft.venueAddress} onChange={(event) => set('venueAddress', event.target.value)} />
-      </Field>
+      <div className="md:col-span-2">
+        <VenueNameField
+          name={draft.venueName}
+          address={draft.venueAddress}
+          onName={(value) => set('venueName', value)}
+          onAddress={(value) => set('venueAddress', value)}
+          labelClassName="block text-sm font-medium text-gray-700 mb-2"
+          inputClassName={fieldClass}
+        />
+      </div>
       <Field label="Requested services" wide>
         <textarea className={fieldClass} rows={2} value={draft.requestedServices} onChange={(event) => set('requestedServices', event.target.value)} placeholder="Ceremony violin, cocktail hour, reception" />
       </Field>
