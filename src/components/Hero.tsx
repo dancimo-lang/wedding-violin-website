@@ -7,6 +7,8 @@ interface HeroProps {
   title: string;
   subtitle?: string;
   description?: string;
+  /** Shorter copy for the stacked mobile hero. Desktop keeps `description`. */
+  mobileDescription?: string;
   ctaText?: string;
   ctaHref?: string;
   ctaOnClick?: () => void;
@@ -32,6 +34,8 @@ interface HeroProps {
   overlay?: boolean;
   size?: 'full' | 'large' | 'medium';
   splitLayout?: boolean;
+  /** Split-layout copy sits in the vertical center. Defaults to the top of the column. */
+  splitAlign?: 'start' | 'center';
   leftSideImage?: string;
   rightSideImage?: string | null;
   rightSideImageAlt?: string;
@@ -41,6 +45,7 @@ export default function Hero({
   title,
   subtitle,
   description,
+  mobileDescription,
   ctaText,
   ctaHref = '/booking',
   ctaOnClick,
@@ -60,6 +65,7 @@ export default function Hero({
   overlay = true,
   size = 'large',
   splitLayout = false,
+  splitAlign = 'start',
   rightSideImage,
   rightSideImageAlt,
 }: HeroProps) {
@@ -148,7 +154,7 @@ export default function Hero({
       {splitLayout ? (
         <div className="relative z-10 container mx-auto px-4 lg:h-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 lg:h-full">
-            <div className="flex flex-col justify-center lg:justify-start items-center text-center text-cream-bright px-6 py-16 lg:px-12 lg:pt-28 lg:pb-16">
+            <div className={`flex flex-col items-center text-center text-cream-bright px-6 lg:px-12 ${splitAlign === 'center' ? 'justify-center py-10 lg:py-16' : 'justify-center py-16 lg:justify-start lg:pt-28 lg:pb-16'}`}>
               {subtitle && (
                 <p className="text-gold-bright font-medium tracking-wide uppercase mb-6 text-sm md:text-base">
                   {subtitle}
@@ -159,7 +165,14 @@ export default function Hero({
               </h1>
               {description && (
                 <p className="text-lg md:text-xl text-cream-muted mb-8 max-w-2xl">
-                  {description}
+                  {mobileDescription ? (
+                    <>
+                      <span className="lg:hidden">{mobileDescription}</span>
+                      <span className="hidden lg:inline">{description}</span>
+                    </>
+                  ) : (
+                    description
+                  )}
                 </p>
               )}
               {actions}
@@ -172,7 +185,7 @@ export default function Hero({
                   alt={rightSideImageAlt ?? 'Daniel playing violin'}
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="object-cover"
+                  className={`object-cover ${imageClassName ?? ''}`}
                   priority
                 />
               )}

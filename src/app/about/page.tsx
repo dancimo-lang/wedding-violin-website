@@ -18,6 +18,12 @@ export const metadata = createPageMetadata({
 
 export default function AboutPage() {
   const training = about.credentials.items.filter((item) => isPublishableCopy(item));
+  const intro = about.bio.paragraphs[0] ?? '';
+  // Phones show the opening sentence so the portrait stays on the first screen.
+  const leadBreak = intro.search(/[.!?](?:\s|$)/);
+  const mobileLead = leadBreak === -1 ? intro : intro.slice(0, leadBreak + 1);
+  const introRest = leadBreak === -1 ? '' : intro.slice(leadBreak + 1).trim();
+  const biography = [introRest, ...about.bio.paragraphs.slice(1)].filter((paragraph) => paragraph.length > 0);
 
   return (
     <>
@@ -25,10 +31,18 @@ export default function AboutPage() {
       <Hero
         title={about.hero.title}
         subtitle={about.hero.subtitle}
+        description={intro}
+        mobileDescription={mobileLead}
+        ctaText={about.cta.booking.buttonText}
+        ctaHref={about.cta.booking.href}
+        secondaryCtaText={about.cta.lessons.buttonText}
+        secondaryCtaHref={about.cta.lessons.href}
         splitLayout={true}
+        splitAlign="center"
         leftSideImage={undefined}
         rightSideImage="/images/0N1A8246.jpg"
         rightSideImageAlt="Daniel playing violin on a paved path through a park"
+        imageClassName="object-top"
         size="full"
       />
 
@@ -57,8 +71,8 @@ export default function AboutPage() {
                 Biography
               </h2>
               <div className="prose prose-lg space-y-4">
-                {about.bio.paragraphs.map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
+                {biography.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
             </div>
