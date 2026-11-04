@@ -77,13 +77,19 @@ export function BookingPayments({ bookingId }: { bookingId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId, obligationId, method, transactionNumber, payerName, paidOn }),
       });
-      const payload = (await response.json()) as { error?: string; emailSent?: boolean; duplicate?: boolean };
+      const payload = (await response.json()) as { error?: string; emailSent?: boolean; duplicate?: boolean; testSiteEmail?: boolean };
       if (!response.ok) {
         setError(payload.error || 'The payment could not be recorded.');
       } else if (payload.duplicate) {
         setMessage('That transaction number is already recorded.');
       } else {
-        setMessage(payload.emailSent ? 'Payment recorded and the email was sent.' : 'Payment recorded.');
+        setMessage(
+          payload.emailSent
+            ? payload.testSiteEmail
+              ? 'Payment recorded. The email went only to you (test site).'
+              : 'Payment recorded and the email was sent.'
+            : 'Payment recorded.',
+        );
         setTransactionNumber('');
         await load();
       }

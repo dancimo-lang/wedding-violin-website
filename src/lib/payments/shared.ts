@@ -1,5 +1,5 @@
 import 'server-only';
-import { contractFromAddress, contractOwnerEmail } from '@/lib/contracts/mail';
+import { contractFromAddress, contractOwnerEmail, guardClientFacingEmail } from '@/lib/contracts/mail';
 import { sendContractMail } from '@/lib/contracts/delivery';
 import { runGoogleSync } from '@/lib/google/run';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -201,7 +201,7 @@ export async function sendCouplePaidMail(input: {
   kind: 'retainer' | 'balance';
   amountCents: number;
   request?: Request;
-}): Promise<{ sent: boolean; skipped: boolean; confirmed: boolean }> {
+}): Promise<{ sent: boolean; skipped: boolean; confirmed: boolean; redirected: boolean }> {
   const couple = await loadCouple(input.admin, input.bookingId, input.bookingCode);
   const qr = zelleQrSources();
   const origin = siteOrigin(input.request);
@@ -220,8 +220,8 @@ export async function sendCouplePaidMail(input: {
       if (owner) await sendContractMail({ to: owner, subject: mail.subject, html: mail.html });
     }
   }
-  if (!couple.email) return { sent: false, skipped: true, confirmed };
-  if (!mailReady()) return { sent: false, skipped: true, confirmed };
+  if (!couple.email) return { sent: false, skipped: true, confirmed, redirected: false };
+  if (!mailReady()) return { sent: false, skipped: true, confirmed, redirected: false };
   const message =
     input.kind === 'retainer'
       ? confirmationEmail({
@@ -241,8 +241,9 @@ export async function sendCouplePaidMail(input: {
           bookingCode: couple.bookingCode,
           amountPaidCents: input.amountCents,
         });
+  const redirected = guardClientFacingEmail({ to: couple.email, subject: message.subject, html: message.html }).redirected;
   const sent = await sendContractMail({ to: couple.email, subject: message.subject, html: message.html });
-  return { sent, skipped: false, confirmed };
+  return { sent, skipped: false, confirmed, redirected };
 }
 
 export async function sendCoupleStatusMail(input: {
@@ -253,9 +254,9 @@ export async function sendCoupleStatusMail(input: {
   amountCents: number;
   which: 'processing' | 'failed';
   request?: Request;
-}): Promise<{ sent: boolean; skipped: boolean }> {
+}): Promise<{ sent: boolean; skipped: boolean; redirected: boolean }> {
   const couple = await loadCouple(input.admin, input.bookingId, input.bookingCode);
-  if (!couple.email || !mailReady()) return { sent: false, skipped: true };
+  if (!couple.email || !mailReady()) return { sent: false, skipped: true, redirected: false };
   const origin = siteOrigin(input.request);
   const payUrl = couple.token ? paymentPageUrl(origin, couple.token) : null;
   const message =
@@ -274,10 +275,11 @@ export async function sendCoupleStatusMail(input: {
           recipientName: zelleRecipientName(),
           recipientContact: zelleRecipientContact(),
         });
+  const redirected = guardClientFacingEmail({ to: couple.email, subject: message.subject, html: message.html }).redirected;
   const sent = await sendContractMail({ to: couple.email, subject: message.subject, html: message.html });
   const owner = contractOwnerEmail();
   if (owner && owner.toLowerCase() !== couple.email.toLowerCase()) {
     await sendContractMail({ to: owner, subject: message.subject, html: message.html });
   }
-  return { sent, skipped: false };
+  return { sent, skipped: false, redirected };
 }

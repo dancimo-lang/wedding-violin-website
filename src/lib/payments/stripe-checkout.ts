@@ -485,9 +485,10 @@ export async function ingestStripeWebhook(input: {
             request: input.request,
           });
     const notifyKind = plan.action === 'paid' ? (kind === 'retainer' ? 'confirmation' : 'receipt') : plan.action === 'processing' ? 'processing' : 'failed';
-    if (('sent' in mailed && mailed.sent) || mailed.skipped) {
+    const delivered = ('sent' in mailed && mailed.sent) || mailed.skipped;
+    if (delivered && !mailed.redirected) {
       await admin.from('stripe_checkout_sessions').update({ notified_kind: notifyKind }).eq('id', session.id);
-    } else {
+    } else if (!delivered) {
       return { status: 500, body: { ok: false, error: 'The payment email could not be sent.' } };
     }
   }
@@ -515,10 +516,12 @@ async function ensurePaidNotice(admin: Admin, session: SessionRow, request?: Req
     request,
   });
   if (!mailed.sent && !mailed.skipped) return 'failed';
-  await admin
-    .from('stripe_checkout_sessions')
-    .update({ notified_kind: kind === 'retainer' ? 'confirmation' : 'receipt' })
-    .eq('id', session.id);
+  if (!mailed.redirected) {
+    await admin
+      .from('stripe_checkout_sessions')
+      .update({ notified_kind: kind === 'retainer' ? 'confirmation' : 'receipt' })
+      .eq('id', session.id);
+  }
   return mailed.sent ? 'sent' : 'skipped';
 }
 

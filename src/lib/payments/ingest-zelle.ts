@@ -173,9 +173,9 @@ async function finishMatched(admin: Admin, row: ReceiptRow, request?: Request): 
       amountCents: row.amount_cents,
       request,
     });
-    if (mailed.sent || mailed.skipped) {
+    if ((mailed.sent || mailed.skipped) && !mailed.redirected) {
       await admin.from('zelle_receipts').update({ couple_notified_at: new Date().toISOString() }).eq('id', row.id);
-    } else if (mailReady()) {
+    } else if (!mailed.sent && !mailed.skipped && mailReady()) {
       return { status: 500, body: { ok: false, error: 'The receipt email could not be sent.' } };
     }
   }

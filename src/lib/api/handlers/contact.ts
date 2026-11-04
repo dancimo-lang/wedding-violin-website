@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import site from '@/data/site.json';
+import { guardClientFacingEmail } from '@/lib/contracts/mail';
 import { todayInTimeZone } from '@/lib/schedule/time';
 import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -245,13 +246,10 @@ export async function POST(request: NextRequest) {
       const safeMessage = escapeHtml(message);
       const from = process.env.RESEND_FROM_EMAIL || 'noreply@danielcimo.com';
 
-      try {
-        await resend.emails.send({
-          from,
-          to: normalizedEmail,
-          replyTo: site.email,
-          subject: 'Thank you for your inquiry - Daniel Cimo Violin',
-          html: `
+      const clientMail = guardClientFacingEmail({
+        to: normalizedEmail,
+        subject: 'Thank you for your inquiry - Daniel Cimo Violin',
+        html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #1f2937;">Thank you for your inquiry!</h2>
               <p>Hi ${safeName},</p>
@@ -266,17 +264,23 @@ export async function POST(request: NextRequest) {
               <p>Best regards,<br>Daniel Cimo</p>
             </div>
           `,
+      });
+      try {
+        await resend.emails.send({
+          from,
+          to: clientMail.to,
+          replyTo: site.email,
+          subject: clientMail.subject,
+          html: clientMail.html,
         });
       } catch (emailError) {
         console.error('Failed to send client acknowledgment', emailError);
       }
 
-      try {
-        await resend.emails.send({
-          from,
-          to: process.env.CONTACT_EMAIL || 'dancimo@gmail.com',
-          subject: `New ${service.replace(/[\r\n]+/g, ' ')} inquiry from ${name.replace(/[\r\n]+/g, ' ')}`,
-          html: `
+      const ownerMail = guardClientFacingEmail({
+        to: process.env.CONTACT_EMAIL || 'dancimo@gmail.com',
+        subject: `New ${service.replace(/[\r\n]+/g, ' ')} inquiry from ${name.replace(/[\r\n]+/g, ' ')}`,
+        html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #1f2937; border-bottom: 2px solid #f59e0b; padding-bottom: 10px;">
                 New Contact Form Submission
@@ -298,6 +302,13 @@ export async function POST(request: NextRequest) {
               </div>
             </div>
           `,
+      });
+      try {
+        await resend.emails.send({
+          from,
+          to: ownerMail.to,
+          subject: ownerMail.subject,
+          html: ownerMail.html,
         });
       } catch (emailError) {
         console.error('Failed to send admin notification', emailError);
