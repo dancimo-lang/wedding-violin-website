@@ -1,3 +1,5 @@
+import site from '@/data/site.json';
+
 type MailEnv = {
   CONTRACT_FROM_EMAIL?: string;
   RESEND_FROM?: string;
@@ -25,10 +27,10 @@ export function contractFromAddress(env?: MailEnv): string | null {
   return trimmed || null;
 }
 
-/** Reply-to for contract mail. Defaults to the address printed in the agreements. */
+/** Reply-to for contract mail. Defaults to the public contact address. */
 export function contractReplyTo(env?: MailEnv): string {
-  const reply = (mailEnv(env).CONTRACT_REPLY_TO || 'dancimo@gmail.com').trim();
-  return reply || 'dancimo@gmail.com';
+  const reply = (mailEnv(env).CONTRACT_REPLY_TO || site.email).trim();
+  return reply || site.email;
 }
 
 export function contractOwnerEmail(env?: MailEnv): string {

@@ -1,3 +1,4 @@
+import site from '@/data/site.json';
 import { createPageMetadata } from '@/lib/page-metadata';
 import { isPublishableCopy } from '@/lib/publicContent';
 
@@ -58,7 +59,7 @@ export default function PrivacyPage() {
           <h2>Contact</h2>
           <p>
             If you have questions about this privacy policy, please contact us at{' '}
-            <a href="mailto:dancimo@gmail.com">dancimo@gmail.com</a>.
+            <a href={`mailto:${site.email}`}>{site.email}</a>.
           </p>
 
           {disclaimer && (

@@ -1,11 +1,12 @@
 import { Fragment } from 'react';
+import site from '@/data/site.json';
 import { createPageMetadata } from '@/lib/page-metadata';
 import { isPublishableCopy } from '@/lib/publicContent';
 
 export const metadata = createPageMetadata({
   title: 'Terms of Service',
   description:
-    'Terms for violin performance, private lessons, and studio recording from Daniel Cimo. All bookings are subject to availability. Contact dancimo@gmail.com.',
+    `Terms for violin performance, private lessons, and studio recording from Daniel Cimo. All bookings are subject to availability. Contact ${site.email}.`,
   path: '/terms',
   noIndex: true,
 });
@@ -60,7 +61,7 @@ export default function TermsPage() {
           <h2>Contact</h2>
           <p>
             For questions about these terms, please contact us at{' '}
-            <a href="mailto:dancimo@gmail.com">dancimo@gmail.com</a>.
+            <a href={`mailto:${site.email}`}>{site.email}</a>.
           </p>
 
           {disclaimer && (

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import site from '@/data/site.json';
 import { todayInTimeZone } from '@/lib/schedule/time';
 import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -248,6 +249,7 @@ export async function POST(request: NextRequest) {
         await resend.emails.send({
           from,
           to: normalizedEmail,
+          replyTo: site.email,
           subject: 'Thank you for your inquiry - Daniel Cimo Violin',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
