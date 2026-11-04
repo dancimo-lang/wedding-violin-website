@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { useRouter } from 'next/navigation';
 import { PACKAGES, PACKAGE_IDS } from '@/lib/contracts/packages';
 import {
@@ -180,9 +181,9 @@ export default function AddExistingBookingPage() {
               : `Paid ${dollars(summary.paidCents)}. Still owed ${dollars(summary.owedCents)}${summary.balanceDueDate ? `, due ${summary.balanceDueDate}` : ''}. A payable record will be saved.`}
           </p>
         )}
-        <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-60">
+        <AdminButton type="submit" disabled={saving}>
           {saving ? 'Saving…' : 'Save booking'}
-        </button>
+        </AdminButton>
         {message && <p className="text-sm text-red-700">{message}</p>}
       </form>
     </div>

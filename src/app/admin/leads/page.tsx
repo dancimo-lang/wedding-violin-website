@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { AdminButton, adminButtonClass } from '@/components/admin/AdminButton';
 import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { DeleteLeadButton } from '@/components/admin/DeleteLeadButton';
@@ -111,7 +112,7 @@ export default function LeadsPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl font-bold text-gray-900">Leads</h2>
-        <Link href="/admin/leads/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+        <Link href="/admin/leads/new" className={adminButtonClass('primary', 'md', 'gap-2')}>
           <Plus size={20} />
           Add Lead
         </Link>
@@ -198,9 +199,9 @@ export default function LeadsPage() {
 function SortHeader({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <th className="text-left py-4 px-4 text-sm font-medium text-gray-600">
-      <button type="button" onClick={onClick} className={active ? 'text-blue-700' : ''}>
+      <AdminButton type="button" size="sm" variant={active ? 'primary' : 'secondary'} onClick={onClick}>
         {label}
-      </button>
+      </AdminButton>
     </th>
   );
 }

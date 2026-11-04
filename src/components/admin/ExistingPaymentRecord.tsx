@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { EXISTING_PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from '@/lib/bookings/existing-booking';
 
 type View = {
@@ -140,15 +141,15 @@ export function ExistingPaymentRecord({ bookingId }: { bookingId: string }) {
           <p className="text-sm text-gray-700">Payment link</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <input readOnly className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm" value={view.paymentLink} />
-            <button type="button" onClick={() => void copy()} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <AdminButton type="button" variant="secondary" size="sm" onClick={() => void copy()}>
               Copy
-            </button>
+            </AdminButton>
           </div>
         </div>
       ) : view.owedCents > 0 ? (
-        <button type="button" disabled={busy} onClick={() => void makeLink()} className="mt-3 rounded-lg border border-blue-700 px-4 py-2 text-sm text-blue-800 disabled:opacity-60">
+        <AdminButton type="button" variant="secondary" className="mt-3" disabled={busy} onClick={() => void makeLink()}>
           {busy ? 'Working...' : 'Create payment link'}
-        </button>
+        </AdminButton>
       ) : null}
       {view.canReplace ? (
         <form
@@ -176,9 +177,9 @@ export function ExistingPaymentRecord({ bookingId }: { bookingId: string }) {
             </select>
           </label>
           <div className="flex items-end">
-            <button type="submit" disabled={busy} className="rounded-lg bg-blue-700 px-4 py-2 text-white disabled:bg-blue-400">
+            <AdminButton type="submit" disabled={busy}>
               {busy ? 'Saving...' : 'Save payment record'}
-            </button>
+            </AdminButton>
           </div>
         </form>
       ) : view.blockedReason ? (

@@ -12,6 +12,7 @@ import { fetchGoogleStatus, loadGoogleBusy, statusToExternalState, type GoogleBu
 import { BookingPayments } from '@/components/admin/BookingPayments';
 import { ExistingPaymentRecord } from '@/components/admin/ExistingPaymentRecord';
 import { ContractPanel } from '@/components/admin/ContractPanel';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { fieldClass } from '@/lib/leads';
 import {
   blockToOccupancy,
@@ -304,32 +305,19 @@ export default function BookingDetailPage() {
         </div>
         <div className="flex gap-2">
           {booking.status === 'Cancelled' ? (
-            <button
-              type="button"
-              onClick={handleRestore}
-              disabled={saving}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800"
-            >
+            <AdminButton type="button" variant="secondary" onClick={handleRestore} disabled={saving}>
               Restore booking
-            </button>
+            </AdminButton>
           ) : (
-            <button
-              type="button"
-              onClick={() => setCancelOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 text-red-700 hover:bg-red-50 rounded-lg"
-            >
+            <AdminButton type="button" variant="danger" onClick={() => setCancelOpen(true)}>
               <Ban size={20} />
               Cancel booking
-            </button>
+            </AdminButton>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
-          >
+          <AdminButton type="button" onClick={handleSave} disabled={saving}>
             <Save size={20} />
             {saving ? 'Saving...' : 'Save'}
-          </button>
+          </AdminButton>
         </div>
       </div>
 
@@ -359,21 +347,12 @@ export default function BookingDetailPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 mb-3"
           />
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={saving}
-              className="px-4 py-2 rounded-lg bg-red-700 text-white disabled:bg-red-400"
-            >
+            <AdminButton type="button" variant="danger" onClick={handleCancel} disabled={saving}>
               {saving ? 'Cancelling...' : 'Cancel booking'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setCancelOpen(false)}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800"
-            >
+            </AdminButton>
+            <AdminButton type="button" variant="secondary" onClick={() => setCancelOpen(false)}>
               Keep booking
-            </button>
+            </AdminButton>
           </div>
         </div>
       )}

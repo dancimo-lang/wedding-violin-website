@@ -1,12 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CONTRACT_LIST_COLUMNS, type ContractListRow } from '@/lib/contracts/columns';
 import { computeFees, formatMoney, type FeeSummary } from '@/lib/contracts/money';
-import { guessPackageId, PACKAGES, type PackageId } from '@/lib/contracts/packages';
+import { guessPackageId, packageIncludesCocktailHour, PACKAGES, type PackageId } from '@/lib/contracts/packages';
 import { coupleSuppliedSummary, missingCoupleDetailMessage, optionalBlankDetailMessage, sentContractBlankDetailMessage } from '@/lib/contracts/event-details';
 import { feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, UNSIGNED } from '@/lib/contracts/render';
+import { AdminButton, adminButtonClass } from '@/components/admin/AdminButton';
+import { CustomSongsFields } from '@/components/admin/CustomSongsFields';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import { ContractText } from '@/components/contracts/ContractText';
+import { emptyCustomSongs, type CustomSongs } from '@/lib/contracts/custom-songs';
+import { loadCustomSongs, saveCustomSongs } from '@/lib/contracts/custom-songs-store';
 import { fieldClass } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
@@ -54,6 +59,7 @@ export function ContractPanel({
   const [receptionStart, setReceptionStart] = useState('');
   const [receptionStartTouched, setReceptionStartTouched] = useState(false);
   const [receptionEnd, setReceptionEnd] = useState('');
+  const [songs, setSongs] = useState<CustomSongs>(emptyCustomSongs);
   const [otherDetails, setOtherDetails] = useState('');
   const [travelFee, setTravelFee] = useState('0');
   const [additionalFees, setAdditionalFees] = useState('0');
@@ -172,6 +178,23 @@ export function ContractPanel({
   const fullWedding = packageId === 'FULL';
   const privateEvent = packageId === 'EVENT';
   const receptionStartValue = fullWedding && !receptionStartTouched ? cocktailEnd : receptionStart;
+  const cocktailRequired = fullWedding || packageIncludesCocktailHour(packageId);
+  const songLeadId = source?.leadId ?? leadId ?? null;
+  const songBookingId = source?.bookingId ?? bookingId ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    loadCustomSongs(createClient(), { leadId: songLeadId, bookingId: songBookingId })
+      .then((next) => {
+        if (!cancelled) setSongs(next);
+      })
+      .catch(() => {
+        if (!cancelled) setSongs(emptyCustomSongs());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [songLeadId, songBookingId]);
   const summary = useMemo(() => {
     return computeFees({
       packageId,
@@ -310,13 +333,15 @@ export function ContractPanel({
       return;
     }
     setSigningUrl(payload.signingUrl || '');
-    setNotice(
-      payload.emailed
-        ? payload.testSiteEmail
-          ? `Signing link emailed to you only (test site). Booking code ${payload.bookingCode}.`
-          : `Signing link emailed. Booking code ${payload.bookingCode}.`
-        : `Agreement saved, but the email was not sent. Booking code ${payload.bookingCode}. Copy the signing link below.`,
+    const songError = await saveCustomSongs(createClient(), { leadId: source.leadId, bookingId: source.bookingId }, songs).catch(
+      () => 'Custom songs could not be saved.',
     );
+    const sentNotice = payload.emailed
+      ? payload.testSiteEmail
+        ? `Signing link emailed to you only (test site). Booking code ${payload.bookingCode}.`
+        : `Signing link emailed. Booking code ${payload.bookingCode}.`
+      : `Agreement saved, but the email was not sent. Booking code ${payload.bookingCode}. Copy the signing link below.`;
+    setNotice(songError ? `${sentNotice} ${songError}` : sentNotice);
     setCreating(false);
     await reloadContracts(source);
     setBusy(false);
@@ -352,9 +377,9 @@ export function ContractPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-xl font-bold text-gray-900">Agreement</h3>
         {!blocking && !creating && (
-          <button type="button" onClick={() => setCreating(true)} className="rounded-lg bg-blue-600 px-4 py-2 text-white">
+          <AdminButton type="button" onClick={() => setCreating(true)}>
             Create contract
-          </button>
+          </AdminButton>
         )}
       </div>
       {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-red-700">{error}</p>}
@@ -372,127 +397,163 @@ export function ContractPanel({
         <p className="mt-4 text-sm text-gray-600">The last agreement was voided. The booking code stays on the booking.</p>
       )}
 
+      {!creating ? (
+        <div className="mt-6">
+          <FormSection title="Custom Songs">
+            <CustomSongsFields leadId={songLeadId} bookingId={songBookingId} />
+          </FormSection>
+        </div>
+      ) : null}
+
       {creating && !blocking && (
         <div className="mt-4 space-y-4">
-          <label className="block text-sm text-gray-700">
-            Contract type / package
-            <select className={`${fieldClass} mt-1`} value={packageId} onChange={(event) => setPackageId(event.target.value as PackageId)}>
-              {(Object.keys(PACKAGES) as PackageId[]).map((id) => (
-                <option key={id} value={id}>
-                  {PACKAGES[id].customFee
-                    ? `${PACKAGES[id].title} agreement (non-wedding) — fee entered below`
-                    : `${PACKAGES[id].title} — $${formatMoney(PACKAGES[id].feeCents)}`}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FormSection title="Package">
+            <label className="block text-sm font-semibold text-gray-900">
+              Contract type / package
+              <select className={`${fieldClass} mt-1 font-normal`} value={packageId} onChange={(event) => setPackageId(event.target.value as PackageId)}>
+                {(Object.keys(PACKAGES) as PackageId[]).map((id) => (
+                  <option key={id} value={id}>
+                    {PACKAGES[id].customFee
+                      ? `${PACKAGES[id].title} agreement (non-wedding) — fee entered below`
+                      : `${PACKAGES[id].title} — $${formatMoney(PACKAGES[id].feeCents)}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </FormSection>
           {privateEvent && (
             <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
               Private event agreement for birthdays, parties, corporate and other non-wedding events.
             </p>
           )}
-          {privateEvent && (
+          <FormSection title="Client">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Event type (e.g. Birthday party)" value={eventType} onChange={setEventType} />
-              <Field label="Performance fee" value={performanceFee} onChange={setPerformanceFee} />
-              <label className="block text-sm text-gray-700 md:col-span-2">
-                Performance description (shown in section 1)
+              <Field label="Client 1" value={client1Name} onChange={setClient1Name} required />
+              <Field label="Client 2, if any" value={client2Name} onChange={setClient2Name} />
+            </div>
+          </FormSection>
+          <FormSection title="Date & Times">
+            <Field label={privateEvent ? 'Event date' : 'Wedding date'} value={weddingDate} onChange={setWeddingDate} type="date" required />
+            {privateEvent ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Event start" value={ceremonyStart} onChange={setCeremonyStart} type="time" required />
+                <Field label="Event end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Prelude begins" value={preludeStart} onChange={setPreludeStart} type="time" />
+                  <Field label="Prelude ends" value={preludeEnd} onChange={setPreludeEnd} type="time" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Ceremony start" value={ceremonyStart} onChange={setCeremonyStart} type="time" required />
+                  <Field label="Ceremony end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" required />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Cocktail hour begins" value={cocktailStart} onChange={setCocktailStart} type="time" required={cocktailRequired} />
+                  <Field label="Cocktail hour ends" value={cocktailEnd} onChange={setCocktailEnd} type="time" required={cocktailRequired} />
+                </div>
+                {fullWedding ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field
+                      label="Reception begins"
+                      value={receptionStartValue}
+                      onChange={(value) => {
+                        setReceptionStartTouched(true);
+                        setReceptionStart(value);
+                      }}
+                      type="time"
+                      required
+                    />
+                    <Field label="Reception ends" value={receptionEnd} onChange={setReceptionEnd} type="time" required />
+                  </div>
+                ) : (
+                  <p className="text-sm font-normal text-gray-700">
+                    Prelude is optional. Cocktail hour is required for ceremony-and-cocktail packages. On a ceremony-only package it prints only when you enter those times.
+                  </p>
+                )}
+              </>
+            )}
+            {fullWedding ? (
+              <p className="text-sm font-normal text-gray-700">
+                Prelude can be left blank. Reception begins starts as the cocktail-hour end and can be changed.
+              </p>
+            ) : null}
+          </FormSection>
+          <FormSection title="Venue">
+            <VenueNameField
+              name={venueName}
+              address={venueAddress}
+              onName={setVenueName}
+              onAddress={setVenueAddress}
+              nameRequired
+              addressRequired
+            />
+          </FormSection>
+          {privateEvent ? (
+            <FormSection title="Performance">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Event type (e.g. Birthday party)" value={eventType} onChange={setEventType} required />
+                <Field label="Performance fee" value={performanceFee} onChange={setPerformanceFee} required />
+              </div>
+              <label className="block text-sm font-semibold text-gray-900">
+                <span className="flex items-baseline justify-between gap-2">
+                  Performance description (shown in section 1)
+                  <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Required</span>
+                </span>
                 <input
-                  className={`${fieldClass} mt-1`}
+                  className={`${fieldClass} mt-1 font-normal`}
                   value={performanceDescription}
                   maxLength={600}
                   placeholder="e.g. Solo violin, two hours of background music during dinner"
                   onChange={(event) => setPerformanceDescription(event.target.value)}
                 />
               </label>
-            </div>
-          )}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Client 1" value={client1Name} onChange={setClient1Name} />
-            <Field label="Client 2, if any" value={client2Name} onChange={setClient2Name} />
-            <Field label={privateEvent ? 'Event date' : 'Wedding date'} value={weddingDate} onChange={setWeddingDate} type="date" />
-            <Field label={privateEvent ? 'Event start' : 'Ceremony start'} value={ceremonyStart} onChange={setCeremonyStart} type="time" />
-            {fullWedding && <Field label="Ceremony end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />}
-            <Field label="Venue name" value={venueName} onChange={setVenueName} />
-            <Field label="Venue address" value={venueAddress} onChange={setVenueAddress} />
-          </div>
-          {privateEvent && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Event end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />
-              <label className="block text-sm text-gray-700">
-                Other agreed performance details
-                <input className={`${fieldClass} mt-1`} value={otherDetails} onChange={(event) => setOtherDetails(event.target.value)} />
-              </label>
-            </div>
-          )}
-          {!fullWedding && !privateEvent && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Prelude begins (optional)" value={preludeStart} onChange={setPreludeStart} type="time" />
-              <Field label="Prelude ends (optional)" value={preludeEnd} onChange={setPreludeEnd} type="time" />
-              <Field label="Ceremony end" value={ceremonyEnd} onChange={setCeremonyEnd} type="time" />
-              <Field label="Cocktail hour begins" value={cocktailStart} onChange={setCocktailStart} type="time" />
-              <Field label="Cocktail hour ends" value={cocktailEnd} onChange={setCocktailEnd} type="time" />
-              <label className="block text-sm text-gray-700 md:col-span-2">
-                Other agreed performance details
-                <input className={`${fieldClass} mt-1`} value={otherDetails} onChange={(event) => setOtherDetails(event.target.value)} />
-              </label>
-            </div>
-          )}
-          {!fullWedding && !privateEvent && (
-            <p className="text-sm text-gray-600">
-              Prelude is optional. Cocktail hour is required for ceremony-and-cocktail packages. On a ceremony-only package it prints only when you enter those times.
-            </p>
-          )}
-          {fullWedding && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Prelude begins (optional)" value={preludeStart} onChange={setPreludeStart} type="time" />
-              <Field label="Prelude ends (optional)" value={preludeEnd} onChange={setPreludeEnd} type="time" />
-              <Field label="Cocktail hour begins" value={cocktailStart} onChange={setCocktailStart} type="time" />
-              <Field label="Cocktail hour ends" value={cocktailEnd} onChange={setCocktailEnd} type="time" />
-              <Field
-                label="Reception start"
-                value={receptionStartValue}
-                onChange={(value) => {
-                  setReceptionStartTouched(true);
-                  setReceptionStart(value);
-                }}
-                type="time"
-              />
-              <Field label="Reception end (when the evening ends)" value={receptionEnd} onChange={setReceptionEnd} type="time" />
-            </div>
-          )}
-          {fullWedding && (
-            <p className="text-sm text-gray-600">
-              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount. The schedule prints Ceremony Prelude, Ceremony, Cocktail Hour, and Reception. Prelude can be left blank. Reception start starts as the cocktail-hour end and can be changed.
-            </p>
-          )}
+            </FormSection>
+          ) : null}
+          <FormSection title="Custom Songs">
+            <CustomSongsFields leadId={songLeadId} bookingId={songBookingId} songs={songs} onChange={setSongs} />
+          </FormSection>
+          <FormSection title="Other Details">
+            <label className="block text-sm font-semibold text-gray-900">
+              Other agreed performance details
+              <input className={`${fieldClass} mt-1 font-normal`} value={otherDetails} onChange={(event) => setOtherDetails(event.target.value)} />
+            </label>
+          </FormSection>
+          <FormSection title="Fees">
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Travel fee" value={travelFee} onChange={setTravelFee} />
             <Field label="Additional fees" value={additionalFees} onChange={setAdditionalFees} />
             {!fullWedding && <Field label="Discount" value={discount} onChange={setDiscount} />}
           </div>
-          <label className="block text-sm text-gray-700">
+          <label className="block text-sm font-semibold text-gray-900">
             Additional fees description (optional, shown in the agreement)
             <input
-              className={`${fieldClass} mt-1`}
+              className={`${fieldClass} mt-1 font-normal`}
               value={additionalFeesDescription}
               maxLength={80}
               placeholder="e.g. New Year's Day holiday fee"
               onChange={(event) => setAdditionalFeesDescription(event.target.value)}
             />
           </label>
+          {fullWedding ? (
+            <p className="text-sm font-normal text-gray-700">
+              The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount.
+            </p>
+          ) : null}
+          </FormSection>
           <FeeReadout summary={'error' in summary ? null : summary} error={'error' in summary ? summary.error : ''} packageFee={'error' in summary ? PACKAGES[packageId].feeCents : summary.packageFeeCents} quotedPrice={source?.quotedPrice ?? null} />
           {preview && <ContractText className="max-h-96 overflow-auto md:max-h-96" text={preview} />}
           {missingDetailMessage ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-amber-900">{missingDetailMessage}</p> : null}
           {optionalBlankMessage ? <p className="rounded-lg bg-gray-50 px-4 py-3 text-gray-700">{optionalBlankMessage}</p> : null}
           {timeOrderMessage ? <p className="rounded-lg bg-red-50 px-4 py-3 text-red-700">{timeOrderMessage}</p> : null}
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy || !preview || Boolean(timeOrderMessage) || Boolean(missingDetailMessage)} onClick={() => void send()} className="rounded-lg bg-blue-600 px-4 py-2 text-white disabled:bg-blue-400">
+            <AdminButton type="button" disabled={busy || !preview || Boolean(timeOrderMessage) || Boolean(missingDetailMessage)} onClick={() => void send()}>
               {busy ? 'Sending...' : 'Send for signature'}
-            </button>
-            <button type="button" onClick={() => setCreating(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-gray-800">
+            </AdminButton>
+            <AdminButton type="button" variant="secondary" onClick={() => setCreating(false)}>
               Close
-            </button>
+            </AdminButton>
           </div>
           {!source?.bookingId && (
             <p className="text-sm text-gray-600">Sending creates a tentative booking when this lead does not have one, so the booking code has a place to live.</p>
@@ -511,26 +572,40 @@ function dollars(value: string) {
   return Number(whole) * 100 + Number(frac.padEnd(2, '0'));
 }
 
+function FormSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+      <h4 className="border-b border-gray-200 pb-2 text-base font-semibold text-gray-900">{title}</h4>
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
+  );
+}
+
 function Field({
   label,
   value,
   onChange,
   type = 'text',
   disabled = false,
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   disabled?: boolean;
+  required?: boolean;
 }) {
   return (
-    <label className="block text-sm text-gray-700">
-      {label}
+    <label className="block text-sm font-semibold text-gray-900">
+      <span className="flex items-baseline justify-between gap-2">
+        {label}
+        {required ? <span className="text-xs font-semibold uppercase tracking-wide text-amber-800">Required</span> : null}
+      </span>
       <input
         type={type}
         disabled={disabled}
-        className={`${fieldClass} mt-1 disabled:bg-gray-100`}
+        className={`${fieldClass} mt-1 font-normal disabled:bg-gray-100`}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -612,36 +687,35 @@ function ContractStatus({
       <div className="flex flex-wrap gap-2">
         {open && (
           <>
-            <button type="button" disabled={busy} onClick={() => void onAction(`/api/admin/contracts/${row.id}/resend`)} className="rounded-lg border border-gray-300 px-4 py-2">
+            <AdminButton type="button" variant="secondary" disabled={busy} onClick={() => void onAction(`/api/admin/contracts/${row.id}/resend`)}>
               Resend
-            </button>
-            <button
+            </AdminButton>
+            <AdminButton
               type="button"
+              variant="danger"
               disabled={busy}
               onClick={() => {
                 if (window.confirm('Void this agreement? The signing link will stop working.')) void onAction(`/api/admin/contracts/${row.id}/void`);
               }}
-              className="rounded-lg border border-red-300 px-4 py-2 text-red-700"
             >
               Void
-            </button>
+            </AdminButton>
           </>
         )}
         {row.status === 'signed' && !row.musician_signed_at && (
           <>
             <input className={`${fieldClass} max-w-xs`} value={musicianName} onChange={(event) => onMusicianName(event.target.value)} />
-            <button
+            <AdminButton
               type="button"
               disabled={busy}
               onClick={() => void onAction(`/api/admin/contracts/${row.id}/countersign`, { name: musicianName })}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-white"
             >
               Countersign
-            </button>
+            </AdminButton>
           </>
         )}
         {row.status === 'signed' && (
-          <a href={`/api/admin/contracts/${row.id}/pdf`} className="rounded-lg border border-gray-300 px-4 py-2">
+          <a href={`/api/admin/contracts/${row.id}/pdf`} className={adminButtonClass('secondary')}>
             Download PDF
           </a>
         )}

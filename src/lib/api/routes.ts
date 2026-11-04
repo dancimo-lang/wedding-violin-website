@@ -26,6 +26,7 @@ import { getAdminPayments, postAssign, postManual } from './handlers/payments-ad
 import { getPaymentView, postCheckout, postStripeWebhook } from './handlers/payments-stripe';
 import { postZelle } from './handlers/payments-zelle';
 import { GET as getPdf } from './handlers/pdf';
+import { GET as getVenues } from './handlers/venues';
 import { POST as restoreTunes } from './handlers/restore-tunes';
 import { GET as getPasswordRecovery } from './handlers/password-recovery';
 import { POST as postSignOut } from './handlers/signout';
@@ -52,6 +53,7 @@ const handlers: Record<string, ApiHandler> = {
   'existing-booking-payment': ({ request }) => existingBookingPayment(request),
   'delete-lead': ({ request, params }) => deleteLead(request, params.id ?? ''),
   'contract-send': mount(postContractSend),
+  'admin-venues': mount(getVenues),
   'contract-void': ({ request, params }) => postVoid(request, params.id ?? ''),
   'contract-resend': ({ request, params }) => postResend(request, params.id ?? ''),
   'contract-countersign': ({ request, params }) => postCountersign(request, params.id ?? ''),

@@ -23,6 +23,7 @@ import {
   type ScheduleSettings,
 } from '@/lib/schedule/availability';
 import { addCalendarDays, venueRef } from '@/lib/schedule/time';
+import { AdminButton, adminButtonClass } from '@/components/admin/AdminButton';
 import { ContractPanel } from '@/components/admin/ContractPanel';
 import { DeleteLeadButton } from '@/components/admin/DeleteLeadButton';
 import { createClient } from '@/lib/supabase/client';
@@ -331,12 +332,12 @@ export default function LeadDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => archive(Boolean(archivedAt))} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">
+          <AdminButton type="button" variant="secondary" onClick={() => archive(Boolean(archivedAt))}>
             {archivedAt ? 'Restore lead' : 'Archive'}
-          </button>
-          <button type="button" onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
+          </AdminButton>
+          <AdminButton type="button" onClick={save} disabled={saving}>
             {saving ? 'Saving...' : 'Save'}
-          </button>
+          </AdminButton>
         </div>
       </div>
       {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>}
@@ -344,16 +345,16 @@ export default function LeadDetailPage() {
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <LeadFields draft={draft} onChange={setDraft} />
         <div className="flex flex-wrap gap-2 mt-6">
-          <button type="button" onClick={() => placeHold('Tentative')} className="px-4 py-2 rounded-lg bg-amber-100 text-amber-950">Place tentative hold</button>
-          <button type="button" onClick={() => placeHold('Confirmed')} className="px-4 py-2 rounded-lg bg-green-700 text-white">Confirm and block calendar</button>
+          <AdminButton type="button" variant="secondary" onClick={() => placeHold('Tentative')}>Place tentative hold</AdminButton>
+          <AdminButton type="button" onClick={() => placeHold('Confirmed')}>Confirm and block calendar</AdminButton>
           {booking && booking.status !== 'Cancelled' && (
-            <button type="button" onClick={() => placeHold('Cancelled')} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800">Cancel booking</button>
+            <AdminButton type="button" variant="danger" onClick={() => placeHold('Cancelled')}>Cancel booking</AdminButton>
           )}
           {booking && booking.status === 'Cancelled' && (
-            <button type="button" onClick={restoreBooking} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700">Restore booking</button>
+            <AdminButton type="button" variant="secondary" onClick={restoreBooking}>Restore booking</AdminButton>
           )}
           {booking && (
-            <Link href={`/admin/bookings/${booking.id}`} className={`px-4 py-2 ${booking.status === 'Cancelled' ? 'text-gray-500' : 'text-blue-700'}`}>
+            <Link href={`/admin/bookings/${booking.id}`} className={adminButtonClass('secondary')}>
               Open {booking.status.toLowerCase()} booking
             </Link>
           )}

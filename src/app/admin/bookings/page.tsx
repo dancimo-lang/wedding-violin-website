@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { adminButtonClass } from '@/components/admin/AdminButton';
 import { Plus } from 'lucide-react';
 import { clientLabel, firstClient, type ClientInfo } from '@/lib/bookings/client-label';
 
@@ -90,14 +91,14 @@ export default function BookingsPage() {
         </label>
         <Link
           href="/admin/calendar"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          className={adminButtonClass('primary', 'md', 'gap-2')}
         >
           <Plus size={20} />
           Add on calendar
         </Link>
         <Link
           href="/admin/bookings/existing"
-          className="flex items-center gap-2 border border-blue-600 text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg"
+          className={adminButtonClass('secondary', 'md', 'gap-2')}
         >
           <Plus size={20} />
           Add existing booking
@@ -150,7 +151,7 @@ export default function BookingsPage() {
                     <td className="py-4 px-6">
                       <Link
                         href={`/admin/bookings/${booking.id}`}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        className={adminButtonClass('secondary', 'sm')}
                       >
                         View
                       </Link>

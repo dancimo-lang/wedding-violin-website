@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { LeadFields } from '@/components/admin/LeadFields';
 import { postBookingStatus } from '@/lib/booking-status-client';
 import { emptyLeadDraft, leadWritePayload, type LeadDraft } from '@/lib/leads';
@@ -138,9 +139,9 @@ export default function NewLeadPage() {
           <Link href="/admin/leads" className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={20} /></Link>
           <h2 className="text-3xl font-bold text-gray-900">New lead</h2>
         </div>
-        <button type="submit" disabled={saving || Boolean(savedId)} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
+        <AdminButton type="submit" disabled={saving || Boolean(savedId)}>
           {saving ? 'Saving...' : 'Save lead'}
-        </button>
+        </AdminButton>
       </div>
       {error && (
         <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">

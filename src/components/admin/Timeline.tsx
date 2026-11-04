@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { fieldClass } from '@/lib/leads';
 
 export type ActivityItem = {
@@ -76,9 +77,9 @@ export function Timeline({
           onChange={(event) => setBody(event.target.value)}
           placeholder="What happened?"
         />
-        <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
+        <AdminButton type="submit" disabled={saving}>
           {saving ? 'Adding...' : 'Add'}
-        </button>
+        </AdminButton>
       </form>
       {error && <p className="text-sm text-red-700 mb-4">{error}</p>}
       {events.length === 0 ? (

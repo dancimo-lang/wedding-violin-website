@@ -1,3 +1,4 @@
+import { AdminButton, adminButtonClass } from '@/components/admin/AdminButton';
 import type { GoogleStatusView } from '@/lib/google/status';
 
 export function GoogleConnectionCard({
@@ -63,29 +64,19 @@ export function GoogleConnectionCard({
           <>
             {/* Full-page navigation so the server can redirect to Google. */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-            <a href="/api/admin/google/connect" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            <a href="/api/admin/google/connect" className={adminButtonClass('primary')}>
               {view.needsReconnect ? 'Reconnect Google' : 'Connect Google Calendar'}
             </a>
           </>
         )}
         {view.connected && (
           <>
-            <button
-              type="button"
-              onClick={onSync}
-              disabled={pending}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 disabled:text-gray-400"
-            >
+            <AdminButton type="button" variant="secondary" onClick={onSync} disabled={pending}>
               {pending ? 'Syncing...' : 'Sync now'}
-            </button>
-            <button
-              type="button"
-              onClick={onDisconnect}
-              disabled={pending}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 disabled:text-gray-400"
-            >
+            </AdminButton>
+            <AdminButton type="button" variant="danger" onClick={onDisconnect} disabled={pending}>
               Disconnect
-            </button>
+            </AdminButton>
           </>
         )}
       </div>
