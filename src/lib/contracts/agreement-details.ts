@@ -410,7 +410,7 @@ export function buildSavedAgreement(input: {
     travelFee: input.agreement.travelFee || '0',
     additionalFees: input.agreement.additionalFees || '0',
     additionalFeesDescription: input.agreement.additionalFeesDescription,
-    discount: fullWedding ? '0' : input.agreement.discount || '0',
+    discount: input.agreement.discount || '0',
     eventType: privateEvent ? input.agreement.eventType : '',
     performanceDescription: privateEvent ? input.agreement.performanceDescription : '',
     performanceFee: privateEvent ? input.agreement.performanceFee : '',
@@ -467,7 +467,7 @@ export function agreementGaps(input: SavedAgreement): AgreementGap[] {
   }
   const travel = feeGap(AGREEMENT_FIELD_IDS.travelFee, 'Travel fee', saved.travelFee);
   const additional = feeGap(AGREEMENT_FIELD_IDS.additionalFees, 'Additional fees', saved.additionalFees);
-  const discount = saved.packageId === 'FULL' ? null : feeGap(AGREEMENT_FIELD_IDS.discount, 'Discount', saved.discount);
+  const discount = feeGap(AGREEMENT_FIELD_IDS.discount, 'Discount', saved.discount);
   for (const item of [travel, additional, discount]) {
     if (item) gaps.push(item);
   }
@@ -518,7 +518,7 @@ export function contractRequestBody(
     travelFee: saved.travelFee,
     additionalFees: saved.additionalFees,
     additionalFeesDescription: saved.additionalFeesDescription.trim().slice(0, 80),
-    discount: fullWedding ? '0' : saved.discount,
+    discount: saved.discount,
     client1Name: saved.client1Name,
     client2Name: saved.client2Name,
     weddingDate: saved.weddingDate,

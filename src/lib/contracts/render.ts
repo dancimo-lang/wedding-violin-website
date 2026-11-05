@@ -433,7 +433,7 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   };
 
   if (fields.templateId === 'private-event') {
-    return fillTemplate(privateEventTemplate, shown({
+    return fillTemplate(omitZeroDiscount(privateEventTemplate, fields.discountCents), shown({
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       EVENT_TYPE: filled(fields.eventType),
       EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -458,7 +458,8 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
         : packageSpecific
           ? weddingMusicTemplateForPackage(fields.packageId)
           : weddingMusicTemplate;
-    const template = fields.renderEdition === 4 ? withWeddingSchedule(baseTemplate, performanceSchedule(fields)) : baseTemplate;
+    const scheduled = fields.renderEdition === 4 ? withWeddingSchedule(baseTemplate, performanceSchedule(fields)) : baseTemplate;
+    const template = omitZeroDiscount(scheduled, fields.discountCents);
     return fillTemplate(template, shown({
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       WEDDING_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -553,23 +554,38 @@ const FULL_BALANCE_ORIGINAL =
  * Owner-approved wording for a full wedding agreement with a travel or additional fee.
  * With both fees at zero the text is returned unchanged, byte for byte.
  */
+const DISCOUNT_LINE = 'Discount (if applicable): \u2212${{DISCOUNT}}\n';
+
+/** The discount line is printed only when the amount is greater than zero. */
+function omitZeroDiscount(template: string, discountCents: number): string {
+  if (!template.includes(DISCOUNT_LINE)) throw new Error('Agreement is missing its discount line.');
+  if (discountCents > 0) return template;
+  return template.replace(DISCOUNT_LINE, '');
+}
+
 function fullWeddingFees(body: string, fields: StoredRenderFields): string {
-  if (!(fields.travelFeeCents > 0) && !(fields.additionalFeesCents > 0)) return body;
-  for (const part of [FULL_FEE_ORIGINAL, FULL_TRAVEL_ORIGINAL, FULL_PAYMENT_ORIGINAL, FULL_BALANCE_ORIGINAL]) {
+  const hasTravelOrExtra = fields.travelFeeCents > 0 || fields.additionalFeesCents > 0;
+  const hasDiscount = fields.discountCents > 0;
+  if (!hasTravelOrExtra && !hasDiscount) return body;
+  for (const part of [FULL_FEE_ORIGINAL, FULL_PAYMENT_ORIGINAL, FULL_BALANCE_ORIGINAL]) {
     if (!body.includes(part)) throw new Error('Full wedding agreement fee wording changed.');
   }
+  if (hasTravelOrExtra && !body.includes(FULL_TRAVEL_ORIGINAL)) throw new Error('Full wedding agreement fee wording changed.');
+  const discountLine = hasDiscount ? `Discount (if applicable): \u2212$${formatMoney(fields.discountCents)}\n` : '';
   const fees =
     `Package Fee: $${formatMoney(fields.packageFeeCents)}\n` +
     `Travel Fee: $${formatMoney(fields.travelFeeCents)}\n` +
     `Additional Agreed Fees: $${formatMoney(fields.additionalFeesCents)}${additionalFeesNote(fields)}\n` +
+    discountLine +
     `Total Contract Price: $${formatMoney(fields.totalCents)}\n`;
   const payment = `A retainer equal to fifty percent (50%) of the Total Contract Price, $${formatMoney(fields.retainerCents)}, is due upon signing this Agreement.`;
   const balance = `The remaining fifty percent (50%) of the Total Contract Price, $${formatMoney(fields.balanceCents)}, is due no later than thirty (30) days before the wedding date.`;
-  return body
+  let next = body
     .replace(FULL_FEE_ORIGINAL, fees)
-    .replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT)
     .replace(FULL_PAYMENT_ORIGINAL, payment)
     .replace(FULL_BALANCE_ORIGINAL, balance);
+  if (hasTravelOrExtra) next = next.replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT);
+  return next;
 }
 
 export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields, keyof FeeSummary | 'templateId' | 'packageId'> & { templateId?: never }): StoredRenderFields {

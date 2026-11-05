@@ -53,7 +53,7 @@ export function AgreementFields({
     packageId: value.packageId,
     travelFeeCents: cents(value.travelFee),
     additionalFeesCents: cents(value.additionalFees),
-    discountCents: cents(fullWedding ? '0' : value.discount),
+    discountCents: cents(value.discount),
     weddingDateIso: value.eventDate,
     performanceFeeCents: privateEvent ? cents(value.performanceFee) : undefined,
   });
@@ -230,9 +230,8 @@ export function AgreementFields({
           <FieldLabel label="Discount">
             <input
               id={AGREEMENT_FIELD_IDS.discount}
-              className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-600`}
-              value={fullWedding ? '0' : value.discount}
-              disabled={fullWedding}
+              className={inputClass}
+              value={value.discount}
               onChange={(event) => set({ discount: event.target.value })}
             />
           </FieldLabel>
@@ -249,7 +248,7 @@ export function AgreementFields({
         </FieldLabel>
         {fullWedding ? (
           <p className="text-sm font-normal text-gray-700">
-            The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added to the total, and the retainer and balance are each 50% of that total. This agreement has no discount.
+            The package fee is $3,000.00. A travel fee or additional fees (for example a holiday fee) are added, and a discount is subtracted. The retainer and balance are each 50% of that total.
           </p>
         ) : null}
         <FeeReadout

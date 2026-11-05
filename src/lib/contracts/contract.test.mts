@@ -120,10 +120,14 @@ test('retainer, balance, and the due date stay exact', () => {
     packageId: 'FULL',
     travelFeeCents: 0,
     additionalFeesCents: 0,
-    discountCents: 100,
+    discountCents: 10000,
     weddingDateIso: '2026-06-15',
   });
-  assert.ok('error' in discountedFull);
+  assert.ok(!('error' in discountedFull));
+  if ('error' in discountedFull) return;
+  assert.equal(discountedFull.totalCents, 290000);
+  assert.equal(discountedFull.retainerCents, 145000);
+  assert.equal(discountedFull.balanceCents, 145000);
 
   const tooMuchDiscount = computeFees({
     packageId: 'A',
@@ -888,6 +892,19 @@ test('full wedding with travel and additional fees uses the approved wording and
   assert.equal(summary.retainerCents + summary.balanceCents, 355000);
   const noNote = renderContract({ ...fields, additionalFeesDescription: undefined }, UNSIGNED);
   assert.ok(noNote.includes('Additional Agreed Fees: $300.00\nTotal Contract Price'));
+  assert.equal(text.includes('Discount (if applicable)'), false);
+  const withDiscount = computeFees({ packageId: 'FULL', travelFeeCents: 0, additionalFeesCents: 0, discountCents: 10000, weddingDateIso: '2026-06-15' });
+  assert.ok(!('error' in withDiscount));
+  if ('error' in withDiscount) return;
+  const discounted = renderContract(feeSnapshot(withDiscount, { ...rest } as never), UNSIGNED);
+  assert.ok(discounted.includes(
+    '2. Event Fee\nPackage Fee: $3,000.00\nTravel Fee: $0.00\nAdditional Agreed Fees: $0.00\nDiscount (if applicable): −$100.00\nTotal Contract Price: $2,900.00\nThis fee includes:\n',
+  ));
+  assert.ok(discounted.includes('A retainer equal to fifty percent (50%) of the Total Contract Price, $1,450.00, is due upon signing this Agreement.'));
+  assert.ok(discounted.includes('The remaining fifty percent (50%) of the Total Contract Price, $1,450.00, is due no later than thirty (30) days before the wedding date.'));
+  assert.ok(discounted.includes('No additional travel fees shall apply unless the event location'));
+  const zeroDiscount = renderContract({ ...sampleFields, discountCents: 0, totalCents: 52500, retainerCents: 26250, balanceCents: 26250 }, UNSIGNED);
+  assert.equal(zeroDiscount.includes('Discount (if applicable)'), false);
 });
 
 test('wedding music agreement shows the additional fee description only when set', () => {
