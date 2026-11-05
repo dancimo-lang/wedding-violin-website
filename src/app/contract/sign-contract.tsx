@@ -130,16 +130,22 @@ export function SignContract() {
   const interactiveText = useMemo(() => {
     if (!fields || !view?.canSign) return view?.text ?? '';
     try {
-      return renderContract(fields, {
+      return renderContract(
+      {
+        ...fields,
+        client1Name: client1Name.trim() || fields.client1Name,
+        client2Name: client2Name.trim(),
+      },
+      {
         ...UNSIGNED,
         client1SignedName: 'x',
-        client2SignedName: 'x',
+        client2SignedName: client2Name.trim() ? 'x' : '',
         display: signingDisplay(),
       });
     } catch {
       return view.text;
     }
-  }, [fields, view]);
+  }, [client1Name, client2Name, fields, view]);
 
   const finished = signedFacts ?? (view && !view.canSign ? view : null);
   const interactive = Boolean(view?.canSign && !signedFacts);
@@ -172,16 +178,16 @@ export function SignContract() {
     );
     if (!signer) return null;
     const slots = SIGNER_SLOTS[signer];
-    const label = signer === 'c1' ? 'Client 1' : 'Client 2';
-    const required = signer === 'c1' || Boolean(client2Name.trim());
+    const label = signer === 'c1' ? 'Client 1' : "Partner's name (optional)";
+    const required = signer === 'c1';
     if (name === slots.name) {
       return (
         <input
           id={signer === 'c1' ? 'sign-here' : undefined}
           className="contract-inline-input scroll-mt-24"
           style={{ width: '100%', maxWidth: '22rem' }}
-          aria-label={`${label} printed full legal name`}
-          placeholder={signer === 'c1' ? 'Full legal name' : 'Full legal name (if applicable)'}
+          aria-label={signer === 'c1' ? 'Client 1 printed full legal name' : "Partner's name (optional)"}
+          placeholder={signer === 'c1' ? 'Full legal name' : "Partner's name (optional)"}
           aria-invalid={(showMissing && signer === 'c1' && !client1Name.trim()) || undefined}
           value={names[signer]}
           onChange={(event) => setName(signer, event.target.value)}
@@ -235,7 +241,7 @@ export function SignContract() {
       setSignError('Client 1: click "Click to sign" in the signature section to sign.');
       return;
     }
-    if (client2Name.trim() && !adopted.c2) {
+    if (hasClient2Block(fields) && client2Name.trim() && !adopted.c2) {
       setSignError('Client 2: click "Click to sign" in the signature section to sign.');
       return;
     }
@@ -326,6 +332,16 @@ export function SignContract() {
                     void sign();
                   }}
                 >
+                  <label className="block font-sans text-sm font-semibold text-gray-900">
+                    {"Partner's name (optional)"}
+                    <input
+                      className="mt-1 w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 font-normal text-gray-900"
+                      value={client2Name}
+                      onChange={(event) => setName('c2', event.target.value)}
+                      autoComplete="name"
+                      aria-label="Partner's name (optional)"
+                    />
+                  </label>
                   <ContractText
                     className="md:max-h-none md:overflow-visible"
                     text={documentText}

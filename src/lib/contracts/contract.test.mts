@@ -228,6 +228,20 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   );
   assert.match(full, /☐ The Client opts out of promotional use of photographs and video clips from the event\./);
   assert.match(full, /Alex Rivera and Jordan Lee/);
+  const oneClient = renderContract({ ...sampleFields, client2Name: '' }, { ...signedOverlay, client2SignedName: '' });
+  assert.match(oneClient, /Client\(s\):\nAlex Rivera\n/);
+  assert.doesNotMatch(oneClient, /Alex Rivera and/);
+  const oneFull = renderContract(
+    { ...sampleFields, templateId: 'full-wedding', packageId: 'FULL', renderEdition: 2, client2Name: '' },
+    { ...signedOverlay, client2SignedName: '' },
+  );
+  assert.match(oneFull, /Client\(s\):\nAlex Rivera\n/);
+  assert.doesNotMatch(oneFull, /Alex Rivera and/);
+  const bothFull = renderContract(
+    { ...sampleFields, templateId: 'full-wedding', packageId: 'FULL', renderEdition: 2 },
+    signedOverlay,
+  );
+  assert.match(bothFull, /Client\(s\):\nAlex Rivera and Jordan Lee\n/);
   assert.match(full, /Event Date: June 15, 2026/);
   assert.match(full, /Event Time: 4:00 PM to 4:30 PM/);
 
