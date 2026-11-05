@@ -2,6 +2,7 @@ import { AgreementFields, FieldLabel, FormSection } from '@/components/admin/Agr
 import { AGREEMENT_FIELD_IDS, applyFormValue, formValueFromDraft } from '@/lib/contracts/agreement-details';
 import {
   CONTRACT_STATUSES,
+  defaultCallBy,
   fieldClass,
   HOW_FOUND_OPTIONS,
   INQUIRY_SOURCES,
@@ -24,6 +25,8 @@ export function LeadFields({
   bookingId?: string | null;
 }) {
   const set = <K extends keyof LeadDraft>(key: K, value: LeadDraft[K]) => onChange({ ...draft, [key]: value });
+  const callBy = defaultCallBy(draft);
+  const callByIsSuggested = !draft.nextFollowUp.trim() && Boolean(callBy);
 
   return (
     <div className="space-y-4">
@@ -70,15 +73,38 @@ export function LeadFields({
         }
       />
       <FormSection title="Follow-up">
-        <div className="grid gap-4 md:grid-cols-2">
-          <FieldLabel label="How this lead was received" required>
+        <FieldLabel label="Call by">
+          <input
+            type="date"
+            className={`${inputClass} max-w-xs`}
+            value={callBy}
+            onChange={(event) => set('nextFollowUp', event.target.value)}
+          />
+        </FieldLabel>
+        {callByIsSuggested ? (
+          <p className="text-sm font-normal text-gray-700">Two days after this inquiry arrived. It is saved when you save the lead.</p>
+        ) : null}
+        <FieldLabel label="Call notes">
+          <textarea className={inputClass} rows={8} value={draft.message} onChange={(event) => set('message', event.target.value)} />
+        </FieldLabel>
+        <div>
+          <p className="text-sm font-semibold text-gray-900">What they asked for</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm font-normal text-gray-800">
+            {draft.requestedServices.trim() || 'Not listed.'}
+          </p>
+        </div>
+      </FormSection>
+      <details className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <summary className="cursor-pointer text-base font-semibold text-gray-900">More details</summary>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <FieldLabel label="How this lead was received">
             <select className={inputClass} value={draft.inquirySource} onChange={(event) => set('inquirySource', event.target.value)}>
               {INQUIRY_SOURCES.map((source) => (
                 <option key={source.value} value={source.value}>{source.label}</option>
               ))}
             </select>
           </FieldLabel>
-          <FieldLabel label="Lead status" required>
+          <FieldLabel label="Lead status">
             <select className={inputClass} value={draft.status} onChange={(event) => set('status', event.target.value)}>
               {LEAD_STATUSES.map((status) => (
                 <option key={status} value={status}>{status}</option>
@@ -120,9 +146,6 @@ export function LeadFields({
           <FieldLabel label="Quoted price">
             <input className={inputClass} value={draft.quotedPrice} placeholder="Optional" onChange={(event) => set('quotedPrice', event.target.value)} />
           </FieldLabel>
-          <FieldLabel label="Next follow-up">
-            <input type="date" className={inputClass} value={draft.nextFollowUp} onChange={(event) => set('nextFollowUp', event.target.value)} />
-          </FieldLabel>
           <FieldLabel label="Contract status">
             <select className={inputClass} value={draft.contractStatus} onChange={(event) => set('contractStatus', event.target.value)}>
               {CONTRACT_STATUSES.map((status) => (
@@ -137,24 +160,8 @@ export function LeadFields({
               ))}
             </select>
           </FieldLabel>
-          <div className="md:col-span-2">
-            <FieldLabel label="Requested services">
-              <textarea
-                className={inputClass}
-                rows={2}
-                value={draft.requestedServices}
-                placeholder="Ceremony violin, cocktail hour, reception"
-                onChange={(event) => set('requestedServices', event.target.value)}
-              />
-            </FieldLabel>
-          </div>
-          <div className="md:col-span-2">
-            <FieldLabel label="Inquiry notes">
-              <textarea className={inputClass} rows={4} value={draft.message} onChange={(event) => set('message', event.target.value)} />
-            </FieldLabel>
-          </div>
         </div>
-      </FormSection>
+      </details>
     </div>
   );
 }

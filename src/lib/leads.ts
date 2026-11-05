@@ -1,5 +1,6 @@
 import { emptyAgreement, readAgreement, type AgreementDetails } from '@/lib/contracts/agreement-details';
 import { guessPackageId, isPackageId } from '@/lib/contracts/packages';
+import { addCalendarDays, zonedClock } from '@/lib/schedule/time';
 
 export const LEAD_STATUSES = [
   'New Inquiry',
@@ -59,6 +60,8 @@ export type LeadDraft = {
   contractStatus: string;
   paymentStatus: string;
   nextFollowUp: string;
+  /** Pacific calendar day the inquiry arrived. Not its own column. Used only to suggest Call by. */
+  receivedOn: string;
   performersNeeded: string;
   agreement: AgreementDetails;
 };
@@ -77,7 +80,7 @@ export function emptyLeadDraft(): LeadDraft {
     clientEmail: '',
     clientPhone: '',
     partnerName: '',
-    inquirySource: 'phone',
+    inquirySource: 'website',
     status: 'New Inquiry',
     eventDate: '',
     venueName: '',
@@ -94,6 +97,7 @@ export function emptyLeadDraft(): LeadDraft {
     contractStatus: 'Not Sent',
     paymentStatus: 'Unpaid',
     nextFollowUp: '',
+    receivedOn: '',
     performersNeeded: '1',
     agreement: { ...emptyAgreement(), packageId: 'A' },
   };
@@ -178,8 +182,8 @@ export function leadWritePayload(draft: LeadDraft) {
       partner_name: blank(draft.partnerName),
     },
     lead: {
-      status: draft.status,
-      inquiry_source: draft.inquirySource || null,
+      status: draft.status.trim() || 'New Inquiry',
+      inquiry_source: draft.inquirySource.trim() || 'website',
       event_date: draft.eventDate || null,
       venue_name: blank(draft.venueName),
       venue_address: blank(draft.venueAddress),
@@ -196,7 +200,7 @@ export function leadWritePayload(draft: LeadDraft) {
       quoted_price: draft.quotedPrice.trim() ? numberOrNull(draft.quotedPrice) : null,
       contract_status: draft.contractStatus,
       payment_status: draft.paymentStatus,
-      next_follow_up_date: draft.nextFollowUp || null,
+      next_follow_up_date: defaultCallBy(draft) || null,
       performers_needed: performers,
     },
   };
@@ -214,7 +218,7 @@ export function draftFromRecords(
     clientEmail: client?.email || '',
     clientPhone: client?.phone || '',
     partnerName: client?.partner_name || '',
-    inquirySource: text('inquiry_source') || 'other',
+    inquirySource: text('inquiry_source') || 'website',
     status: text('status') || 'New Inquiry',
     eventDate: text('event_date'),
     venueName: text('venue_name'),
@@ -230,10 +234,39 @@ export function draftFromRecords(
     quotedPrice: text('quoted_price'),
     contractStatus: text('contract_status') || 'Not Sent',
     paymentStatus: text('payment_status') || 'Unpaid',
-    nextFollowUp: text('next_follow_up_date'),
+    nextFollowUp: isoDate(text('next_follow_up_date')),
+    receivedOn: receivedOnFromRecord(lead.created_at),
     performersNeeded: text('performers_needed') || '1',
     agreement,
   };
+}
+
+function isoDate(value: string) {
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+  return match ? match[1] : '';
+}
+
+/** Calendar day the inquiry arrived, in Pacific Time. */
+export function receivedOnFromRecord(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const plain = isoDate(value);
+  if (plain && value.trim().length === 10) return plain;
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return plain;
+  return zonedClock(parsed).date;
+}
+
+/**
+ * Call by. A saved date wins. A website inquiry with none yet shows two days after it arrived.
+ * The suggestion is not written until the lead is saved.
+ */
+export function defaultCallBy(draft: { nextFollowUp: string; inquirySource: string; receivedOn: string }): string {
+  const saved = isoDate(draft.nextFollowUp);
+  if (saved) return saved;
+  if ((draft.inquirySource.trim() || 'website') !== 'website') return '';
+  const received = isoDate(draft.receivedOn);
+  if (!received) return '';
+  return addCalendarDays(received, 2);
 }
 
 function agreementFromLead(lead: Record<string, unknown>): AgreementDetails {
