@@ -167,7 +167,7 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
               <div
                 className={
                   sideBySide
-                    ? 'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]'
+                    ? 'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)]'
                     : hasVideo
                       ? 'mx-auto w-full max-w-[900px]'
                       : 'w-full'
