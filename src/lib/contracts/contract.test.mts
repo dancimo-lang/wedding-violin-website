@@ -360,7 +360,19 @@ test('a backwards ceremony or cocktail time blocks sending', () => {
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:00', cocktailStart: '', cocktailEnd: '' }),
+    'Ceremony end is the same as ceremony start. Fix the times before sending this agreement.',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '18:00', ceremonyEnd: '18:30', cocktailStart: '18:30', cocktailEnd: '19:30', receptionStart: '19:30', receptionEnd: '00:00' }),
     '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '18:00', ceremonyEnd: '19:00', cocktailStart: '', cocktailEnd: '', receptionStart: '19:00', receptionEnd: '01:00' }),
+    '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '18:00', ceremonyEnd: '07:00', cocktailStart: '', cocktailEnd: '' }),
+    'Ceremony runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '', cocktailStart: '18:00', cocktailEnd: '' }),
@@ -368,23 +380,23 @@ test('a backwards ceremony or cocktail time blocks sending', () => {
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '17:00', cocktailEnd: '18:00' }),
-    'Ceremony end is before ceremony start. Fix the times before sending this agreement.',
+    'Ceremony runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '18:00', cocktailEnd: '17:00' }),
-    'Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
+    'Cocktail hour runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '18:00', cocktailEnd: '17:00' }),
-    'Ceremony end is before ceremony start. Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
+    'Ceremony runs longer than 12 hours. Cocktail hour runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '17:00', cocktailEnd: '18:00', receptionStart: '19:00', receptionEnd: '18:00' }),
-    'Reception end is before reception start. Fix the times before sending this agreement.',
+    'Reception runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '', cocktailEnd: '', preludeStart: '16:00', preludeEnd: '15:30' }),
-    'Prelude end is before prelude start. Fix the times before sending this agreement.',
+    'Prelude runs longer than 12 hours. Fix the times before sending this agreement.',
   );
 });
 
@@ -664,6 +676,8 @@ test('sending is blocked until the required event details are filled in', () => 
   assert.match(fullSchedule, /Ceremony: 4:00 PM \u2013 4:30 PM/);
   assert.match(fullSchedule, /Cocktail Hour: 5:00 PM \u2013 6:00 PM/);
   assert.match(fullSchedule, /Reception: 6:00 PM \u2013 10:00 PM/);
+  const overnight = renderContract({ ...fullFields, renderEdition: 4, receptionEnd: '00:00' }, signedOverlay);
+  assert.match(overnight, /Reception: 6:00 PM \u2013 12:00 AM/);
   assert.equal(fullSchedule.split('Ceremony: 4:00 PM \u2013 4:30 PM').length - 1, 1);
 });
 

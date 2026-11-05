@@ -227,11 +227,15 @@ export function AgreementFields({
               onChange={(event) => set({ additionalFees: event.target.value })}
             />
           </FieldLabel>
-          {!fullWedding ? (
-            <FieldLabel label="Discount">
-              <input id={AGREEMENT_FIELD_IDS.discount} className={inputClass} value={value.discount} onChange={(event) => set({ discount: event.target.value })} />
-            </FieldLabel>
-          ) : null}
+          <FieldLabel label="Discount">
+            <input
+              id={AGREEMENT_FIELD_IDS.discount}
+              className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-600`}
+              value={fullWedding ? '0' : value.discount}
+              disabled={fullWedding}
+              onChange={(event) => set({ discount: event.target.value })}
+            />
+          </FieldLabel>
         </div>
         <FieldLabel label="Additional fees description (optional, shown in the agreement)">
           <input

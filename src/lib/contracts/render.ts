@@ -153,8 +153,34 @@ function clockMinutes(value: string): number | null {
   return hour * 60 + minute;
 }
 
+/** A range longer than this is treated as a mistake, not an overnight booking. */
+export const MAX_RANGE_MINUTES = 12 * 60;
+
 /**
- * A message when an entered end is earlier than its start. A blank side is not a range.
+ * Minutes from start to end. An earlier end clock crosses midnight.
+ * Equal clocks are 0. Null when either side is missing.
+ */
+export function clockSpanMinutes(start: string, end: string): number | null {
+  const startMinutes = clockMinutes(start);
+  const endMinutes = clockMinutes(end);
+  if (startMinutes == null || endMinutes == null) return null;
+  if (endMinutes === startMinutes) return 0;
+  if (endMinutes > startMinutes) return endMinutes - startMinutes;
+  return endMinutes + 24 * 60 - startMinutes;
+}
+
+function rangeProblem(start: string, end: string, label: string): string {
+  const span = clockSpanMinutes(start, end);
+  if (span == null) return '';
+  const lower = `${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+  if (span === 0) return `${label} end is the same as ${lower} start.`;
+  if (span > MAX_RANGE_MINUTES) return `${label} runs longer than 12 hours.`;
+  return '';
+}
+
+/**
+ * A message when a start/end pair is empty of length, or too long to be an overnight range.
+ * Ending at midnight or in the next morning is allowed. A blank side is not a range.
  * The closing sentence stays the send wording unless the caller is the signing page.
  */
 export function performanceTimeOrderMessage(
@@ -170,27 +196,12 @@ export function performanceTimeOrderMessage(
   },
   closing = 'Fix the times before sending this agreement.',
 ): string {
-  const lines: string[] = [];
-  const ceremonyStart = clockMinutes(input.ceremonyStart);
-  const ceremonyEnd = clockMinutes(input.ceremonyEnd);
-  const cocktailStart = clockMinutes(input.cocktailStart);
-  const cocktailEnd = clockMinutes(input.cocktailEnd);
-  const preludeStart = input.preludeStart ? clockMinutes(input.preludeStart) : null;
-  const preludeEnd = input.preludeEnd ? clockMinutes(input.preludeEnd) : null;
-  const receptionStart = input.receptionStart ? clockMinutes(input.receptionStart) : null;
-  const receptionEnd = input.receptionEnd ? clockMinutes(input.receptionEnd) : null;
-  if (ceremonyStart != null && ceremonyEnd != null && ceremonyEnd < ceremonyStart) {
-    lines.push('Ceremony end is before ceremony start.');
-  }
-  if (cocktailStart != null && cocktailEnd != null && cocktailEnd < cocktailStart) {
-    lines.push('Cocktail hour end is before cocktail hour start.');
-  }
-  if (preludeStart != null && preludeEnd != null && preludeEnd < preludeStart) {
-    lines.push('Prelude end is before prelude start.');
-  }
-  if (receptionStart != null && receptionEnd != null && receptionEnd < receptionStart) {
-    lines.push('Reception end is before reception start.');
-  }
+  const lines = [
+    rangeProblem(input.ceremonyStart, input.ceremonyEnd, 'Ceremony'),
+    rangeProblem(input.cocktailStart, input.cocktailEnd, 'Cocktail hour'),
+    rangeProblem(input.preludeStart ?? '', input.preludeEnd ?? '', 'Prelude'),
+    rangeProblem(input.receptionStart ?? '', input.receptionEnd ?? '', 'Reception'),
+  ].filter(Boolean);
   if (lines.length === 0) return '';
   return `${lines.join(' ')} ${closing}`;
 }

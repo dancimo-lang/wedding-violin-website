@@ -1,7 +1,7 @@
 import { missingRequiredDetails, type CoupleDetailSource, type DetailKey } from './event-details';
 import { computeFees } from './money';
 import { guessPackageId, isPackageId, type PackageId } from './packages';
-import { performanceTimeOrderMessage } from './render';
+import { clockSpanMinutes, MAX_RANGE_MINUTES, performanceTimeOrderMessage } from './render';
 
 /**
  * Extra agreement fields that have no lead or booking column.
@@ -264,46 +264,38 @@ export function preludeAfterCeremonyChange(
   return preludeFromCeremony(nextCeremonyStart) ?? { preludeStart: '', preludeEnd: '' };
 }
 
-function earliestClock(values: string[]) {
-  let best = '';
-  let bestMinutes = Number.POSITIVE_INFINITY;
-  for (const value of values) {
-    const minutes = clockMinutes(value);
-    if (minutes == null || minutes >= bestMinutes) continue;
-    bestMinutes = minutes;
-    best = value.trim().slice(0, 5);
-  }
-  return best;
-}
-
-function latestClock(values: string[]) {
-  let best = '';
-  let bestMinutes = -1;
-  for (const value of values) {
-    const minutes = clockMinutes(value);
-    if (minutes == null || minutes <= bestMinutes) continue;
-    bestMinutes = minutes;
-    best = value.trim().slice(0, 5);
-  }
-  return best;
+function withinRange(anchor: string, clock: string): number | null {
+  const span = clockSpanMinutes(anchor, clock);
+  if (span == null || span <= 0 || span > MAX_RANGE_MINUTES) return null;
+  return span;
 }
 
 /**
  * Calendar block for this event. Ceremony start and end stay on the agreement.
- * The performance columns cover the whole time Daniel is playing, through cocktail or reception when those are later.
+ * The performance columns cover the whole time Daniel is playing, through cocktail or reception,
+ * including an end that crosses midnight.
  */
 export function calendarPerformanceTimes(value: AgreementFormValue): { start: string; end: string } {
   const privateEvent = value.packageId === 'EVENT';
+  const ceremonyStart = value.ceremonyStart.trim();
+  const preludeStart = privateEvent ? '' : value.preludeStart.trim();
+  const start = ceremonyStart && withinRange(preludeStart, ceremonyStart) != null ? preludeStart : ceremonyStart || preludeStart;
   const receptionStart = value.packageId === 'FULL' && !value.receptionStart.trim() ? value.cocktailEnd : value.receptionStart;
-  return {
-    start: earliestClock([value.ceremonyStart, privateEvent ? '' : value.preludeStart]) || value.ceremonyStart.trim(),
-    end:
-      latestClock([
-        value.ceremonyEnd,
-        privateEvent ? '' : value.cocktailEnd,
-        value.packageId === 'FULL' ? value.receptionEnd || receptionStart : '',
-      ]) || value.ceremonyEnd.trim(),
-  };
+  const ends = [
+    value.ceremonyEnd,
+    privateEvent ? '' : value.cocktailEnd,
+    value.packageId === 'FULL' ? value.receptionEnd || receptionStart : '',
+  ];
+  let end = value.ceremonyEnd.trim();
+  let best = withinRange(start, end) ?? -1;
+  for (const candidate of ends) {
+    const span = withinRange(start, candidate);
+    if (span != null && span >= best) {
+      best = span;
+      end = candidate.trim().slice(0, 5);
+    }
+  }
+  return { start: start.slice(0, 5), end: end.slice(0, 5) };
 }
 
 /** Full wedding reception begins at the cocktail-hour end until a different time is entered. */
