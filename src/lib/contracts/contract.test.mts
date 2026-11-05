@@ -120,10 +120,14 @@ test('retainer, balance, and the due date stay exact', () => {
     packageId: 'FULL',
     travelFeeCents: 0,
     additionalFeesCents: 0,
-    discountCents: 100,
+    discountCents: 10000,
     weddingDateIso: '2026-06-15',
   });
-  assert.ok('error' in discountedFull);
+  assert.ok(!('error' in discountedFull));
+  if ('error' in discountedFull) return;
+  assert.equal(discountedFull.totalCents, 290000);
+  assert.equal(discountedFull.retainerCents, 145000);
+  assert.equal(discountedFull.balanceCents, 145000);
 
   const tooMuchDiscount = computeFees({
     packageId: 'A',
@@ -360,7 +364,19 @@ test('a backwards ceremony or cocktail time blocks sending', () => {
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:00', cocktailStart: '', cocktailEnd: '' }),
+    'Ceremony end is the same as ceremony start. Fix the times before sending this agreement.',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '18:00', ceremonyEnd: '18:30', cocktailStart: '18:30', cocktailEnd: '19:30', receptionStart: '19:30', receptionEnd: '00:00' }),
     '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '18:00', ceremonyEnd: '19:00', cocktailStart: '', cocktailEnd: '', receptionStart: '19:00', receptionEnd: '01:00' }),
+    '',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '18:00', ceremonyEnd: '07:00', cocktailStart: '', cocktailEnd: '' }),
+    'Ceremony runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '', cocktailStart: '18:00', cocktailEnd: '' }),
@@ -368,23 +384,23 @@ test('a backwards ceremony or cocktail time blocks sending', () => {
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '17:00', cocktailEnd: '18:00' }),
-    'Ceremony end is before ceremony start. Fix the times before sending this agreement.',
+    'Ceremony runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '18:00', cocktailEnd: '17:00' }),
-    'Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
+    'Cocktail hour runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '18:00', cocktailEnd: '17:00' }),
-    'Ceremony end is before ceremony start. Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
+    'Ceremony runs longer than 12 hours. Cocktail hour runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '17:00', cocktailEnd: '18:00', receptionStart: '19:00', receptionEnd: '18:00' }),
-    'Reception end is before reception start. Fix the times before sending this agreement.',
+    'Reception runs longer than 12 hours. Fix the times before sending this agreement.',
   );
   assert.equal(
     performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '', cocktailEnd: '', preludeStart: '16:00', preludeEnd: '15:30' }),
-    'Prelude end is before prelude start. Fix the times before sending this agreement.',
+    'Prelude runs longer than 12 hours. Fix the times before sending this agreement.',
   );
 });
 
@@ -664,6 +680,8 @@ test('sending is blocked until the required event details are filled in', () => 
   assert.match(fullSchedule, /Ceremony: 4:00 PM \u2013 4:30 PM/);
   assert.match(fullSchedule, /Cocktail Hour: 5:00 PM \u2013 6:00 PM/);
   assert.match(fullSchedule, /Reception: 6:00 PM \u2013 10:00 PM/);
+  const overnight = renderContract({ ...fullFields, renderEdition: 4, receptionEnd: '00:00' }, signedOverlay);
+  assert.match(overnight, /Reception: 6:00 PM \u2013 12:00 AM/);
   assert.equal(fullSchedule.split('Ceremony: 4:00 PM \u2013 4:30 PM').length - 1, 1);
 });
 
@@ -874,6 +892,19 @@ test('full wedding with travel and additional fees uses the approved wording and
   assert.equal(summary.retainerCents + summary.balanceCents, 355000);
   const noNote = renderContract({ ...fields, additionalFeesDescription: undefined }, UNSIGNED);
   assert.ok(noNote.includes('Additional Agreed Fees: $300.00\nTotal Contract Price'));
+  assert.equal(text.includes('Discount (if applicable)'), false);
+  const withDiscount = computeFees({ packageId: 'FULL', travelFeeCents: 0, additionalFeesCents: 0, discountCents: 10000, weddingDateIso: '2026-06-15' });
+  assert.ok(!('error' in withDiscount));
+  if ('error' in withDiscount) return;
+  const discounted = renderContract(feeSnapshot(withDiscount, { ...rest } as never), UNSIGNED);
+  assert.ok(discounted.includes(
+    '2. Event Fee\nPackage Fee: $3,000.00\nTravel Fee: $0.00\nAdditional Agreed Fees: $0.00\nDiscount (if applicable): −$100.00\nTotal Contract Price: $2,900.00\nThis fee includes:\n',
+  ));
+  assert.ok(discounted.includes('A retainer equal to fifty percent (50%) of the Total Contract Price, $1,450.00, is due upon signing this Agreement.'));
+  assert.ok(discounted.includes('The remaining fifty percent (50%) of the Total Contract Price, $1,450.00, is due no later than thirty (30) days before the wedding date.'));
+  assert.ok(discounted.includes('No additional travel fees shall apply unless the event location'));
+  const zeroDiscount = renderContract({ ...sampleFields, discountCents: 0, totalCents: 52500, retainerCents: 26250, balanceCents: 26250 }, UNSIGNED);
+  assert.equal(zeroDiscount.includes('Discount (if applicable)'), false);
 });
 
 test('wedding music agreement shows the additional fee description only when set', () => {

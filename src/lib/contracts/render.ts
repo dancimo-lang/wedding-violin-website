@@ -153,8 +153,34 @@ function clockMinutes(value: string): number | null {
   return hour * 60 + minute;
 }
 
+/** A range longer than this is treated as a mistake, not an overnight booking. */
+export const MAX_RANGE_MINUTES = 12 * 60;
+
 /**
- * A message when an entered end is earlier than its start. A blank side is not a range.
+ * Minutes from start to end. An earlier end clock crosses midnight.
+ * Equal clocks are 0. Null when either side is missing.
+ */
+export function clockSpanMinutes(start: string, end: string): number | null {
+  const startMinutes = clockMinutes(start);
+  const endMinutes = clockMinutes(end);
+  if (startMinutes == null || endMinutes == null) return null;
+  if (endMinutes === startMinutes) return 0;
+  if (endMinutes > startMinutes) return endMinutes - startMinutes;
+  return endMinutes + 24 * 60 - startMinutes;
+}
+
+function rangeProblem(start: string, end: string, label: string): string {
+  const span = clockSpanMinutes(start, end);
+  if (span == null) return '';
+  const lower = `${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+  if (span === 0) return `${label} end is the same as ${lower} start.`;
+  if (span > MAX_RANGE_MINUTES) return `${label} runs longer than 12 hours.`;
+  return '';
+}
+
+/**
+ * A message when a start/end pair is empty of length, or too long to be an overnight range.
+ * Ending at midnight or in the next morning is allowed. A blank side is not a range.
  * The closing sentence stays the send wording unless the caller is the signing page.
  */
 export function performanceTimeOrderMessage(
@@ -170,27 +196,12 @@ export function performanceTimeOrderMessage(
   },
   closing = 'Fix the times before sending this agreement.',
 ): string {
-  const lines: string[] = [];
-  const ceremonyStart = clockMinutes(input.ceremonyStart);
-  const ceremonyEnd = clockMinutes(input.ceremonyEnd);
-  const cocktailStart = clockMinutes(input.cocktailStart);
-  const cocktailEnd = clockMinutes(input.cocktailEnd);
-  const preludeStart = input.preludeStart ? clockMinutes(input.preludeStart) : null;
-  const preludeEnd = input.preludeEnd ? clockMinutes(input.preludeEnd) : null;
-  const receptionStart = input.receptionStart ? clockMinutes(input.receptionStart) : null;
-  const receptionEnd = input.receptionEnd ? clockMinutes(input.receptionEnd) : null;
-  if (ceremonyStart != null && ceremonyEnd != null && ceremonyEnd < ceremonyStart) {
-    lines.push('Ceremony end is before ceremony start.');
-  }
-  if (cocktailStart != null && cocktailEnd != null && cocktailEnd < cocktailStart) {
-    lines.push('Cocktail hour end is before cocktail hour start.');
-  }
-  if (preludeStart != null && preludeEnd != null && preludeEnd < preludeStart) {
-    lines.push('Prelude end is before prelude start.');
-  }
-  if (receptionStart != null && receptionEnd != null && receptionEnd < receptionStart) {
-    lines.push('Reception end is before reception start.');
-  }
+  const lines = [
+    rangeProblem(input.ceremonyStart, input.ceremonyEnd, 'Ceremony'),
+    rangeProblem(input.cocktailStart, input.cocktailEnd, 'Cocktail hour'),
+    rangeProblem(input.preludeStart ?? '', input.preludeEnd ?? '', 'Prelude'),
+    rangeProblem(input.receptionStart ?? '', input.receptionEnd ?? '', 'Reception'),
+  ].filter(Boolean);
   if (lines.length === 0) return '';
   return `${lines.join(' ')} ${closing}`;
 }
@@ -422,7 +433,7 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   };
 
   if (fields.templateId === 'private-event') {
-    return fillTemplate(privateEventTemplate, shown({
+    return fillTemplate(omitZeroDiscount(privateEventTemplate, fields.discountCents), shown({
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       EVENT_TYPE: filled(fields.eventType),
       EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -447,7 +458,8 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
         : packageSpecific
           ? weddingMusicTemplateForPackage(fields.packageId)
           : weddingMusicTemplate;
-    const template = fields.renderEdition === 4 ? withWeddingSchedule(baseTemplate, performanceSchedule(fields)) : baseTemplate;
+    const scheduled = fields.renderEdition === 4 ? withWeddingSchedule(baseTemplate, performanceSchedule(fields)) : baseTemplate;
+    const template = omitZeroDiscount(scheduled, fields.discountCents);
     return fillTemplate(template, shown({
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       WEDDING_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -542,23 +554,38 @@ const FULL_BALANCE_ORIGINAL =
  * Owner-approved wording for a full wedding agreement with a travel or additional fee.
  * With both fees at zero the text is returned unchanged, byte for byte.
  */
+const DISCOUNT_LINE = 'Discount (if applicable): \u2212${{DISCOUNT}}\n';
+
+/** The discount line is printed only when the amount is greater than zero. */
+function omitZeroDiscount(template: string, discountCents: number): string {
+  if (!template.includes(DISCOUNT_LINE)) throw new Error('Agreement is missing its discount line.');
+  if (discountCents > 0) return template;
+  return template.replace(DISCOUNT_LINE, '');
+}
+
 function fullWeddingFees(body: string, fields: StoredRenderFields): string {
-  if (!(fields.travelFeeCents > 0) && !(fields.additionalFeesCents > 0)) return body;
-  for (const part of [FULL_FEE_ORIGINAL, FULL_TRAVEL_ORIGINAL, FULL_PAYMENT_ORIGINAL, FULL_BALANCE_ORIGINAL]) {
+  const hasTravelOrExtra = fields.travelFeeCents > 0 || fields.additionalFeesCents > 0;
+  const hasDiscount = fields.discountCents > 0;
+  if (!hasTravelOrExtra && !hasDiscount) return body;
+  for (const part of [FULL_FEE_ORIGINAL, FULL_PAYMENT_ORIGINAL, FULL_BALANCE_ORIGINAL]) {
     if (!body.includes(part)) throw new Error('Full wedding agreement fee wording changed.');
   }
+  if (hasTravelOrExtra && !body.includes(FULL_TRAVEL_ORIGINAL)) throw new Error('Full wedding agreement fee wording changed.');
+  const discountLine = hasDiscount ? `Discount (if applicable): \u2212$${formatMoney(fields.discountCents)}\n` : '';
   const fees =
     `Package Fee: $${formatMoney(fields.packageFeeCents)}\n` +
     `Travel Fee: $${formatMoney(fields.travelFeeCents)}\n` +
     `Additional Agreed Fees: $${formatMoney(fields.additionalFeesCents)}${additionalFeesNote(fields)}\n` +
+    discountLine +
     `Total Contract Price: $${formatMoney(fields.totalCents)}\n`;
   const payment = `A retainer equal to fifty percent (50%) of the Total Contract Price, $${formatMoney(fields.retainerCents)}, is due upon signing this Agreement.`;
   const balance = `The remaining fifty percent (50%) of the Total Contract Price, $${formatMoney(fields.balanceCents)}, is due no later than thirty (30) days before the wedding date.`;
-  return body
+  let next = body
     .replace(FULL_FEE_ORIGINAL, fees)
-    .replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT)
     .replace(FULL_PAYMENT_ORIGINAL, payment)
     .replace(FULL_BALANCE_ORIGINAL, balance);
+  if (hasTravelOrExtra) next = next.replace(FULL_TRAVEL_ORIGINAL, FULL_TRAVEL_REPLACEMENT);
+  return next;
 }
 
 export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields, keyof FeeSummary | 'templateId' | 'packageId'> & { templateId?: never }): StoredRenderFields {

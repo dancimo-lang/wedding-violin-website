@@ -1,4 +1,5 @@
 import { emptyAgreement, readAgreement, type AgreementDetails } from '@/lib/contracts/agreement-details';
+import { clockSpanMinutes, MAX_RANGE_MINUTES } from '@/lib/contracts/render';
 import { guessPackageId, isPackageId } from '@/lib/contracts/packages';
 import { addCalendarDays, todayInTimeZone, zonedClock } from '@/lib/schedule/time';
 
@@ -149,12 +150,8 @@ function numberOrNull(value: string) {
 }
 
 export function durationFromTimes(start: string, end: string) {
-  if (!start || !end) return null;
-  const [startHour, startMinute] = start.split(':').map(Number);
-  const [endHour, endMinute] = end.split(':').map(Number);
-  if (![startHour, startMinute, endHour, endMinute].every(Number.isFinite)) return null;
-  let minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
-  if (minutes <= 0) minutes += 24 * 60;
+  const minutes = clockSpanMinutes(start, end);
+  if (minutes == null || minutes <= 0 || minutes > MAX_RANGE_MINUTES) return null;
   return Math.round((minutes / 60) * 100) / 100;
 }
 
