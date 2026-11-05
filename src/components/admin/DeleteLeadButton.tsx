@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { deleteLead } from '@/lib/delete-lead-client';
 
 type DeleteLeadButtonProps = {
@@ -80,32 +81,34 @@ export function DeleteLeadButton({ leadId, clientName, placement, onDeleted }: D
           <p className="mt-2 text-sm text-red-900">
             Delete is for a test or junk inquiry. Archive only hides it, and cancelling a booking keeps the timeline.
           </p>
-          <button
+          <AdminButton
             type="button"
+            variant="danger"
+            className="mt-4"
             onClick={() => {
               pendingRef.current = false;
               setPending(false);
               setError('');
               setOpen(true);
             }}
-            className="mt-4 px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white"
           >
             Delete inquiry
-          </button>
+          </AdminButton>
         </section>
       ) : (
-        <button
+        <AdminButton
           type="button"
+          variant="danger"
+          size="sm"
           onClick={() => {
             pendingRef.current = false;
             setPending(false);
             setError('');
             setOpen(true);
           }}
-          className="text-sm text-red-700 hover:text-red-900"
         >
           Delete
-        </button>
+        </AdminButton>
       )}
       {open && createPortal(
         <div
@@ -130,23 +133,12 @@ export function DeleteLeadButton({ leadId, clientName, placement, onDeleted }: D
             </p>
             {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
             <div className="mt-6 flex justify-end gap-2">
-              <button
-                ref={cancelRef}
-                type="button"
-                onClick={close}
-                disabled={pending}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 disabled:text-gray-400"
-              >
+              <AdminButton ref={cancelRef} type="button" variant="secondary" onClick={close} disabled={pending}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirm()}
-                disabled={pending}
-                className="px-4 py-2 rounded-lg bg-red-700 text-white hover:bg-red-800 disabled:bg-red-400"
-              >
+              </AdminButton>
+              <AdminButton type="button" variant="danger" onClick={() => void confirm()} disabled={pending}>
                 {pending ? 'Deleting...' : 'Delete inquiry'}
-              </button>
+              </AdminButton>
             </div>
           </div>
         </div>,

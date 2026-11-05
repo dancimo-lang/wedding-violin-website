@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { ArrowLeft, Upload, Plus } from 'lucide-react';
 
 export default function AddTunePage() {
@@ -264,13 +265,9 @@ export default function AddTunePage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              >
+              <AdminButton type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? 'Adding Tune...' : 'Add Tune'}
-              </button>
+              </AdminButton>
             </form>
           </div>
         </div>

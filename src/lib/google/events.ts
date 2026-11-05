@@ -135,6 +135,55 @@ export function bookingEventDescription(row: BookingSyncRow): string {
   return clipText(lines.join('\n'), DESCRIPTION_LIMIT);
 }
 
+export type CallReminderRow = {
+  id: string;
+  status: string;
+  callBy: string;
+  archived: boolean;
+  clientName: string | null;
+  phone: string | null;
+  email: string | null;
+  eventDate: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+};
+
+/** Still waiting on a call. Booked, contract sent, and lost leads drop the reminder. */
+const OPEN_CALL_STATUSES = new Set(['New Inquiry', 'Needs Information', 'Quote Sent', 'Awaiting Response']);
+
+export const CALL_REMINDER_ORIGIN = 'https://danielcimo.com';
+
+/** All-day reminder on the call-by date. Null when the lead no longer needs a call. */
+export function callReminderPayload(row: CallReminderRow, origin = CALL_REMINDER_ORIGIN): GoogleEventPayload | null {
+  if (row.archived || !OPEN_CALL_STATUSES.has(row.status)) return null;
+  const day = row.callBy.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  const name = clip(row.clientName || 'Inquiry', 80);
+  return {
+    id: googleEventId(row.id),
+    summary: clip(`Call: ${name} (wedding inquiry)`, 180),
+    description: callReminderDescription(row, origin),
+    start: { date: day },
+    end: { date: addCalendarDays(day, 1) },
+    extendedProperties: { private: { source: WEBSITE_EVENT_SOURCE, rowId: row.id } },
+  };
+}
+
+export function callReminderDescription(row: CallReminderRow, origin = CALL_REMINDER_ORIGIN): string {
+  const venue = [row.venueName, row.venueAddress]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(', ');
+  const lines = [
+    `Phone: ${clip(row.phone || 'Not provided', 40)}`,
+    `Email: ${clip(row.email || 'Not provided', 200)}`,
+    `Event date: ${row.eventDate?.trim() || 'Not set'}`,
+    `Venue: ${clip(venue || 'Not set', 300)}`,
+    `Lead: ${origin.replace(/\/$/, '')}/admin/leads/${row.id}`,
+  ];
+  return clipText(lines.join('\n'), DESCRIPTION_LIMIT);
+}
+
 export function blockEventPayload(row: BlockSyncRow): GoogleEventPayload {
   const summary = clip(row.blockType || 'Unavailable', 80);
   const startTime = timeInput(row.startTime);

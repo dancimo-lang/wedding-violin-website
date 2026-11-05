@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AdminButton } from '@/components/admin/AdminButton';
 
 type PaymentRow = {
   id: string;
@@ -194,9 +195,9 @@ export function BookingPayments({ bookingId }: { bookingId: string }) {
             <input type="date" className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2" value={paidOn} onChange={(event) => setPaidOn(event.target.value)} />
           </label>
           <div className="flex items-end">
-            <button type="submit" disabled={busy} className="rounded-lg bg-blue-700 px-4 py-2 text-white disabled:bg-blue-400">
+            <AdminButton type="submit" disabled={busy}>
               {busy ? 'Saving...' : 'Record payment'}
-            </button>
+            </AdminButton>
           </div>
         </form>
       ) : null}

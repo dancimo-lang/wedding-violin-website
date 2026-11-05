@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import site from '@/data/site.json';
 import { guardClientFacingEmail } from '@/lib/contracts/mail';
+import { queueCallReminderAndSync } from '@/lib/google/call-reminder-queue';
+import { websiteCallByDate } from '@/lib/leads';
 import { todayInTimeZone } from '@/lib/schedule/time';
 import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest) {
     const eventDate = optionalText(body.eventDate, 10);
     const partnerName = optionalText(body.partnerName, 200);
     const venueName = optionalText(body.venueName, 200);
+    const venueAddress = optionalText(body.venueAddress, 500);
     const eventStart = optionalText(body.eventStart, 8);
     const howFound = optionalText(body.howFound, 50);
     const guestCountRaw = optionalText(body.guestCount, 6);
@@ -92,6 +95,7 @@ export async function POST(request: NextRequest) {
       !dateLooksValid ||
       partnerName === 'invalid' ||
       venueName === 'invalid' ||
+      venueAddress === 'invalid' ||
       eventStart === 'invalid' ||
       !timeLooksValid ||
       howFound === 'invalid' ||
@@ -192,6 +196,7 @@ export async function POST(request: NextRequest) {
       eventDate,
       eventStart,
       venueName,
+      venueAddress,
       guestCount,
       howFound,
       message,
@@ -206,6 +211,7 @@ export async function POST(request: NextRequest) {
         inquiry_source: 'website',
         event_date: eventDate,
         venue_name: venueName,
+        venue_address: venueAddress,
         service_type: service,
         requested_services: service,
         package_interest: packageInterest,
@@ -213,6 +219,7 @@ export async function POST(request: NextRequest) {
         guest_count: guestCount,
         how_they_found_us: howFound,
         message,
+        next_follow_up_date: websiteCallByDate(),
         inquiry_details: inquiryDetails,
       })
       .select('id')
@@ -233,6 +240,8 @@ export async function POST(request: NextRequest) {
       body: message,
       metadata: { source: 'website' },
     });
+
+    await queueCallReminderAndSync(supabase, createdLead.id).catch(() => undefined);
 
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {

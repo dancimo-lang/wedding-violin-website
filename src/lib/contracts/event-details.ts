@@ -1,97 +1,68 @@
-import type { PackageId } from './packages';
-import {
-  formatClock,
-  performanceTimeOrderMessage,
-  type CoupleDetailKey,
-  type StoredRenderFields,
-} from './render';
+import { packageIncludesCocktailHour, type PackageId } from './packages';
+import { formatClock, type CoupleDetailKey, type StoredRenderFields } from './render';
 
-const SIGNING_TIME_CLOSING = 'Fix the times before signing this agreement.';
-
-export type CoupleDetailField = {
-  key: CoupleDetailKey;
-  label: string;
-  kind: 'text' | 'time';
-  max: number;
-  /** Optional details (the "(if applicable)" lines) may stay blank at signing. */
-  optional: boolean;
-};
-
+/** Owner-entered details the send form knows about, including ones with no contract line yet. */
 export type CoupleDetailSource = {
   packageId: PackageId;
   venueName: string;
   venueAddress: string;
   ceremonyStart: string;
-  cocktailStart: string;
-  cocktailEnd: string;
+  cocktailStart?: string;
+  cocktailEnd?: string;
   ceremonyEnd?: string;
   preludeStart?: string;
+  preludeEnd?: string;
   otherDetails?: string;
+  receptionStart?: string;
+  receptionEnd?: string;
 };
 
-const DETAIL_SPECS: readonly CoupleDetailField[] = [
-  { key: 'venueName', label: 'Venue name', kind: 'text', max: 255, optional: false },
-  { key: 'venueAddress', label: 'Venue address', kind: 'text', max: 500, optional: false },
-  { key: 'ceremonyStart', label: 'Ceremony start time', kind: 'time', max: 5, optional: false },
-  { key: 'ceremonyEnd', label: 'Event end time', kind: 'time', max: 5, optional: true },
-  { key: 'preludeStart', label: 'Prelude music start time', kind: 'time', max: 5, optional: true },
-  { key: 'cocktailStart', label: 'Cocktail hour start time', kind: 'time', max: 5, optional: true },
-  { key: 'cocktailEnd', label: 'Cocktail hour end time', kind: 'time', max: 5, optional: true },
-  { key: 'otherDetails', label: 'Other agreed performance details', kind: 'text', max: 400, optional: true },
-];
+export type DetailKey = CoupleDetailKey | 'preludeEnd' | 'receptionStart' | 'receptionEnd';
 
-/** Which blanks appear in each agreement's text. */
-const KEYS_BY_PACKAGE: Record<'wedding-music' | 'FULL' | 'EVENT', ReadonlySet<CoupleDetailKey>> = {
-  'wedding-music': new Set(['venueName', 'venueAddress', 'ceremonyStart', 'preludeStart', 'cocktailStart', 'cocktailEnd', 'otherDetails']),
-  FULL: new Set(['venueName', 'venueAddress', 'ceremonyStart']),
-  EVENT: new Set(['venueName', 'venueAddress', 'ceremonyStart', 'ceremonyEnd', 'otherDetails']),
+const LABELS: Record<DetailKey, string> = {
+  venueName: 'Venue name',
+  venueAddress: 'Venue address',
+  ceremonyStart: 'Ceremony start time',
+  ceremonyEnd: 'Ceremony end time',
+  preludeStart: 'Prelude music start time',
+  preludeEnd: 'Prelude end time',
+  cocktailStart: 'Cocktail hour start time',
+  cocktailEnd: 'Cocktail hour end time',
+  otherDetails: 'Other agreed performance details',
+  receptionStart: 'Reception start time',
+  receptionEnd: 'Reception end time',
 };
 
-const EVENT_LABELS: Partial<Record<CoupleDetailKey, string>> = {
+const EVENT_LABELS: Partial<Record<DetailKey, string>> = {
   ceremonyStart: 'Event start time',
   ceremonyEnd: 'Event end time',
 };
 
-function value(source: CoupleDetailSource, key: CoupleDetailKey): string {
+const SHARED_REQUIRED: readonly DetailKey[] = ['venueName', 'venueAddress', 'ceremonyStart', 'ceremonyEnd'];
+const COCKTAIL_REQUIRED: readonly DetailKey[] = ['cocktailStart', 'cocktailEnd'];
+const RECEPTION_REQUIRED: readonly DetailKey[] = ['receptionStart', 'receptionEnd'];
+
+/** Details that block sending. Prelude never blocks. Ceremony-only packages do not require cocktail times. */
+function requiredKeys(packageId: PackageId): readonly DetailKey[] {
+  if (packageId === 'EVENT') return ['venueName', 'venueAddress', 'ceremonyStart'];
+  if (packageId === 'FULL') return [...SHARED_REQUIRED, ...COCKTAIL_REQUIRED, ...RECEPTION_REQUIRED];
+  if (packageIncludesCocktailHour(packageId)) return [...SHARED_REQUIRED, ...COCKTAIL_REQUIRED];
+  return SHARED_REQUIRED;
+}
+
+/** Optional lines. A blank prelude is left off the wedding-music schedule. Private-event end stays a blank line. */
+function optionalKeys(packageId: PackageId): readonly DetailKey[] {
+  if (packageId === 'EVENT') return ['ceremonyEnd'];
+  return [];
+}
+
+function labelFor(packageId: PackageId, key: DetailKey): string {
+  if (packageId === 'EVENT' && EVENT_LABELS[key]) return EVENT_LABELS[key] as string;
+  return LABELS[key];
+}
+
+function readDetail(source: CoupleDetailSource, key: DetailKey): string {
   return (source[key] ?? '').trim();
-}
-
-export type CoupleDetailResult =
-  | { ok: true; fields: StoredRenderFields; supplied: CoupleDetailKey[] }
-  | { ok: false; error: string };
-
-export function emptyCoupleDetailDraft(): Record<CoupleDetailKey, string> {
-  return {
-    venueName: '',
-    venueAddress: '',
-    ceremonyStart: '',
-    ceremonyEnd: '',
-    preludeStart: '',
-    cocktailStart: '',
-    cocktailEnd: '',
-    otherDetails: '',
-  };
-}
-
-function specFor(key: CoupleDetailKey): CoupleDetailField {
-  const spec = DETAIL_SPECS.find((field) => field.key === key);
-  if (!spec) throw new Error('Unknown event detail.');
-  return spec;
-}
-
-function applies(field: CoupleDetailField, packageId: PackageId): boolean {
-  const group = packageId === 'FULL' ? 'FULL' : packageId === 'EVENT' ? 'EVENT' : 'wedding-music';
-  return KEYS_BY_PACKAGE[group].has(field.key);
-}
-
-/**
- * Blanks in this agreement's text that the client may fill inline at signing.
- * Venue and start time are required; the "(if applicable)" lines are optional.
- */
-export function coupleFillableDetails(source: CoupleDetailSource): CoupleDetailField[] {
-  return DETAIL_SPECS.filter((field) => applies(field, source.packageId) && !value(source, field.key)).map((field) =>
-    source.packageId === 'EVENT' && EVENT_LABELS[field.key] ? { ...field, label: EVENT_LABELS[field.key] as string } : field,
-  );
 }
 
 function formatList(items: string[]): string {
@@ -100,167 +71,77 @@ function formatList(items: string[]): string {
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
 }
 
-/** Admin note. Empty when every couple-fillable detail already has a value. */
+function missingLabels(source: CoupleDetailSource, keys: readonly DetailKey[]): string[] {
+  return keys.filter((key) => !readDetail(source, key)).map((key) => labelFor(source.packageId, key));
+}
+
+/** Required details that are still blank, with the same labels the send error uses. */
+export function missingRequiredDetails(source: CoupleDetailSource): { key: DetailKey; label: string }[] {
+  return requiredKeys(source.packageId)
+    .filter((key) => !readDetail(source, key))
+    .map((key) => ({ key, label: labelFor(source.packageId, key) }));
+}
+
+/**
+ * Blocks sending. Empty when every required detail for this agreement is filled in.
+ * The client cannot supply these, so a blank would stay blank.
+ */
 export function missingCoupleDetailMessage(source: CoupleDetailSource): string {
-  const labels = coupleFillableDetails(source)
-    .filter((field) => !field.optional)
-    .map((field) => field.label);
+  const labels = missingLabels(source, requiredKeys(source.packageId));
   if (labels.length === 0) return '';
   const list = formatList(labels);
   if (labels.length === 1) {
-    return `This event detail is still blank: ${list}. The couple will be asked to fill it in before signing.`;
+    return `${list} is still blank. Enter it before sending. The client cannot add it when signing.`;
   }
-  return `These event details are still blank: ${list}. The couple will be asked to fill them in before signing.`;
+  return `These details are still blank: ${list}. Enter them before sending. The client cannot add them when signing.`;
 }
 
-function lowerLabel(label: string): string {
-  return label.charAt(0).toLowerCase() + label.slice(1);
-}
-
-function isClock(value: string): boolean {
-  const match = /^(\d{2}):(\d{2})$/.exec(value);
-  if (!match) return false;
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  return hour <= 23 && minute <= 59;
-}
-
-function detailProblem(field: CoupleDetailField, value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) return 'blank';
-  if (field.kind === 'time') {
-    if (!isClock(trimmed)) return `Enter a valid ${lowerLabel(field.label)}.`;
-    return null;
+/**
+ * Already-sent agreements. Blank required details do not stop the client from signing.
+ */
+export function sentContractBlankDetailMessage(source: CoupleDetailSource): string {
+  const labels = missingLabels(source, requiredKeys(source.packageId));
+  if (labels.length === 0) return '';
+  const list = formatList(labels);
+  if (labels.length === 1) {
+    return `${list} was still blank when this agreement was sent. The client can still sign.`;
   }
-  if (trimmed.length > field.max) return `${field.label} is too long.`;
-  if (/[\r\n]/.test(trimmed) || trimmed.includes('{{') || trimmed.includes('}}')) {
-    return `Enter the ${lowerLabel(field.label)} on one line.`;
+  return `These details were still blank when this agreement was sent: ${list}. The client can still sign.`;
+}
+
+/** Optional lines that will stay blank. Does not block sending. */
+export function optionalBlankDetailMessage(source: CoupleDetailSource): string {
+  const labels = missingLabels(source, optionalKeys(source.packageId));
+  if (labels.length === 0) return '';
+  const list = formatList(labels);
+  if (labels.length === 1) {
+    return `${list} is blank. That optional line will stay blank on the agreement.`;
+  }
+  return `These optional lines are blank and will stay blank on the agreement: ${list}.`;
+}
+
+/**
+ * The client cannot submit event details. Missing or empty input is allowed,
+ * so an agreement that was sent with blanks can still be signed.
+ */
+export function clientEventDetailsError(raw: unknown): string | null {
+  if (raw == null) return null;
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    return 'Event details cannot be changed when signing.';
+  }
+  if (Object.keys(raw as object).length > 0) {
+    return 'Event details cannot be changed when signing.';
   }
   return null;
 }
 
-function timeMessageForSupplied(fields: StoredRenderFields, supplied: readonly CoupleDetailKey[]): string {
-  const ceremonyTouched = supplied.includes('ceremonyStart') || supplied.includes('ceremonyEnd');
-  const cocktailTouched = supplied.includes('cocktailStart') || supplied.includes('cocktailEnd');
-  return performanceTimeOrderMessage(
-    {
-      ceremonyStart: ceremonyTouched ? fields.ceremonyStart : '',
-      ceremonyEnd: ceremonyTouched ? fields.ceremonyEnd : '',
-      cocktailStart: cocktailTouched ? fields.cocktailStart : '',
-      cocktailEnd: cocktailTouched ? fields.cocktailEnd : '',
-    },
-    SIGNING_TIME_CLOSING,
-  );
-}
-
-/** Live contract preview. Invalid or non-blank-field edits are left out. */
-export function previewCoupleEventDetails(
-  stored: StoredRenderFields,
-  draft: Partial<Record<CoupleDetailKey, string>>,
-): StoredRenderFields {
-  const next: StoredRenderFields = { ...stored };
-  for (const field of coupleFillableDetails(stored)) {
-    const value = (draft[field.key] ?? '').trim();
-    if (!value || detailProblem(field, value)) continue;
-    next[field.key] = value;
-  }
-  return next;
-}
-
-/** Shown while the couple is typing. Missing fields are not an error yet. */
-export function coupleEventTimeMessage(
-  stored: StoredRenderFields,
-  draft: Partial<Record<CoupleDetailKey, string>>,
-): string {
-  const preview = previewCoupleEventDetails(stored, draft);
-  const supplied = coupleFillableDetails(stored)
-    .filter((field) => (preview[field.key] ?? '').trim() !== (stored[field.key] ?? '').trim())
-    .map((field) => field.key);
-  return timeMessageForSupplied(preview, supplied);
-}
-
-export function coupleDetailPayload(
-  source: CoupleDetailSource,
-  draft: Partial<Record<CoupleDetailKey, string>>,
-): Record<string, string> {
-  const payload: Record<string, string> = {};
-  for (const field of coupleFillableDetails(source)) {
-    payload[field.key] = draft[field.key] ?? '';
-  }
-  return payload;
-}
-
-/**
- * Accepts only details that are still blank on this agreement.
- * Prices, package, names, and anything the admin already filled are rejected.
- */
-export function applyCoupleEventDetails(stored: StoredRenderFields, raw: unknown): CoupleDetailResult {
-  if (raw == null) raw = {};
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { ok: false, error: 'Event details could not be read.' };
-  }
-  const input = raw as Record<string, unknown>;
-  const fillable = coupleFillableDetails(stored);
-  const fillableKeys = new Set(fillable.map((field) => field.key));
-  for (const key of Object.keys(input)) {
-    if (!fillableKeys.has(key as CoupleDetailKey)) {
-      return { ok: false, error: 'Only blank event details can be filled in.' };
-    }
-  }
-
-  const next: StoredRenderFields = { ...stored };
-  delete next.coupleSupplied;
-  const supplied: CoupleDetailKey[] = [];
-  const missing: string[] = [];
-  for (const field of fillable) {
-    if (!Object.prototype.hasOwnProperty.call(input, field.key)) {
-      if (!field.optional) missing.push(field.label);
-      continue;
-    }
-    const value = input[field.key];
-    if (typeof value !== 'string') {
-      return { ok: false, error: `Enter the ${lowerLabel(field.label)} on one line.` };
-    }
-    const problem = detailProblem(field, value);
-    if (problem === 'blank') {
-      if (!field.optional) missing.push(field.label);
-      continue;
-    }
-    if (problem) return { ok: false, error: problem };
-    next[field.key] = value.trim();
-    supplied.push(field.key);
-  }
-  if (missing.length === 1) {
-    return { ok: false, error: `Fill in ${missing[0]} before signing.` };
-  }
-  if (missing.length > 1) {
-    return { ok: false, error: `Fill in these event details before signing: ${formatList(missing)}.` };
-  }
-
-  const timeMessage = timeMessageForSupplied(next, supplied);
-  if (timeMessage) return { ok: false, error: timeMessage };
-  if (supplied.length > 0) next.coupleSupplied = supplied;
-  return { ok: true, fields: next, supplied };
-}
-
-/** One sentence for the lead and booking when the couple supplied a cocktail time. */
-export function coupleCocktailRecordLine(fields: StoredRenderFields, supplied: readonly CoupleDetailKey[]): string {
-  if (!supplied.includes('cocktailStart') && !supplied.includes('cocktailEnd')) return '';
-  const start = formatClock(fields.cocktailStart) || fields.cocktailStart.trim();
-  const end = formatClock(fields.cocktailEnd) || fields.cocktailEnd.trim();
-  if (start && end) return `Cocktail hour on the signed agreement: ${start} to ${end}.`;
-  if (start) return `Cocktail hour on the signed agreement starts at ${start}.`;
-  if (end) return `Cocktail hour on the signed agreement ends at ${end}.`;
-  return '';
-}
-
+/** One sentence for an older signed agreement where the couple had supplied details. */
 export function coupleSuppliedSummary(fields: StoredRenderFields | null): string {
   if (!fields?.coupleSupplied?.length) return '';
   const parts = fields.coupleSupplied.map((key) => {
-    const spec = specFor(key);
     const raw = (fields[key] ?? '').trim();
-    const shown = spec.kind === 'time' ? formatClock(raw) || raw : raw;
-    return `${spec.label}: ${shown}`;
+    const shown = key === 'venueName' || key === 'venueAddress' || key === 'otherDetails' ? raw : formatClock(raw) || raw;
+    return `${LABELS[key]}: ${shown}`;
   });
   return `The couple added ${parts.join('; ')}.`;
 }

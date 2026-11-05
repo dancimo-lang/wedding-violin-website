@@ -8,6 +8,7 @@ import {
   subscribeBookingPrefill,
 } from './booking-prefill-store';
 import { BookingCalendar } from '@/components/BookingCalendar';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 
 function formatDate(date: string) {
   const [y, m, d] = date.split('-').map(Number);
@@ -34,6 +35,7 @@ export default function BookingForm() {
     eventDate: '',
     partnerName: '',
     venueName: '',
+    venueAddress: '',
     eventStart: '',
     guestCount: '',
     howFound: '',
@@ -257,19 +259,19 @@ export default function BookingForm() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
             />
           </div>
-          <div>
-            <label htmlFor="venueName" className="block text-sm font-medium text-gray-700 mb-2">
-              Venue <span className="text-gray-600">(optional)</span>
-            </label>
-            <input
-              type="text"
-              id="venueName"
-              name="venueName"
-              value={formData.venueName}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
-            />
-          </div>
+          <VenueNameField
+            name={formData.venueName}
+            address={formData.venueAddress}
+            onName={(value) => setFormData((prev) => ({ ...prev, venueName: value }))}
+            onAddress={(value) => setFormData((prev) => ({ ...prev, venueAddress: value }))}
+            endpoint="/api/venues"
+            nameLabel="Venue"
+            addressLabel="Venue address"
+            optional
+            labelClassName="block text-sm font-medium text-gray-700 mb-2"
+            inputClassName="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-transparent transition-colors text-black"
+            layoutClassName="grid grid-cols-1 gap-6 sm:grid-cols-2"
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="eventStart" className="block text-sm font-medium text-gray-700 mb-2">

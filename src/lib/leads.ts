@@ -1,3 +1,7 @@
+import { emptyAgreement, readAgreement, type AgreementDetails } from '@/lib/contracts/agreement-details';
+import { guessPackageId, isPackageId } from '@/lib/contracts/packages';
+import { addCalendarDays, todayInTimeZone, zonedClock } from '@/lib/schedule/time';
+
 export const LEAD_STATUSES = [
   'New Inquiry',
   'Needs Information',
@@ -56,7 +60,10 @@ export type LeadDraft = {
   contractStatus: string;
   paymentStatus: string;
   nextFollowUp: string;
+  /** Pacific calendar day the inquiry arrived. Not its own column. Used only to suggest Call by. */
+  receivedOn: string;
   performersNeeded: string;
+  agreement: AgreementDetails;
 };
 
 export type ClientRecord = {
@@ -73,7 +80,7 @@ export function emptyLeadDraft(): LeadDraft {
     clientEmail: '',
     clientPhone: '',
     partnerName: '',
-    inquirySource: 'phone',
+    inquirySource: 'website',
     status: 'New Inquiry',
     eventDate: '',
     venueName: '',
@@ -90,7 +97,9 @@ export function emptyLeadDraft(): LeadDraft {
     contractStatus: 'Not Sent',
     paymentStatus: 'Unpaid',
     nextFollowUp: '',
+    receivedOn: '',
     performersNeeded: '1',
+    agreement: { ...emptyAgreement(), packageId: 'A' },
   };
 }
 
@@ -173,8 +182,8 @@ export function leadWritePayload(draft: LeadDraft) {
       partner_name: blank(draft.partnerName),
     },
     lead: {
-      status: draft.status,
-      inquiry_source: draft.inquirySource || null,
+      status: draft.status.trim() || 'New Inquiry',
+      inquiry_source: draft.inquirySource.trim() || 'website',
       event_date: draft.eventDate || null,
       venue_name: blank(draft.venueName),
       venue_address: blank(draft.venueAddress),
@@ -191,7 +200,7 @@ export function leadWritePayload(draft: LeadDraft) {
       quoted_price: draft.quotedPrice.trim() ? numberOrNull(draft.quotedPrice) : null,
       contract_status: draft.contractStatus,
       payment_status: draft.paymentStatus,
-      next_follow_up_date: draft.nextFollowUp || null,
+      next_follow_up_date: defaultCallBy(draft) || null,
       performers_needed: performers,
     },
   };
@@ -203,19 +212,20 @@ export function draftFromRecords(
 ): LeadDraft {
   const text = (key: string) => (typeof lead[key] === 'string' || typeof lead[key] === 'number' ? String(lead[key] ?? '') : '');
   const time = (key: string) => text(key).slice(0, 5);
+  const agreement = agreementFromLead(lead);
   return {
     clientName: client?.name || '',
     clientEmail: client?.email || '',
     clientPhone: client?.phone || '',
     partnerName: client?.partner_name || '',
-    inquirySource: text('inquiry_source') || 'other',
+    inquirySource: text('inquiry_source') || 'website',
     status: text('status') || 'New Inquiry',
     eventDate: text('event_date'),
     venueName: text('venue_name'),
     venueAddress: text('venue_address'),
     requestedServices: text('requested_services') || text('service_type'),
-    performanceStart: time('performance_start_time'),
-    performanceEnd: time('performance_end_time'),
+    performanceStart: agreement.ceremonyStart || time('performance_start_time'),
+    performanceEnd: agreement.ceremonyEnd || time('performance_end_time'),
     estimatedDuration: text('estimated_duration_hours'),
     guestCount: text('guest_count'),
     budget: text('budget_range') || text('budget_amount'),
@@ -224,7 +234,56 @@ export function draftFromRecords(
     quotedPrice: text('quoted_price'),
     contractStatus: text('contract_status') || 'Not Sent',
     paymentStatus: text('payment_status') || 'Unpaid',
-    nextFollowUp: text('next_follow_up_date'),
+    nextFollowUp: isoDate(text('next_follow_up_date')),
+    receivedOn: receivedOnFromRecord(lead.created_at),
     performersNeeded: text('performers_needed') || '1',
+    agreement,
+  };
+}
+
+function isoDate(value: string) {
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+  return match ? match[1] : '';
+}
+
+/** Calendar day the inquiry arrived, in Pacific Time. */
+export function receivedOnFromRecord(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const plain = isoDate(value);
+  if (plain && value.trim().length === 10) return plain;
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return plain;
+  return zonedClock(parsed).date;
+}
+
+/**
+ * Call by. A saved date wins. A website inquiry with none yet shows two days after it arrived.
+ * The suggestion is not written until the lead is saved.
+ */
+/** Two Pacific calendar days after an inquiry arrives. Stored on the lead when the website form is saved. */
+export function websiteCallByDate(now = new Date()): string {
+  return addCalendarDays(todayInTimeZone(undefined, now), 2);
+}
+
+export function defaultCallBy(draft: { nextFollowUp: string; inquirySource: string; receivedOn: string }): string {
+  const saved = isoDate(draft.nextFollowUp);
+  if (saved) return saved;
+  if ((draft.inquirySource.trim() || 'website') !== 'website') return '';
+  const received = isoDate(draft.receivedOn);
+  if (!received) return '';
+  return addCalendarDays(received, 2);
+}
+
+function agreementFromLead(lead: Record<string, unknown>): AgreementDetails {
+  const stored = readAgreement(lead.inquiry_details);
+  if (isPackageId(stored.packageId)) return stored;
+  const quoted = lead.quoted_price;
+  return {
+    ...stored,
+    packageId: guessPackageId({
+      packageInterest: typeof lead.package_interest === 'string' ? lead.package_interest : '',
+      service: typeof lead.requested_services === 'string' ? lead.requested_services : typeof lead.service_type === 'string' ? lead.service_type : '',
+      quotedPrice: typeof quoted === 'number' ? quoted : null,
+    }),
   };
 }

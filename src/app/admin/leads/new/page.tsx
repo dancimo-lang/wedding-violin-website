@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { LeadFields } from '@/components/admin/LeadFields';
 import { postBookingStatus } from '@/lib/booking-status-client';
+import { agreementForStorage, formValueFromDraft, mergeAgreement } from '@/lib/contracts/agreement-details';
 import { emptyLeadDraft, leadWritePayload, type LeadDraft } from '@/lib/leads';
 import { createClient } from '@/lib/supabase/client';
 
@@ -73,16 +75,19 @@ export default function NewLeadPage() {
         ...payload.lead,
         status: booked ? 'Awaiting Response' : payload.lead.status,
         client_id: clientId,
-        inquiry_details: {
-          source: payload.lead.inquiry_source,
-          name: payload.client.name,
-          email: payload.client.email,
-          phone: payload.client.phone,
-          partner: payload.client.partner_name,
-          services: payload.lead.requested_services,
-          eventDate: payload.lead.event_date,
-          message: payload.lead.message,
-        },
+        inquiry_details: mergeAgreement(
+          {
+            source: payload.lead.inquiry_source,
+            name: payload.client.name,
+            email: payload.client.email,
+            phone: payload.client.phone,
+            partner: payload.client.partner_name,
+            services: payload.lead.requested_services,
+            eventDate: payload.lead.event_date,
+            message: payload.lead.message,
+          },
+          agreementForStorage(formValueFromDraft(draft)),
+        ),
       })
       .select('id')
       .single();
@@ -128,6 +133,7 @@ export default function NewLeadPage() {
       }
     }
 
+    void fetch(`/api/admin/leads/${lead.id}/call-reminder`, { method: 'POST' }).catch(() => undefined);
     router.push(`/admin/leads/${lead.id}`);
   };
 
@@ -138,9 +144,9 @@ export default function NewLeadPage() {
           <Link href="/admin/leads" className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={20} /></Link>
           <h2 className="text-3xl font-bold text-gray-900">New lead</h2>
         </div>
-        <button type="submit" disabled={saving || Boolean(savedId)} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
+        <AdminButton type="submit" disabled={saving || Boolean(savedId)}>
           {saving ? 'Saving...' : 'Save lead'}
-        </button>
+        </AdminButton>
       </div>
       {error && (
         <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -148,7 +154,7 @@ export default function NewLeadPage() {
           {savedId && <Link href={`/admin/leads/${savedId}`} className="underline">Open the lead</Link>}
         </div>
       )}
-      <div className="bg-white rounded-xl shadow p-6">
+      <div id="record-details" className="bg-white rounded-xl shadow p-6">
         <LeadFields draft={draft} onChange={setDraft} />
       </div>
     </form>

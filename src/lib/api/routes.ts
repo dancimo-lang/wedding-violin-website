@@ -4,6 +4,7 @@ import { POST as postTune } from './handlers/admin-tunes';
 import { GET as getAvailability } from './handlers/availability';
 import { GET as getAvailabilityDates } from './handlers/availability-dates';
 import { POST as postBookingStatus } from './handlers/booking-status';
+import { POST as postCallReminder } from './handlers/call-reminder';
 import { DELETE as deleteLead } from './handlers/delete-lead';
 import { POST as postExistingBooking } from './handlers/existing-booking';
 import { existingBookingPayment } from './handlers/existing-booking-payment';
@@ -26,6 +27,8 @@ import { getAdminPayments, postAssign, postManual } from './handlers/payments-ad
 import { getPaymentView, postCheckout, postStripeWebhook } from './handlers/payments-stripe';
 import { postZelle } from './handlers/payments-zelle';
 import { GET as getPdf } from './handlers/pdf';
+import { GET as getVenues } from './handlers/venues';
+import { GET as getPublicVenues } from './handlers/venues-public';
 import { POST as restoreTunes } from './handlers/restore-tunes';
 import { GET as getPasswordRecovery } from './handlers/password-recovery';
 import { POST as postSignOut } from './handlers/signout';
@@ -51,7 +54,10 @@ const handlers: Record<string, ApiHandler> = {
   'existing-booking': mount(postExistingBooking),
   'existing-booking-payment': ({ request }) => existingBookingPayment(request),
   'delete-lead': ({ request, params }) => deleteLead(request, params.id ?? ''),
+  'lead-call-reminder': ({ request, params }) => postCallReminder(request, params.id ?? ''),
   'contract-send': mount(postContractSend),
+  'admin-venues': mount(getVenues),
+  'public-venues': mount(getPublicVenues),
   'contract-void': ({ request, params }) => postVoid(request, params.id ?? ''),
   'contract-resend': ({ request, params }) => postResend(request, params.id ?? ''),
   'contract-countersign': ({ request, params }) => postCountersign(request, params.id ?? ''),
