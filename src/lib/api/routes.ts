@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { DELETE as deleteTune } from './handlers/admin-tune';
+import { DELETE as deleteTune, PATCH as patchTune } from './handlers/admin-tune';
 import { POST as postTune } from './handlers/admin-tunes';
 import { GET as getAvailability } from './handlers/availability';
 import { GET as getAvailabilityDates } from './handlers/availability-dates';
@@ -33,6 +33,7 @@ import { POST as restoreTunes } from './handlers/restore-tunes';
 import { GET as getPasswordRecovery } from './handlers/password-recovery';
 import { POST as postSignOut } from './handlers/signout';
 import { GET as getTunes } from './handlers/tunes';
+import { POST as postResourceTip } from './handlers/resource-tip';
 import { apiRouteCatalog, type ApiRouteSpec } from './route-table';
 import type { ApiRequestContext } from './dispatch';
 
@@ -71,7 +72,11 @@ const handlers: Record<string, ApiHandler> = {
   'google-sync': mount(postGoogleSync),
   'restore-tunes': mount(restoreTunes),
   'admin-tunes': mount(postTune),
-  'admin-tune': ({ request, params }) => deleteTune(request, { params: Promise.resolve({ id: params.id ?? '' }) }),
+  'admin-tune': ({ request, params }) => {
+    const context = { params: Promise.resolve({ id: params.id ?? '' }) };
+    if (request.method === 'PATCH') return patchTune(request, context);
+    return deleteTune(request, context);
+  },
   availability: mount(getAvailability),
   'availability-dates': () => getAvailabilityDates(),
   contact: mount(postContact),
@@ -79,6 +84,7 @@ const handlers: Record<string, ApiHandler> = {
   'payments-zelle': ({ request, rawBody }) => postZelle(request, rawBody ?? ''),
   'payments-stripe-webhook': ({ request, rawBody }) => postStripeWebhook(request, rawBody ?? ''),
   'payments-checkout': ({ request }) => postCheckout(request),
+  'resource-tip': mount(postResourceTip),
   'payments-view': ({ request }) => getPaymentView(request),
   'admin-payments': ({ request }) => getAdminPayments(request),
   'admin-payments-manual': ({ request }) => postManual(request),
