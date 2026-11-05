@@ -92,6 +92,7 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
   const showPlayAlong = hasMusicXml && !playerFailed;
   const showSheet = hasSheetMusic || showPlayAlong;
   const showPracticeTips = isPublishableCopy(tune.practiceTips);
+  const sideBySide = hasVideo && showSheet;
 
   return (
     <>
@@ -160,128 +161,144 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
               </article>
 
               <SupportLessonsLink prompt={prompt} />
-
-              {hasVideo ? (
-                <div className="overflow-hidden rounded-xl border border-cream-line bg-cream-card">
-                  <h2 className="border-b border-cream-line px-4 py-3 text-lg font-semibold text-ink">Video</h2>
-                  <div className="aspect-video bg-charcoal">
-                    <iframe
-                      className="h-full w-full"
-                      src={video?.src}
-                      title={`${tune.title} video`}
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-              ) : null}
             </div>
 
-            {showSheet ? (
-              <div className="overflow-hidden rounded-xl border border-cream-line bg-cream-card">
-                <div className="flex flex-col gap-3 border-b border-cream-line p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-gold-deep" aria-hidden />
-                    <h2 className="text-xl font-semibold text-ink">Sheet Music</h2>
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                    {sheetIsPdf ? (
-                      <button
-                        type="button"
-                        className={`${goldButtonClass} w-full sm:w-auto`}
-                        onClick={() =>
-                          prompt.requestDownload({
-                            href: `/api/pdf/${tune.id}`,
-                            filename: downloadName(tune.id, tune.sheetMusicPath, '.pdf'),
-                          })
-                        }
-                      >
-                        <Download className="h-4 w-4" aria-hidden />
-                        Download PDF
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className={`${goldButtonClass} w-full sm:w-auto`}
-                        onClick={() =>
-                          prompt.requestDownload({
-                            href: tune.sheetMusicPath,
-                            filename: downloadName(tune.id, tune.sheetMusicPath, ''),
-                          })
-                        }
-                      >
-                        <Download className="h-4 w-4" aria-hidden />
-                        Download sheet music
-                      </button>
-                    )}
-                    {hasScore ? (
-                      <button
-                        type="button"
-                        className={`${goldButtonClass} w-full sm:w-auto`}
-                        onClick={() =>
-                          prompt.requestDownload({
-                            href: tune.museScorePath || '',
-                            filename: downloadName(tune.id, tune.museScorePath || '', '.mscz'),
-                          })
-                        }
-                      >
-                        <Download className="h-4 w-4" aria-hidden />
-                        Download MuseScore file
-                      </button>
-                    ) : null}
-                    {sheetIsPdf ? (
-                      <a
-                        href={`/api/pdf/${tune.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${quietLinkClass} justify-center`}
-                      >
-                        Open PDF
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="p-3 sm:p-4">
-                  {showPlayAlong && sheetIsPdf ? (
-                    <div role="tablist" aria-label="Sheet music view" className="mb-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={sheetMode === 'play'}
-                        className={sheetMode === 'play' ? goldButtonClass : outlineButtonClass}
-                        onClick={() => setSheetMode('play')}
-                      >
-                        Play along
-                      </button>
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={sheetMode === 'pdf'}
-                        className={sheetMode === 'pdf' ? goldButtonClass : outlineButtonClass}
-                        onClick={() => setSheetMode('pdf')}
-                      >
-                        PDF
-                      </button>
+            {hasVideo || showSheet ? (
+              <div
+                className={
+                  sideBySide
+                    ? 'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)]'
+                    : hasVideo
+                      ? 'mx-auto w-full max-w-[900px]'
+                      : 'w-full'
+                }
+              >
+                {hasVideo ? (
+                  <div className={sideBySide ? 'min-w-0 lg:sticky lg:top-[calc(var(--header-height)+1rem)]' : undefined}>
+                    <div className="overflow-hidden rounded-xl border border-cream-line bg-cream-card">
+                      <h2 className="border-b border-cream-line px-4 py-3 text-lg font-semibold text-ink">Video</h2>
+                      <div className="aspect-video bg-charcoal">
+                        <iframe
+                          className="h-full w-full"
+                          src={video?.src}
+                          title={`${tune.title} video`}
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
                     </div>
-                  ) : null}
-                  {showPlayAlong && sheetMode === 'play' ? (
-                    <InteractiveSheetPlayer
-                      scoreUrl={tune.museScorePath || ''}
-                      title={tune.title}
-                      onUnavailable={() => setPlayerFailed(true)}
-                    />
-                  ) : sheetIsPdf ? (
-                    <SheetMusicViewer key={tune.id} fileUrl={`/api/pdf/${tune.id}`} title={tune.title} />
-                  ) : hasSheetMusic ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={tune.sheetMusicPath} alt={`${tune.title} sheet music`} className="mx-auto h-auto w-full" />
-                    </>
-                  ) : (
-                    <p className="py-8 text-center text-ink-body">The interactive score could not be shown.</p>
-                  )}
-                </div>
+                  </div>
+                ) : null}
+
+                {showSheet ? (
+                  <div className={sideBySide ? 'min-w-0' : undefined}>
+                    <div className="overflow-hidden rounded-xl border border-cream-line bg-cream-card">
+                      <div className="flex flex-col gap-3 border-b border-cream-line p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-gold-deep" aria-hidden />
+                          <h2 className="text-xl font-semibold text-ink">Sheet Music</h2>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                          {sheetIsPdf ? (
+                            <button
+                              type="button"
+                              className={`${goldButtonClass} w-full sm:w-auto`}
+                              onClick={() =>
+                                prompt.requestDownload({
+                                  href: `/api/pdf/${tune.id}`,
+                                  filename: downloadName(tune.id, tune.sheetMusicPath, '.pdf'),
+                                })
+                              }
+                            >
+                              <Download className="h-4 w-4" aria-hidden />
+                              Download PDF
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={`${goldButtonClass} w-full sm:w-auto`}
+                              onClick={() =>
+                                prompt.requestDownload({
+                                  href: tune.sheetMusicPath,
+                                  filename: downloadName(tune.id, tune.sheetMusicPath, ''),
+                                })
+                              }
+                            >
+                              <Download className="h-4 w-4" aria-hidden />
+                              Download sheet music
+                            </button>
+                          )}
+                          {hasScore ? (
+                            <button
+                              type="button"
+                              className={`${goldButtonClass} w-full sm:w-auto`}
+                              onClick={() =>
+                                prompt.requestDownload({
+                                  href: tune.museScorePath || '',
+                                  filename: downloadName(tune.id, tune.museScorePath || '', '.mscz'),
+                                })
+                              }
+                            >
+                              <Download className="h-4 w-4" aria-hidden />
+                              Download MuseScore file
+                            </button>
+                          ) : null}
+                          {sheetIsPdf ? (
+                            <a
+                              href={`/api/pdf/${tune.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${quietLinkClass} justify-center`}
+                            >
+                              Open PDF
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="p-3 sm:p-4">
+                        {showPlayAlong && sheetIsPdf ? (
+                          <div role="tablist" aria-label="Sheet music view" className="mb-4 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={sheetMode === 'play'}
+                              className={sheetMode === 'play' ? goldButtonClass : outlineButtonClass}
+                              onClick={() => setSheetMode('play')}
+                            >
+                              Play along
+                            </button>
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={sheetMode === 'pdf'}
+                              className={sheetMode === 'pdf' ? goldButtonClass : outlineButtonClass}
+                              onClick={() => setSheetMode('pdf')}
+                            >
+                              PDF
+                            </button>
+                          </div>
+                        ) : null}
+                        {showPlayAlong && sheetMode === 'play' ? (
+                          <InteractiveSheetPlayer
+                            scoreUrl={tune.museScorePath || ''}
+                            title={tune.title}
+                            onUnavailable={() => setPlayerFailed(true)}
+                          />
+                        ) : sheetIsPdf ? (
+                          <SheetMusicViewer key={tune.id} fileUrl={`/api/pdf/${tune.id}`} title={tune.title} />
+                        ) : hasSheetMusic ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={tune.sheetMusicPath} alt={`${tune.title} sheet music`} className="mx-auto h-auto w-full" />
+                          </>
+                        ) : (
+                          <p className="py-8 text-center text-ink-body">The interactive score could not be shown.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
