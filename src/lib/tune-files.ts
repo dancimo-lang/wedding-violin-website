@@ -1,7 +1,8 @@
 export const TUNE_FILE_MAX_BYTES = 20 * 1024 * 1024;
 export const PRACTICE_TIPS_MAX = 2000;
 
-const SCORE_EXTENSIONS = new Set(['.mscz', '.mxl', '.musicxml']);
+const SCORE_EXTENSIONS = new Set(['.mscz', '.mxl', '.musicxml', '.xml']);
+const MUSICXML_EXTENSIONS = new Set(['.mxl', '.musicxml', '.xml']);
 
 export function fileExtension(name: string): string {
   const base = name.split(/[/\\]/).pop() ?? '';
@@ -24,6 +25,10 @@ export function isScoreExtension(extension: string): boolean {
   return SCORE_EXTENSIONS.has(extension);
 }
 
+export function isMusicXmlExtension(extension: string): boolean {
+  return MUSICXML_EXTENSIONS.has(extension);
+}
+
 export function isTuneId(value: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 80;
 }
@@ -42,7 +47,7 @@ export function validateSheetMusicFile(file: { name: string; size: number }): st
 
 export function validateScoreFile(file: { name: string; size: number }): string | null {
   if (!isScoreExtension(fileExtension(file.name))) {
-    return 'MuseScore files must end in .mscz, .mxl, or .musicxml.';
+    return 'MuseScore files must end in .mscz, .mxl, .musicxml, or .xml.';
   }
   return sizeError(file, 'MuseScore file');
 }

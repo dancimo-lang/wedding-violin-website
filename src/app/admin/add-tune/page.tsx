@@ -350,14 +350,14 @@ export default function AddTunePage() {
 
               <div>
                 <label htmlFor="score" className="mb-2 block text-sm font-medium text-gray-700">
-                  MuseScore file (.mscz, .mxl, or .musicxml)
+                  MuseScore file (.mscz, .mxl, .musicxml, or .xml)
                 </label>
                 <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-amber-500">
                   <input
                     key={`score-${fileKey}`}
                     type="file"
                     id="score"
-                    accept=".mscz,.mxl,.musicxml"
+                    accept=".mscz,.mxl,.musicxml,.xml"
                     onChange={(event) => setScoreFile(event.target.files?.[0] ?? null)}
                     className="hidden"
                   />
@@ -366,6 +366,7 @@ export default function AddTunePage() {
                     <p className="text-gray-600">{scoreFile ? scoreFile.name : 'Optional. Click to upload a MuseScore file'}</p>
                   </label>
                 </div>
+                <p className="mt-2 text-sm text-gray-600">Export from MuseScore: File &gt; Export &gt; MusicXML</p>
               </div>
 
               {message.text ? (
@@ -431,10 +432,11 @@ export default function AddTunePage() {
                   key={`edit-score-${editFileKey}`}
                   id="edit-score"
                   type="file"
-                  accept=".mscz,.mxl,.musicxml"
+                  accept=".mscz,.mxl,.musicxml,.xml"
                   onChange={(event) => setEditScore(event.target.files?.[0] ?? null)}
                   className="block w-full text-sm text-gray-700"
                 />
+                <p className="mt-2 text-sm text-gray-600">Export from MuseScore: File &gt; Export &gt; MusicXML</p>
               </div>
               {editMessage.text ? (
                 <div role="status" className={`rounded-lg p-4 ${editMessage.type === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>

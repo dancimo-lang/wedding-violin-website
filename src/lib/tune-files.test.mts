@@ -4,6 +4,7 @@ import {
   cleanPracticeTips,
   downloadExtension,
   fileExtension,
+  isMusicXmlExtension,
   practiceTipsError,
   validateScoreFile,
   validateSheetMusicFile,
@@ -17,15 +18,19 @@ test('sheet music accepts a PDF inside the size limit', () => {
   assert.equal(fileExtension('folder/Song.PDF'), '.pdf');
 });
 
-test('MuseScore uploads accept mscz, mxl, and musicxml only', () => {
+test('MuseScore uploads accept mscz and MusicXML', () => {
   assert.equal(validateScoreFile({ name: 'tune.mscz', size: 500 }), null);
   assert.equal(validateScoreFile({ name: 'tune.MXL', size: 500 }), null);
   assert.equal(validateScoreFile({ name: 'tune.musicxml', size: 500 }), null);
+  assert.equal(validateScoreFile({ name: 'tune.xml', size: 500 }), null);
   assert.match(validateScoreFile({ name: 'tune.pdf', size: 500 }) ?? '', /mscz/);
-  assert.match(validateScoreFile({ name: 'tune.xml', size: 500 }) ?? '', /mscz/);
+  assert.match(validateScoreFile({ name: 'tune.txt', size: 500 }) ?? '', /mscz/);
   assert.equal(fileExtension('../secret.mscz'), '.mscz');
-  assert.equal(downloadExtension('https://example.blob.vercel-storage.com/cook.mscz?download=1'), '.mscz');
+  assert.equal(downloadExtension('https://example.blob.vercel-storage.com/cook.musicxml?download=1'), '.musicxml');
   assert.equal(downloadExtension('/docs/cook-in-the-kitchen.pdf'), '.pdf');
+  assert.equal(isMusicXmlExtension('.xml'), true);
+  assert.equal(isMusicXmlExtension('.mxl'), true);
+  assert.equal(isMusicXmlExtension('.mscz'), false);
 });
 
 test('practice tips keep line breaks and reject a too-long note', () => {

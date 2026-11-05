@@ -5,16 +5,21 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CTASection from '@/components/CTASection';
 import { downloadName, ResourceTipDialog, SupportLessonsLink, useResourceTipPrompt } from '@/components/ResourceTipPrompt';
-import { goldButtonClass, quietLinkClass } from '@/components/public-button';
+import { goldButtonClass, outlineButtonClass, quietLinkClass } from '@/components/public-button';
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { isPublishableCopy } from '@/lib/publicContent';
 import { TIP_CANCELED, TIP_THANKS } from '@/lib/payments/resource-tip';
-import { downloadExtension } from '@/lib/tune-files';
+import { downloadExtension, isMusicXmlExtension } from '@/lib/tune-files';
 import type { Tune } from '@/lib/tune-types';
 
 const SheetMusicViewer = dynamic(() => import('@/components/SheetMusicViewer'), {
   ssr: false,
   loading: () => <p className="py-16 text-center text-ink-body">Loading sheet music…</p>,
+});
+
+const InteractiveSheetPlayer = dynamic(() => import('@/components/InteractiveSheetPlayer'), {
+  ssr: false,
+  loading: () => <p className="py-16 text-center text-ink-body">Loading score…</p>,
 });
 
 const navClass =
@@ -23,6 +28,8 @@ const navClass =
 export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'canceled' | null }) {
   const [tunes, setTunes] = useState<Tune[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sheetMode, setSheetMode] = useState<'play' | 'pdf'>('play');
+  const [playerFailed, setPlayerFailed] = useState(false);
   const prompt = useResourceTipPrompt(`/services/lessons/resources/${id}`);
 
   useEffect(() => {
@@ -38,6 +45,8 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
         if (!cancelled) setIsLoading(false);
       }
     }
+    setSheetMode('play');
+    setPlayerFailed(false);
     void fetchTunes();
     return () => {
       cancelled = true;
@@ -77,6 +86,9 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
   const hasSheetMusic = isPublishableCopy(tune.sheetMusicPath);
   const sheetIsPdf = hasSheetMusic && downloadExtension(tune.sheetMusicPath) === '.pdf';
   const hasScore = isPublishableCopy(tune.museScorePath);
+  const hasMusicXml = hasScore && isMusicXmlExtension(downloadExtension(tune.museScorePath || ''));
+  const showPlayAlong = hasMusicXml && !playerFailed;
+  const showSheet = hasSheetMusic || showPlayAlong;
   const showPracticeTips = isPublishableCopy(tune.practiceTips);
 
   return (
@@ -163,7 +175,7 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
               ) : null}
             </div>
 
-            {hasSheetMusic ? (
+            {showSheet ? (
               <div className="overflow-hidden rounded-xl border border-cream-line bg-cream-card">
                 <div className="flex flex-col gap-3 border-b border-cream-line p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
@@ -228,13 +240,43 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
                   </div>
                 </div>
                 <div className="p-3 sm:p-4">
-                  {sheetIsPdf ? (
+                  {showPlayAlong && sheetIsPdf ? (
+                    <div role="tablist" aria-label="Sheet music view" className="mb-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={sheetMode === 'play'}
+                        className={sheetMode === 'play' ? goldButtonClass : outlineButtonClass}
+                        onClick={() => setSheetMode('play')}
+                      >
+                        Play along
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={sheetMode === 'pdf'}
+                        className={sheetMode === 'pdf' ? goldButtonClass : outlineButtonClass}
+                        onClick={() => setSheetMode('pdf')}
+                      >
+                        PDF
+                      </button>
+                    </div>
+                  ) : null}
+                  {showPlayAlong && sheetMode === 'play' ? (
+                    <InteractiveSheetPlayer
+                      scoreUrl={tune.museScorePath || ''}
+                      title={tune.title}
+                      onUnavailable={() => setPlayerFailed(true)}
+                    />
+                  ) : sheetIsPdf ? (
                     <SheetMusicViewer fileUrl={`/api/pdf/${tune.id}`} title={tune.title} />
-                  ) : (
+                  ) : hasSheetMusic ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={tune.sheetMusicPath} alt={`${tune.title} sheet music`} className="mx-auto h-auto w-full" />
                     </>
+                  ) : (
+                    <p className="py-8 text-center text-ink-body">The interactive score could not be shown.</p>
                   )}
                 </div>
               </div>
