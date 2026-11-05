@@ -1,7 +1,8 @@
 import { list } from '@vercel/blob';
 import localTunes from '@/data/tunes.json';
+import type { Tune } from '@/lib/tune-types';
 
-export type Tune = (typeof localTunes.tunes)[number];
+export type { Tune };
 
 export async function getTunes(): Promise<Tune[]> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {

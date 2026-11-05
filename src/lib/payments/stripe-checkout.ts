@@ -9,6 +9,7 @@ import type { ObligationRef } from './match';
 import { verifyStripeWebhook } from './stripe-signature';
 import { isStripeSecretKey } from './stripe-key';
 import { planStripeEvent, type CheckoutSessionStatus } from './stripe-event';
+import { isResourceTipMetadata } from './resource-tip';
 import {
   STRIPE_CHECKOUT_API_VERSION,
   checkoutIdempotencyKey,
@@ -363,7 +364,7 @@ type StripeSessionObject = {
   payment_status?: string;
   amount_total?: number;
   payment_intent?: string | { id?: string };
-  metadata?: { obligation_id?: string; booking_id?: string };
+  metadata?: { obligation_id?: string; booking_id?: string; purpose?: string; tune_id?: string };
 };
 
 type SessionRow = {
@@ -396,6 +397,11 @@ export async function ingestStripeWebhook(input: {
   const eventId = typeof event.id === 'string' ? event.id : '';
   const type = typeof event.type === 'string' ? event.type : '';
   const sessionObject = event.data?.object;
+  // Tips are not booking payments. Ignore them before any payment row, checkout
+  // session, or owner email is touched. metadata.purpose identifies the session.
+  if (isResourceTipMetadata(sessionObject?.metadata)) {
+    return { status: 200, body: { ok: true, ignored: true } };
+  }
   const sessionId = typeof sessionObject?.id === 'string' ? sessionObject.id : '';
   if (!eventId.startsWith('evt_') || !sessionId.startsWith('cs_')) {
     return { status: 200, body: { ok: true, ignored: true } };
