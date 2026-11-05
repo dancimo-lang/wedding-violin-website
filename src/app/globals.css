@@ -281,6 +281,16 @@ button.pay-card-button:disabled {
   white-space: normal;
 }
 
+.contract-musician-note {
+  margin-top: 0.35rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #4b5563;
+}
+
 .contract-inline-input {
   display: inline-block;
   min-width: 10rem;

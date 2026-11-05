@@ -5,7 +5,7 @@ import test from 'node:test';
 import { findOpenObligations, generateBookingCode, isBookingCode } from './booking-code';
 import { computeFees, finalPaymentDueDate, formatMoney, parseDollarInput, splitRetainer } from './money';
 import { renderContractPdf } from './pdf';
-import { contractSourceText, formatElectronicSignature, presentSignedContract } from './signature-style';
+import { contractSourceText, formatElectronicSignature, isBlankAgreementLine, presentSignedContract } from './signature-style';
 import {
   clientEventDetailsError,
   coupleSuppliedSummary,
@@ -228,6 +228,20 @@ test('filled agreements keep the legal wording and have no placeholders', () => 
   );
   assert.match(full, /☐ The Client opts out of promotional use of photographs and video clips from the event\./);
   assert.match(full, /Alex Rivera and Jordan Lee/);
+  const oneClient = renderContract({ ...sampleFields, client2Name: '' }, { ...signedOverlay, client2SignedName: '' });
+  assert.match(oneClient, /Client\(s\):\nAlex Rivera\n/);
+  assert.doesNotMatch(oneClient, /Alex Rivera and/);
+  const oneFull = renderContract(
+    { ...sampleFields, templateId: 'full-wedding', packageId: 'FULL', renderEdition: 2, client2Name: '' },
+    { ...signedOverlay, client2SignedName: '' },
+  );
+  assert.match(oneFull, /Client\(s\):\nAlex Rivera\n/);
+  assert.doesNotMatch(oneFull, /Alex Rivera and/);
+  const bothFull = renderContract(
+    { ...sampleFields, templateId: 'full-wedding', packageId: 'FULL', renderEdition: 2 },
+    signedOverlay,
+  );
+  assert.match(bothFull, /Client\(s\):\nAlex Rivera and Jordan Lee\n/);
   assert.match(full, /Event Date: June 15, 2026/);
   assert.match(full, /Event Time: 4:00 PM to 4:30 PM/);
 
@@ -807,6 +821,13 @@ test('signature styling is drawn from the locked text and does not change it', (
     unsigned.filter((segment) => segment.type === 'signature').every((segment) => segment.type === 'signature' && segment.caption === ''),
     true,
   );
+});
+
+test('blank musician lines are underscores, not a typed name', () => {
+  assert.equal(isBlankAgreementLine(''), true);
+  assert.equal(isBlankAgreementLine('__________________________________'), true);
+  assert.equal(isBlankAgreementLine('Daniel Cimo'), false);
+  assert.equal(isBlankAgreementLine('\u27e6c1sig\u27e7'), false);
 });
 
 test('public package ids from the booking form map to contract packages', () => {

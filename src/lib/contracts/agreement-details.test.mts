@@ -10,6 +10,8 @@ import {
   emptyAgreement,
   formValueFromDraft,
   mergeAgreement,
+  preludeAfterCeremonyChange,
+  preludeFromCeremony,
   readAgreement,
   readAgreementNote,
 } from './agreement-details';
@@ -160,4 +162,23 @@ test('full wedding stores the displayed reception start', () => {
     }),
   });
   assert.equal(stored.receptionStart, '18:00');
+});
+
+test('prelude follows the ceremony until the times are typed by hand', () => {
+  assert.deepEqual(preludeFromCeremony('16:00'), { preludeStart: '15:30', preludeEnd: '16:00' });
+  assert.deepEqual(preludeFromCeremony('00:10'), { preludeStart: '23:40', preludeEnd: '00:10' });
+  assert.equal(preludeFromCeremony(''), null);
+
+  const empty = { ceremonyStart: '', preludeStart: '', preludeEnd: '' };
+  assert.deepEqual(preludeAfterCeremonyChange(empty, '16:00'), { preludeStart: '15:30', preludeEnd: '16:00' });
+
+  const auto = { ceremonyStart: '16:00', preludeStart: '15:30', preludeEnd: '16:00' };
+  assert.deepEqual(preludeAfterCeremonyChange(auto, '17:00'), { preludeStart: '16:30', preludeEnd: '17:00' });
+  assert.deepEqual(preludeAfterCeremonyChange(auto, ''), { preludeStart: '', preludeEnd: '' });
+
+  const typed = { ceremonyStart: '16:00', preludeStart: '15:00', preludeEnd: '15:45' };
+  assert.equal(preludeAfterCeremonyChange(typed, '17:00'), null);
+
+  const cleared = { ceremonyStart: '16:00', preludeStart: '', preludeEnd: '' };
+  assert.deepEqual(preludeAfterCeremonyChange(cleared, '17:00'), { preludeStart: '16:30', preludeEnd: '17:00' });
 });

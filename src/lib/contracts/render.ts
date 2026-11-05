@@ -265,6 +265,14 @@ function clientLine(first: string, second: string): string {
   return left || right;
 }
 
+/** Full wedding writes both names into the Client(s) line. One name must not leave "and" plus a blank. */
+const FULL_CLIENT_PAIR = '{{CLIENT_1_NAME}} and {{CLIENT_2_NAME}}';
+
+function fullWeddingClients(template: string): string {
+  if (!template.includes(FULL_CLIENT_PAIR)) throw new Error('Full wedding agreement is missing the client line.');
+  return template.replace(FULL_CLIENT_PAIR, '{{CLIENT_NAMES}}');
+}
+
 function photoLine(optOut: boolean): string {
   return `${mark(optOut)} ${PHOTO_SENTENCE}`;
 }
@@ -482,7 +490,8 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   }
 
   const fullTemplate = fields.renderEdition === 4 ? withFullWeddingSchedule(fullWeddingTemplate, performanceSchedule(fields)) : fullWeddingTemplate;
-  const body = fullWeddingFees(fillTemplate(fullTemplate, shown({
+  const body = fullWeddingFees(fillTemplate(fullWeddingClients(fullTemplate), shown({
+    CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
     CLIENT_1_NAME: filled(fields.client1Name),
     CLIENT_2_NAME: filled(fields.client2Name),
     EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
