@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:schedule": "tsx --test src/lib/schedule/availability.test.mts src/lib/schedule/booking-status.test.mts src/lib/schedule/unavailable-dates.test.mts src/lib/google/google.test.mts src/lib/google/sync.test.mts src/lib/google/busy-refresh.test.mts src/components/admin/GoogleConnectionCard.test.mts src/lib/api/match.test.mts src/lib/admin-shell-path.test.mts src/lib/contracts/contract.test.mts src/lib/contracts/agreement-details.test.mts src/lib/leads-follow-up.test.mts src/lib/contracts/custom-songs.test.mts src/lib/venues/photon.test.mts src/lib/venues/search.test.mts src/lib/venues/rate-limit.test.mts src/lib/contracts/mail-guard.test.mts src/lib/payments/payments.test.mts src/lib/bookings/existing-booking.test.mts src/lib/auth/password-reset.test.mts scripts/gmail-zelle-forwarder/forwarder.test.mts"
+    "test:schedule": "tsx --test src/lib/schedule/availability.test.mts src/lib/schedule/booking-status.test.mts src/lib/schedule/unavailable-dates.test.mts src/lib/google/google.test.mts src/lib/google/sync.test.mts src/lib/google/busy-refresh.test.mts src/components/admin/GoogleConnectionCard.test.mts src/lib/api/match.test.mts src/lib/admin-shell-path.test.mts src/lib/contracts/contract.test.mts src/lib/contracts/agreement-details.test.mts src/lib/leads-follow-up.test.mts src/lib/contracts/custom-songs.test.mts src/lib/venues/photon.test.mts src/lib/venues/search.test.mts src/lib/venues/rate-limit.test.mts src/lib/contracts/mail-guard.test.mts src/lib/payments/payments.test.mts src/lib/payments/resource-tip.test.mts src/lib/tune-files.test.mts src/lib/bookings/existing-booking.test.mts src/lib/auth/password-reset.test.mts scripts/gmail-zelle-forwarder/forwarder.test.mts"
   },
   "dependencies": {
     "@codesweetly/react-youtube-playlist": "^3.1.0",
@@ -18,6 +18,7 @@
     "lucide-react": "^0.563.0",
     "next": "16.1.4",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",

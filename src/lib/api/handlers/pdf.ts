@@ -17,10 +17,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ message: 'PDF not found' }, { status: 404 });
     }
     
-    console.log('Fetching PDF from:', tune.sheetMusicPath);
-    
-    // Fetch the PDF from the Blob URL
-    const pdfResponse = await fetch(tune.sheetMusicPath);
+    const pdfUrl = /^https?:\/\//i.test(tune.sheetMusicPath)
+      ? tune.sheetMusicPath
+      : new URL(tune.sheetMusicPath, request.nextUrl.origin).toString();
+    console.log('Fetching PDF from:', pdfUrl);
+
+    const pdfResponse = await fetch(pdfUrl);
     
     if (!pdfResponse.ok) {
       throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);

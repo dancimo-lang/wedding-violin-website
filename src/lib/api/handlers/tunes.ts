@@ -3,6 +3,7 @@ import { list } from '@vercel/blob';
 import fs from 'fs';
 import path from 'path';
 import { isPublishableCopy } from '@/lib/publicContent';
+import { cleanPracticeTips, downloadExtension, isScoreExtension, PRACTICE_TIPS_MAX } from '@/lib/tune-files';
 
 function publishedSheetMusicPath(sheetMusicPath: unknown): string {
   if (typeof sheetMusicPath !== 'string' || !isPublishableCopy(sheetMusicPath)) {
@@ -19,18 +20,38 @@ function publishedSheetMusicPath(sheetMusicPath: unknown): string {
   return fs.existsSync(filePath) ? sheetMusicPath : '';
 }
 
+function publishedPracticeTips(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const cleaned = cleanPracticeTips(value).slice(0, PRACTICE_TIPS_MAX);
+  return isPublishableCopy(cleaned) ? cleaned : '';
+}
+
+function publishedScorePath(scorePath: unknown): string {
+  if (typeof scorePath !== 'string' || !isPublishableCopy(scorePath)) return '';
+  if (!isScoreExtension(downloadExtension(scorePath))) return '';
+  if (/^https?:\/\//i.test(scorePath)) return scorePath;
+  const relative = scorePath.replace(/^\/+/, '');
+  if (!relative || relative.includes('..')) return '';
+  const filePath = path.join(process.cwd(), 'public', relative);
+  return fs.existsSync(filePath) ? scorePath : '';
+}
+
 function sanitizeTunesPayload(data: { tunes?: Array<Record<string, unknown>> }) {
   return {
     tunes: (data.tunes ?? []).map((tune) => {
       const youtubeId = typeof tune.youtubeId === 'string' && isPublishableCopy(tune.youtubeId)
         ? tune.youtubeId
         : '';
+      const practiceTips = publishedPracticeTips(tune.practiceTips);
+      const museScorePath = publishedScorePath(tune.museScorePath);
       return {
         ...tune,
         ownerNote: undefined,
         mediaNote: undefined,
         youtubeId,
         sheetMusicPath: publishedSheetMusicPath(tune.sheetMusicPath),
+        practiceTips: practiceTips || undefined,
+        museScorePath: museScorePath || undefined,
       };
     }),
   };
