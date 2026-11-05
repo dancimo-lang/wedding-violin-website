@@ -232,6 +232,38 @@ function clockMinutes(value: string) {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
+function clockFromMinutes(total: number) {
+  const minutes = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+/** Prelude begins 30 minutes before the ceremony and ends when the ceremony starts. */
+export function preludeFromCeremony(ceremonyStart: string): { preludeStart: string; preludeEnd: string } | null {
+  const minutes = clockMinutes(ceremonyStart);
+  if (minutes == null) return null;
+  return { preludeStart: clockFromMinutes(minutes - 30), preludeEnd: ceremonyStart.trim().slice(0, 5) };
+}
+
+/**
+ * New prelude times when the ceremony start changes.
+ * Empty fields, and fields that still match the previous automatic times, follow the ceremony.
+ * Hand-typed times are left alone. Null means do not change the prelude.
+ */
+export function preludeAfterCeremonyChange(
+  current: { ceremonyStart: string; preludeStart: string; preludeEnd: string },
+  nextCeremonyStart: string,
+): { preludeStart: string; preludeEnd: string } | null {
+  const start = current.preludeStart.trim();
+  const end = current.preludeEnd.trim();
+  const previous = preludeFromCeremony(current.ceremonyStart);
+  const empty = !start && !end;
+  const stillAuto = Boolean(previous && start === previous.preludeStart && end === previous.preludeEnd);
+  if (!empty && !stillAuto) return null;
+  return preludeFromCeremony(nextCeremonyStart) ?? { preludeStart: '', preludeEnd: '' };
+}
+
 function earliestClock(values: string[]) {
   let best = '';
   let bestMinutes = Number.POSITIVE_INFINITY;

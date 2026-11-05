@@ -1,10 +1,12 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { CustomSongsFields } from '@/components/admin/CustomSongsFields';
 import { VenueNameField } from '@/components/admin/VenueNameField';
 import {
   AGREEMENT_FIELD_IDS,
+  preludeAfterCeremonyChange,
+  preludeFromCeremony,
   type AgreementFormValue,
 } from '@/lib/contracts/agreement-details';
 import { computeFees, formatMoney, type FeeSummary } from '@/lib/contracts/money';
@@ -31,6 +33,22 @@ export function AgreementFields({
   const fullWedding = value.packageId === 'FULL';
   const cocktailRequired = fullWedding || packageIncludesCocktailHour(value.packageId);
   const receptionStartShown = fullWedding && !value.receptionStart.trim() ? value.cocktailEnd : value.receptionStart;
+  const ceremonyStart = value.ceremonyStart;
+
+  useEffect(() => {
+    if (privateEvent || !ceremonyStart || value.preludeStart.trim() || value.preludeEnd.trim()) return;
+    const auto = preludeFromCeremony(ceremonyStart);
+    if (!auto) return;
+    onChange({ ...value, ...auto });
+    // Fill once when the ceremony start is set and the prelude is still blank.
+    // Clearing the prelude must not run this again until the ceremony start changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ceremonyStart, privateEvent]);
+
+  const setCeremonyStart = (nextCeremonyStart: string) => {
+    const prelude = preludeAfterCeremonyChange(value, nextCeremonyStart);
+    set({ ceremonyStart: nextCeremonyStart, ...(prelude ?? {}) });
+  };
   const summary = computeFees({
     packageId: value.packageId,
     travelFeeCents: cents(value.travelFee),
@@ -88,7 +106,7 @@ export function AgreementFields({
               <TimeField id={AGREEMENT_FIELD_IDS.preludeEnd} label="Prelude ends" value={value.preludeEnd} onChange={(preludeEnd) => set({ preludeEnd })} />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <TimeField id={AGREEMENT_FIELD_IDS.ceremonyStart} label="Ceremony start" value={value.ceremonyStart} required onChange={(ceremonyStart) => set({ ceremonyStart })} />
+              <TimeField id={AGREEMENT_FIELD_IDS.ceremonyStart} label="Ceremony start" value={value.ceremonyStart} required onChange={setCeremonyStart} />
               <TimeField id={AGREEMENT_FIELD_IDS.ceremonyEnd} label="Ceremony end" value={value.ceremonyEnd} required onChange={(ceremonyEnd) => set({ ceremonyEnd })} />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -126,14 +144,14 @@ export function AgreementFields({
               </div>
             ) : (
               <p className="text-sm font-normal text-gray-700">
-                Prelude is optional. Cocktail hour is required for ceremony-and-cocktail packages. On a ceremony-only package it prints only when you enter those times.
+                Prelude fills in as the 30 minutes before the ceremony and can be changed or cleared. Cocktail hour is required for ceremony-and-cocktail packages. On a ceremony-only package it prints only when you enter those times.
               </p>
             )}
           </>
         )}
         {fullWedding ? (
           <p className="text-sm font-normal text-gray-700">
-            Prelude can be left blank. Reception begins starts as the cocktail-hour end and can be changed.
+            Prelude fills in as the 30 minutes before the ceremony and can be changed or cleared. Reception begins starts as the cocktail-hour end and can be changed.
           </p>
         ) : null}
       </FormSection>
