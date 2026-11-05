@@ -3,6 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
+
+async function openPdf(data: Uint8Array): Promise<PDFDocumentProxy> {
+  try {
+    const pdfjs = await import('pdfjs-dist/webpack.mjs');
+    return await pdfjs.getDocument({ data }).promise;
+  } catch {
+    // The bundled worker can fail to load on a protected preview. The legacy
+    // build parses the same bytes without that separate request.
+    const legacy = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    return await legacy.getDocument({ data: data.slice(), isEvalSupported: false }).promise;
+  }
+}
 import { goldButtonClass, outlineButtonClass } from '@/components/public-button';
 
 export default function SheetMusicViewer({ fileUrl, title }: { fileUrl: string; title: string }) {
@@ -17,16 +29,15 @@ export default function SheetMusicViewer({ fileUrl, title }: { fileUrl: string; 
 
   useEffect(() => {
     let cancelled = false;
-    setStatus('loading');
-    setPage(1);
-    setPageCount(0);
 
     async function load() {
-      const pdfjs = await import('pdfjs-dist/webpack.mjs');
-      const response = await fetch(fileUrl);
+      const response = await fetch(fileUrl, { credentials: 'same-origin' });
       if (!response.ok) throw new Error('The sheet music could not be loaded.');
       const data = new Uint8Array(await response.arrayBuffer());
-      const loaded = await pdfjs.getDocument({ data }).promise;
+      if (data.length < 5 || data[0] !== 0x25 || data[1] !== 0x50 || data[2] !== 0x44 || data[3] !== 0x46) {
+        throw new Error('The sheet music was not a PDF.');
+      }
+      const loaded = await openPdf(data);
       if (cancelled) {
         await loaded.destroy();
         return;

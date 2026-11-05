@@ -10,6 +10,7 @@ import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { isPublishableCopy } from '@/lib/publicContent';
 import { TIP_CANCELED, TIP_THANKS } from '@/lib/payments/resource-tip';
 import { downloadExtension, isMusicXmlExtension } from '@/lib/tune-files';
+import { youtubeEmbed } from '@/lib/youtube';
 import type { Tune } from '@/lib/tune-types';
 
 const SheetMusicViewer = dynamic(() => import('@/components/SheetMusicViewer'), {
@@ -82,7 +83,8 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
   const previous = index > 0 ? tunes[index - 1] : null;
   const next = index < tunes.length - 1 ? tunes[index + 1] : null;
   const tags = Array.isArray(tune.tags) ? tune.tags : [];
-  const hasVideo = isPublishableCopy(tune.youtubeId);
+  const video = youtubeEmbed(tune.youtubeId);
+  const hasVideo = Boolean(video);
   const hasSheetMusic = isPublishableCopy(tune.sheetMusicPath);
   const sheetIsPdf = hasSheetMusic && downloadExtension(tune.sheetMusicPath) === '.pdf';
   const hasScore = isPublishableCopy(tune.museScorePath);
@@ -165,8 +167,9 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
                   <div className="aspect-video bg-charcoal">
                     <iframe
                       className="h-full w-full"
-                      src={`https://www.youtube.com/embed/${tune.youtubeId}?rel=0&modestbranding=1&playsinline=1`}
+                      src={video?.src}
                       title={`${tune.title} video`}
+                      referrerPolicy="strict-origin-when-cross-origin"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
                     />
@@ -269,7 +272,7 @@ export default function TuneView({ id, tip }: { id: string; tip: 'thanks' | 'can
                       onUnavailable={() => setPlayerFailed(true)}
                     />
                   ) : sheetIsPdf ? (
-                    <SheetMusicViewer fileUrl={`/api/pdf/${tune.id}`} title={tune.title} />
+                    <SheetMusicViewer key={tune.id} fileUrl={`/api/pdf/${tune.id}`} title={tune.title} />
                   ) : hasSheetMusic ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
