@@ -24,6 +24,7 @@ type ViewResponse = {
   musicianSigned?: boolean;
   clientSignedAt?: string | null;
   musicianSignedAt?: string | null;
+  autoCountersign?: boolean;
   client1Name?: string | null;
   client2Name?: string | null;
   bookingCode: string | null;
@@ -325,7 +326,12 @@ export function SignContract() {
                     void sign();
                   }}
                 >
-                  <ContractText className="md:max-h-none md:overflow-visible" text={documentText} renderSlot={renderSlot} />
+                  <ContractText
+                    className="md:max-h-none md:overflow-visible"
+                    text={documentText}
+                    renderSlot={renderSlot}
+                    musicianAwaitingNote={view?.autoCountersign === true}
+                  />
                   <label className="flex items-start gap-3 text-base">
                     <input
                       type="checkbox"

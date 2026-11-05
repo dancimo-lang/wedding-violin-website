@@ -34,6 +34,17 @@ export function isRecordedSignatureName(name: string): boolean {
   return trimmed.length > 0 && !/^_+$/.test(trimmed);
 }
 
+/** Shown in the musician block before the client signs, only when auto-countersign is on. Not stored in the agreement. */
+export const MUSICIAN_AUTO_SIGN_NOTE = 'Daniel Cimo — signs automatically when you sign';
+
+/** Empty or underscore fill-in lines. Slot markers used by the signing form are not blank. */
+export function isBlankAgreementLine(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  if (trimmed.includes('\u27e6')) return false;
+  return /^_+$/.test(trimmed);
+}
+
 /**
  * "Signed electronically Oct 29, 2026, 9:22 AM PT".
  * The clock is Pacific time. The label is always PT.

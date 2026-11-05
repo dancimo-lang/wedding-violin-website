@@ -53,6 +53,7 @@ export function ContractPanel({
   const [notice, setNotice] = useState('');
   const [signingUrl, setSigningUrl] = useState('');
   const [musicianName, setMusicianName] = useState('Daniel Cimo');
+  const [autoCountersign, setAutoCountersign] = useState(false);
 
   const reloadContracts = useCallback(async (next: Loaded) => {
     let query = createClient().from('contracts').select(CONTRACT_LIST_COLUMNS).order('created_at', { ascending: false });
@@ -110,6 +111,8 @@ export function ContractPanel({
         saved: buildSavedAgreement({ lead, booking, client, agreement }),
       };
       setLoaded(next);
+      const { data: settings } = await supabase.from('business_settings').select('auto_countersign_contracts').eq('id', 1).maybeSingle();
+      if (!cancelled) setAutoCountersign(settings?.auto_countersign_contracts === true);
       await reloadContracts(next);
     }
     load().catch(() => {
@@ -289,7 +292,7 @@ export function ContractPanel({
             />
           ) : null}
           {preview ? (
-            <ContractText className="max-h-96 overflow-auto md:max-h-96" text={preview} />
+            <ContractText className="max-h-96 overflow-auto md:max-h-96" text={preview} musicianAwaitingNote={autoCountersign} />
           ) : (
             <p className="text-sm text-gray-700">The agreement preview appears once the client name and date are saved.</p>
           )}

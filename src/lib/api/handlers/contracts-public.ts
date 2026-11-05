@@ -82,7 +82,7 @@ function paymentPayload(row: ContractRecord) {
   };
 }
 
-function viewPayload(row: ContractRecord, text: string) {
+function viewPayload(row: ContractRecord, text: string, autoCountersign = false) {
   const canSign = OPEN_STATUSES.has(row.status);
   return {
     status: row.status,
@@ -95,8 +95,19 @@ function viewPayload(row: ContractRecord, text: string) {
     musicianSigned: Boolean(row.musician_signed_at),
     clientSignedAt: row.signed_at,
     musicianSignedAt: row.musician_signed_at,
+    autoCountersign,
     ...paymentPayload(row),
   };
+}
+
+async function readAutoCountersign(): Promise<boolean> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from('business_settings').select('auto_countersign_contracts').eq('id', 1).maybeSingle();
+    return data?.auto_countersign_contracts === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function GET(request: Request) {
@@ -132,7 +143,8 @@ export async function GET(request: Request) {
     row.executed_text ||
     row.signed_text ||
     (fields ? renderContract(fields) : '');
-  return noStore(viewPayload(row, text));
+  const autoCountersign = await readAutoCountersign();
+  return noStore(viewPayload(row, text, autoCountersign));
 }
 
 async function clientEmail(leadId: string | null, bookingId: string | null): Promise<{ email: string | null; name: string | null }> {

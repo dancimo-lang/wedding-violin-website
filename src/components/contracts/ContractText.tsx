@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { contractBlocks, signerRoleFor, type ContractBlock } from '@/lib/contracts/layout';
 import { SLOT_PATTERN } from '@/lib/contracts/render';
-import { formatElectronicSignature, isRecordedSignatureName } from '@/lib/contracts/signature-style';
+import { formatElectronicSignature, isBlankAgreementLine, isRecordedSignatureName, MUSICIAN_AUTO_SIGN_NOTE } from '@/lib/contracts/signature-style';
 
 const frameClass =
   'contract-document md:max-h-[40rem] md:overflow-auto rounded-lg border border-gray-200 bg-white px-4 py-6 font-serif text-[15px] leading-7 sm:px-8';
@@ -53,16 +53,25 @@ function grouped(blocks: ContractBlock[]): Group[] {
  * script font, with a Pacific-time line when a timestamp is stored. The source text
  * is not edited. On the signing page, renderSlot draws inline inputs for blanks.
  */
+const MUSICIAN_BLANK_LABELS = new Set(['Signature', 'Date', 'Printed Name', 'Name']);
+
+function isMusicianBlankField(block: ContractBlock): boolean {
+  return block.kind === 'field' && MUSICIAN_BLANK_LABELS.has(block.label) && isBlankAgreementLine(block.value);
+}
+
 export function ContractText({
   text,
   clientSignedAt = null,
   musicianSignedAt = null,
+  musicianAwaitingNote = false,
   className = '',
   renderSlot,
 }: {
   text: string;
   clientSignedAt?: string | null;
   musicianSignedAt?: string | null;
+  /** Subtle note in place of blank musician lines. Only while auto-countersign is on and he has not signed. */
+  musicianAwaitingNote?: boolean;
   className?: string;
   renderSlot?: (name: string) => ReactNode;
 }) {
@@ -106,6 +115,7 @@ export function ContractText({
         );
       case 'field': {
         const value = block.value.trim();
+        if (role === 'musician' && musicianAwaitingNote && isMusicianBlankField(block)) return null;
         if (block.label === 'Signature' && role && !value.includes('\u27e6') && isRecordedSignatureName(value)) {
           const caption = formatElectronicSignature(role === 'musician' ? musicianSignedAt : clientSignedAt);
           return (
@@ -132,11 +142,13 @@ export function ContractText({
     <div className={className ? `${frameClass} ${className}` : frameClass}>
       {groups.map((group, groupIndex) => {
         const role = group.signer ? signerRoleFor(group.signer) : null;
+        const showMusicianNote = role === 'musician' && musicianAwaitingNote && group.blocks.some(isMusicianBlankField);
         const content = group.blocks.map((block, index) => drawBlock(block, index, role));
         if (!group.signer) return <Fragment key={groupIndex}>{content}</Fragment>;
         return (
           <div key={groupIndex} className="contract-signer my-4 rounded-lg border border-gray-300 p-4">
             {content}
+            {showMusicianNote ? <p className="contract-musician-note">{MUSICIAN_AUTO_SIGN_NOTE}</p> : null}
           </div>
         );
       })}

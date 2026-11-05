@@ -5,7 +5,7 @@ import test from 'node:test';
 import { findOpenObligations, generateBookingCode, isBookingCode } from './booking-code';
 import { computeFees, finalPaymentDueDate, formatMoney, parseDollarInput, splitRetainer } from './money';
 import { renderContractPdf } from './pdf';
-import { contractSourceText, formatElectronicSignature, presentSignedContract } from './signature-style';
+import { contractSourceText, formatElectronicSignature, isBlankAgreementLine, presentSignedContract } from './signature-style';
 import {
   clientEventDetailsError,
   coupleSuppliedSummary,
@@ -807,6 +807,13 @@ test('signature styling is drawn from the locked text and does not change it', (
     unsigned.filter((segment) => segment.type === 'signature').every((segment) => segment.type === 'signature' && segment.caption === ''),
     true,
   );
+});
+
+test('blank musician lines are underscores, not a typed name', () => {
+  assert.equal(isBlankAgreementLine(''), true);
+  assert.equal(isBlankAgreementLine('__________________________________'), true);
+  assert.equal(isBlankAgreementLine('Daniel Cimo'), false);
+  assert.equal(isBlankAgreementLine('\u27e6c1sig\u27e7'), false);
 });
 
 test('public package ids from the booking form map to contract packages', () => {
