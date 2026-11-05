@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { AdminButton } from '@/components/admin/AdminButton';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import { useRouter } from 'next/navigation';
 import { PACKAGES, PACKAGE_IDS } from '@/lib/contracts/packages';
 import {
@@ -133,12 +135,17 @@ export default function AddExistingBookingPage() {
               <input type="time" className={fieldClass} value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </label>
           </div>
-          <label className="block text-sm text-gray-700">Venue name
-            <input className={fieldClass} value={venueName} onChange={(e) => setVenueName(e.target.value)} />
-          </label>
-          <label className="block text-sm text-gray-700">Venue address
-            <input className={fieldClass} value={venueAddress} onChange={(e) => setVenueAddress(e.target.value)} />
-          </label>
+          <div className="sm:col-span-2">
+            <VenueNameField
+              name={venueName}
+              address={venueAddress}
+              onName={setVenueName}
+              onAddress={setVenueAddress}
+              labelClassName="block text-sm text-gray-700"
+              inputClassName={fieldClass}
+              layoutClassName="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            />
+          </div>
           <label className="block text-sm text-gray-700">Package
             <select className={fieldClass} value={pkg} onChange={(e) => choosePackage(e.target.value as ExistingPackageChoice)}>
               {PACKAGE_IDS.map((id) => (
@@ -180,9 +187,9 @@ export default function AddExistingBookingPage() {
               : `Paid ${dollars(summary.paidCents)}. Still owed ${dollars(summary.owedCents)}${summary.balanceDueDate ? `, due ${summary.balanceDueDate}` : ''}. A payable record will be saved.`}
           </p>
         )}
-        <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-60">
+        <AdminButton type="submit" disabled={saving}>
           {saving ? 'Saving…' : 'Save booking'}
-        </button>
+        </AdminButton>
         {message && <p className="text-sm text-red-700">{message}</p>}
       </form>
     </div>

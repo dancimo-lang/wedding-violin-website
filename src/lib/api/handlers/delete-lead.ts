@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { queueCallReminder } from '@/lib/google/call-reminder-queue';
+import { isProductionCalendarEnvironment } from '@/lib/google/production';
 import { runGoogleSync } from '@/lib/google/run';
 import { requireAdminApi } from '@/lib/require-admin-api';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -71,7 +73,8 @@ export async function DELETE(_request: Request, leadId: string) {
     }
   }
 
-  if (bookingIds(row.booking_ids).length > 0) {
+  await queueCallReminder(admin, leadId);
+  if (bookingIds(row.booking_ids).length > 0 || isProductionCalendarEnvironment()) {
     try {
       await runGoogleSync();
     } catch {

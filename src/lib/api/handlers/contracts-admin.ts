@@ -5,10 +5,13 @@ import { generateBookingCode, isBookingCode } from '@/lib/contracts/booking-code
 import { clientFacingActivityBody, clientMailWasRedirected, contractOwnerEmail } from '@/lib/contracts/mail';
 import { centsToDollarString, computeFees, formatLongDate, formatMoney, parseDollarInput } from '@/lib/contracts/money';
 import { agreementNoun, isPackageId, packageDefinition } from '@/lib/contracts/packages';
+import { missingCoupleDetailMessage } from '@/lib/contracts/event-details';
 import { cleanAdditionalFeesDescription, feeSnapshot, normalizeStoredFields, performanceTimeOrderMessage, renderContract, signatureDateLabel } from '@/lib/contracts/render';
 import { renderContractPdf } from '@/lib/contracts/pdf';
 import { validateTypedName } from '@/lib/contracts/signers';
 import { generateContractToken, isContractToken } from '@/lib/contracts/token';
+import { queueCallReminder } from '@/lib/google/call-reminder-queue';
+import { isProductionCalendarEnvironment } from '@/lib/google/production';
 import { runGoogleSync } from '@/lib/google/run';
 import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import {
@@ -159,9 +162,12 @@ export async function POST(request: Request) {
   const cocktailStart = clockOrBlank(body.cocktailStart);
   const cocktailEnd = clockOrBlank(body.cocktailEnd);
   const preludeStart = clockOrBlank(body.preludeStart);
+  const preludeEnd = clockOrBlank(body.preludeEnd);
+  const receptionStart = clockOrBlank(body.receptionStart);
+  const receptionEnd = clockOrBlank(body.receptionEnd);
   const weddingDate = plain(body.weddingDate, 10);
   if (
-    [client1Name, client2Name, venueName, venueAddress, otherDetails, ceremonyStart, ceremonyEnd, cocktailStart, cocktailEnd, preludeStart, weddingDate].includes(
+    [client1Name, client2Name, venueName, venueAddress, otherDetails, ceremonyStart, ceremonyEnd, cocktailStart, cocktailEnd, preludeStart, preludeEnd, receptionStart, receptionEnd, weddingDate].includes(
       null,
     )
   ) {
@@ -171,11 +177,31 @@ export async function POST(request: Request) {
   if (!weddingDate) {
     return json({ error: `Add the ${privateEvent ? 'event' : 'wedding'} date. The balance is due 30 days before that date.` }, 400);
   }
-  const timeOrder = performanceTimeOrderMessage({
+  const detailSource = {
+    packageId,
+    venueName: venueName || '',
+    venueAddress: venueAddress || '',
     ceremonyStart: ceremonyStart || '',
     ceremonyEnd: ceremonyEnd || '',
-    cocktailStart: packageId === 'FULL' ? '' : cocktailStart || '',
-    cocktailEnd: packageId === 'FULL' ? '' : cocktailEnd || '',
+    cocktailStart: cocktailStart || '',
+    cocktailEnd: cocktailEnd || '',
+    preludeStart: preludeStart || '',
+    preludeEnd: preludeEnd || '',
+    otherDetails: otherDetails || '',
+    receptionStart: packageId === 'FULL' ? receptionStart || '' : '',
+    receptionEnd: packageId === 'FULL' ? receptionEnd || '' : '',
+  };
+  const missingDetails = missingCoupleDetailMessage(detailSource);
+  if (missingDetails) return json({ error: missingDetails }, 400);
+  const timeOrder = performanceTimeOrderMessage({
+    ceremonyStart: detailSource.ceremonyStart,
+    ceremonyEnd: detailSource.ceremonyEnd,
+    cocktailStart: detailSource.cocktailStart,
+    cocktailEnd: detailSource.cocktailEnd,
+    preludeStart: detailSource.preludeStart,
+    preludeEnd: detailSource.preludeEnd,
+    receptionStart: detailSource.receptionStart,
+    receptionEnd: detailSource.receptionEnd,
   });
   if (timeOrder) return json({ error: timeOrder }, 400);
 
@@ -207,7 +233,10 @@ export async function POST(request: Request) {
     cocktailStart: cocktailStart || '',
     cocktailEnd: cocktailEnd || '',
     preludeStart: preludeStart || '',
+    ...(preludeEnd ? { preludeEnd } : {}),
     otherDetails: otherDetails || '',
+    ...(packageId === 'FULL' && receptionStart ? { receptionStart } : {}),
+    ...(packageId === 'FULL' && receptionEnd ? { receptionEnd } : {}),
     additionalFeesDescription: cleanAdditionalFeesDescription(body.additionalFeesDescription),
     ...(privateEvent ? { eventType, performanceDescription } : {}),
   });
@@ -393,7 +422,8 @@ export async function POST(request: Request) {
     }).then(undefined, () => undefined);
   }
 
-  if (createdBooking) {
+  if (leadIdForStatus) await queueCallReminder(admin, leadIdForStatus);
+  if (createdBooking || (leadIdForStatus && isProductionCalendarEnvironment())) {
     try {
       await runGoogleSync();
     } catch {

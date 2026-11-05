@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { queueCallReminder } from '@/lib/google/call-reminder-queue';
+import { isProductionCalendarEnvironment } from '@/lib/google/production';
 import { runGoogleSync } from '@/lib/google/run';
 import { requireAdminApi } from '@/lib/require-admin-api';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -188,11 +190,14 @@ export async function POST(request: Request) {
     lead_status?: string | null;
   };
 
+  const syncedLeadId = row.lead_id || leadId;
+  if (syncedLeadId) await queueCallReminder(admin, syncedLeadId);
+
   const touchesCalendar =
     action === 'apply_booking' ||
     action === 'restore_booking' ||
     (action === 'set_lead_status' && (status === 'Confirmed' || status === 'Lost' || status === 'Completed'));
-  if (touchesCalendar) {
+  if (touchesCalendar || (syncedLeadId && isProductionCalendarEnvironment())) {
     try {
       await runGoogleSync();
     } catch {

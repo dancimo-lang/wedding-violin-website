@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AdminButton } from '@/components/admin/AdminButton';
 
 type Candidate = { id: string; bookingCode: string; kind: string; amountLabel: string };
 type Receipt = {
@@ -88,15 +89,16 @@ export default function UnmatchedPaymentsPage() {
             {row.candidates.length === 0 ? <p className="mt-3 text-sm text-gray-600">No open payment is this exact amount.</p> : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {row.candidates.map((candidate) => (
-                <button
+                <AdminButton
                   key={candidate.id}
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   disabled={busyId === row.id}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
                   onClick={() => void assign(row.id, candidate.id)}
                 >
                   Assign to {candidate.bookingCode} {candidate.kind}
-                </button>
+                </AdminButton>
               ))}
             </div>
           </article>

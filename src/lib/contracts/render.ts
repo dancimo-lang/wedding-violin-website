@@ -7,7 +7,10 @@ import { DUO_DJ_OVERTIME, packageDefinition, weddingMusicOvertimeClause, type Co
 
 export const BLANK = '__________________________________';
 
-/** Event details the couple may fill when the admin left them blank. Rendering ignores this list. */
+/**
+ * Event-detail keys. Older signed agreements may list which of these the couple
+ * supplied. Rendering ignores that list.
+ */
 export const COUPLE_DETAIL_KEYS = [
   'venueName',
   'venueAddress',
@@ -32,8 +35,9 @@ export type StoredRenderFields = {
    * Edition 2 prints only the chosen wedding-music package, with no package checkboxes.
    * Edition 3 also states the selected package ("The Client has selected the following package:")
    * and prints each signer's own signing date.
+   * Edition 4 replaces the old time lines with the schedule block. Earlier editions keep those lines.
    */
-  renderEdition?: 2 | 3;
+  renderEdition?: 2 | 3 | 4;
   client1Name: string;
   client2Name: string;
   weddingDateIso: string;
@@ -44,7 +48,13 @@ export type StoredRenderFields = {
   cocktailStart: string;
   cocktailEnd: string;
   preludeStart: string;
+  /** Optional end of the ceremony prelude. Edition 4 prints it on the schedule. */
+  preludeEnd?: string;
   otherDetails: string;
+  /** Full wedding schedule: when the reception starts. Edition 4 prints it. */
+  receptionStart?: string;
+  /** Full wedding schedule: when the reception ends. Edition 4 prints it. */
+  receptionEnd?: string;
   packageFeeCents: number;
   travelFeeCents: number;
   additionalFeesCents: number;
@@ -64,7 +74,7 @@ export type StoredRenderFields = {
   eventType?: string;
   /** Private event agreements: the services the admin described. */
   performanceDescription?: string;
-  /** Signing date each client typed or picked (YYYY-MM-DD). Set at signing. */
+  /** Signing date for each client (YYYY-MM-DD). Set to the business day when they sign. */
   client1SignedOnIso?: string;
   client2SignedOnIso?: string;
 };
@@ -153,6 +163,10 @@ export function performanceTimeOrderMessage(
     ceremonyEnd: string;
     cocktailStart: string;
     cocktailEnd: string;
+    preludeStart?: string;
+    preludeEnd?: string;
+    receptionStart?: string;
+    receptionEnd?: string;
   },
   closing = 'Fix the times before sending this agreement.',
 ): string {
@@ -161,14 +175,80 @@ export function performanceTimeOrderMessage(
   const ceremonyEnd = clockMinutes(input.ceremonyEnd);
   const cocktailStart = clockMinutes(input.cocktailStart);
   const cocktailEnd = clockMinutes(input.cocktailEnd);
+  const preludeStart = input.preludeStart ? clockMinutes(input.preludeStart) : null;
+  const preludeEnd = input.preludeEnd ? clockMinutes(input.preludeEnd) : null;
+  const receptionStart = input.receptionStart ? clockMinutes(input.receptionStart) : null;
+  const receptionEnd = input.receptionEnd ? clockMinutes(input.receptionEnd) : null;
   if (ceremonyStart != null && ceremonyEnd != null && ceremonyEnd < ceremonyStart) {
     lines.push('Ceremony end is before ceremony start.');
   }
   if (cocktailStart != null && cocktailEnd != null && cocktailEnd < cocktailStart) {
     lines.push('Cocktail hour end is before cocktail hour start.');
   }
+  if (preludeStart != null && preludeEnd != null && preludeEnd < preludeStart) {
+    lines.push('Prelude end is before prelude start.');
+  }
+  if (receptionStart != null && receptionEnd != null && receptionEnd < receptionStart) {
+    lines.push('Reception end is before reception start.');
+  }
   if (lines.length === 0) return '';
   return `${lines.join(' ')} ${closing}`;
+}
+
+const SCHEDULE_DASH = '\u2013';
+
+/** One schedule range, in the same clock style as the rest of the agreement. */
+export function formatTimeRange(start: string | undefined, end: string | undefined): string {
+  const startText = formatClock(start);
+  const endText = formatClock(end);
+  if (startText && endText) return `${startText} ${SCHEDULE_DASH} ${endText}`;
+  return startText || endText || BLANK;
+}
+
+/**
+ * Schedule lines for edition 4. Earlier editions do not use this.
+ * Full wedding always has all four lines. Wedding music omits prelude unless a
+ * prelude time was entered, and omits cocktail hour on ceremony-only packages
+ * unless a cocktail time was entered.
+ */
+export function performanceSchedule(fields: StoredRenderFields): string {
+  const preludeStart = (fields.preludeStart ?? '').trim();
+  const preludeEnd = (fields.preludeEnd ?? '').trim();
+  const fullWedding = fields.packageId === 'FULL' || fields.templateId === 'full-wedding';
+  const lines: string[] = [];
+  if (fullWedding || preludeStart || preludeEnd) {
+    lines.push(`Ceremony Prelude: ${formatTimeRange(preludeStart, preludeEnd)}`);
+  }
+  lines.push(`Ceremony: ${formatTimeRange(fields.ceremonyStart, fields.ceremonyEnd)}`);
+  const cocktailStart = (fields.cocktailStart ?? '').trim();
+  const cocktailEnd = (fields.cocktailEnd ?? '').trim();
+  const cocktailPackage = fullWedding || fields.packageId === 'B' || fields.packageId === 'D';
+  if (cocktailPackage || cocktailStart || cocktailEnd) {
+    lines.push(`Cocktail Hour: ${formatTimeRange(cocktailStart, cocktailEnd)}`);
+  }
+  if (fullWedding) {
+    lines.push(`Reception: ${formatTimeRange(fields.receptionStart, fields.receptionEnd)}`);
+  }
+  return lines.join('\n');
+}
+
+const WEDDING_HEADER_TIMES =
+  'Ceremony Start Time: {{CEREMONY_START}}\nCocktail Hour Start Time (if applicable): {{COCKTAIL_START}}\nCocktail Hour End Time (if applicable): {{COCKTAIL_END}}\n';
+const WEDDING_SECTION_TIMES =
+  'Prelude Music Begins: {{PRELUDE_BEGINS}}\nCeremony Start Time: {{CEREMONY_START}}\nCocktail Hour Begins (if applicable): {{COCKTAIL_START}}\nCocktail Hour Ends (if applicable): {{COCKTAIL_END}}\n';
+const FULL_EVENT_TIME = 'Event Time: {{EVENT_TIME}}\n';
+
+function withWeddingSchedule(template: string, schedule: string): string {
+  if (!template.includes(WEDDING_HEADER_TIMES) || !template.includes(WEDDING_SECTION_TIMES)) {
+    throw new Error('Wedding music agreement is missing its time lines.');
+  }
+  const block = `${schedule}\n`;
+  return template.replace(WEDDING_HEADER_TIMES, block).replace(WEDDING_SECTION_TIMES, block);
+}
+
+function withFullWeddingSchedule(template: string, schedule: string): string {
+  if (!template.includes(FULL_EVENT_TIME)) throw new Error('Full wedding agreement is missing its event time.');
+  return template.replace(FULL_EVENT_TIME, `${schedule}\n`);
 }
 
 function eventTime(start: string, end: string): string {
@@ -352,13 +432,14 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
   }
 
   if (fields.templateId === 'wedding-music') {
-    const packageSpecific = fields.renderEdition === 2 || fields.renderEdition === 3;
-    const template =
-      fields.renderEdition === 3
+    const packageSpecific = fields.renderEdition === 2 || fields.renderEdition === 3 || fields.renderEdition === 4;
+    const baseTemplate =
+      fields.renderEdition === 3 || fields.renderEdition === 4
         ? statedPackageTemplate(fields.packageId)
         : packageSpecific
           ? weddingMusicTemplateForPackage(fields.packageId)
           : weddingMusicTemplate;
+    const template = fields.renderEdition === 4 ? withWeddingSchedule(baseTemplate, performanceSchedule(fields)) : baseTemplate;
     return fillTemplate(template, shown({
       CLIENT_NAMES: filled(clientLine(fields.client1Name, fields.client2Name)),
       WEDDING_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -400,7 +481,8 @@ export function renderContract(fields: StoredRenderFields, signature: SignatureO
     }));
   }
 
-  const body = fullWeddingFees(fillTemplate(fullWeddingTemplate, shown({
+  const fullTemplate = fields.renderEdition === 4 ? withFullWeddingSchedule(fullWeddingTemplate, performanceSchedule(fields)) : fullWeddingTemplate;
+  const body = fullWeddingFees(fillTemplate(fullTemplate, shown({
     CLIENT_1_NAME: filled(fields.client1Name),
     CLIENT_2_NAME: filled(fields.client2Name),
     EVENT_DATE: filled(formatLongDate(fields.weddingDateIso)),
@@ -480,7 +562,7 @@ export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields
       : {}),
     templateId: definition.templateId,
     packageId: summary.packageId,
-    renderEdition: 3,
+    renderEdition: 4,
     client1Name: fields.client1Name,
     client2Name: fields.client2Name,
     weddingDateIso: fields.weddingDateIso,
@@ -491,7 +573,10 @@ export function feeSnapshot(summary: FeeSummary, fields: Omit<StoredRenderFields
     cocktailStart: fields.cocktailStart,
     cocktailEnd: fields.cocktailEnd,
     preludeStart: fields.preludeStart,
+    ...(fields.preludeEnd?.trim() ? { preludeEnd: fields.preludeEnd.trim() } : {}),
     otherDetails: fields.otherDetails,
+    ...(fields.receptionStart?.trim() ? { receptionStart: fields.receptionStart.trim() } : {}),
+    ...(fields.receptionEnd?.trim() ? { receptionEnd: fields.receptionEnd.trim() } : {}),
     packageFeeCents: summary.packageFeeCents,
     travelFeeCents: summary.travelFeeCents,
     additionalFeesCents: summary.additionalFeesCents,
@@ -508,7 +593,7 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
   const row = value as StoredRenderFields;
   const normalized: StoredRenderFields = {
     ...row,
-    renderEdition: row.renderEdition === 2 || row.renderEdition === 3 ? row.renderEdition : undefined,
+    renderEdition: row.renderEdition === 2 || row.renderEdition === 3 || row.renderEdition === 4 ? row.renderEdition : undefined,
     client1Name: row.client1Name ?? '',
     client2Name: row.client2Name ?? '',
     venueName: row.venueName ?? '',
@@ -521,6 +606,12 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
     otherDetails: row.otherDetails ?? '',
     finalPaymentDueDate: row.finalPaymentDueDate ?? '',
   };
+  if (typeof row.preludeEnd === 'string' && row.preludeEnd.trim()) normalized.preludeEnd = row.preludeEnd.trim();
+  else delete normalized.preludeEnd;
+  if (typeof row.receptionStart === 'string' && row.receptionStart.trim()) normalized.receptionStart = row.receptionStart.trim();
+  else delete normalized.receptionStart;
+  if (typeof row.receptionEnd === 'string' && row.receptionEnd.trim()) normalized.receptionEnd = row.receptionEnd.trim();
+  else delete normalized.receptionEnd;
   const supplied = readCoupleSupplied(row.coupleSupplied, normalized);
   if (supplied) normalized.coupleSupplied = supplied;
   else delete normalized.coupleSupplied;
@@ -529,7 +620,7 @@ export function normalizeStoredFields(value: unknown): StoredRenderFields | null
 
 function readCoupleSupplied(value: unknown, fields: StoredRenderFields): CoupleDetailKey[] | undefined {
   if (!Array.isArray(value)) return undefined;
-  const supplied = COUPLE_DETAIL_KEYS.filter((key) => value.includes(key) && fields[key].trim());
+  const supplied = COUPLE_DETAIL_KEYS.filter((key) => value.includes(key) && (fields[key] ?? '').trim());
   return supplied.length > 0 ? supplied : undefined;
 }
 

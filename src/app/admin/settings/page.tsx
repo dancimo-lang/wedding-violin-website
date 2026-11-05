@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { GoogleConnectionCard } from '@/components/admin/GoogleConnectionCard';
 import { fetchGoogleStatus, googleSyncNotice, requestGoogleSync } from '@/lib/google/browser';
 import { DISCONNECTED_GOOGLE_STATUS, type GoogleStatusView } from '@/lib/google/status';
@@ -103,9 +104,9 @@ export default function SettingsPage() {
         <input type="checkbox" className="mt-1" checked={autoCountersign} onChange={(event) => setAutoCountersign(event.target.checked)} />
         <span>When a client signs an agreement, record Daniel Cimo as the musician signature at the same time. Leave this off to countersign from the lead or booking.</span>
       </label>
-      <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg">
+      <AdminButton type="submit" disabled={saving}>
         {saving ? 'Saving...' : 'Save settings'}
-      </button>
+      </AdminButton>
       {message && <p className="text-sm text-gray-800">{message}</p>}
     </form>
     <GoogleConnectionCard

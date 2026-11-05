@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { AdminButton } from '@/components/admin/AdminButton';
 import { createClient } from '@/lib/supabase/client';
 
 const navItems = [
@@ -50,12 +51,9 @@ export function AdminShell({ children, testSite = false }: { children: React.Rea
               {email && <p className="text-sm text-gray-600">{email}</p>}
             </div>
             <form action="/auth/signout" method="post">
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
-              >
+              <AdminButton type="submit" variant="secondary">
                 Sign Out
-              </button>
+              </AdminButton>
             </form>
           </div>
         </div>

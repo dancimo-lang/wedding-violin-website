@@ -7,11 +7,11 @@ import { computeFees, finalPaymentDueDate, formatMoney, parseDollarInput, splitR
 import { renderContractPdf } from './pdf';
 import { contractSourceText, formatElectronicSignature, presentSignedContract } from './signature-style';
 import {
-  applyCoupleEventDetails,
-  coupleCocktailRecordLine,
-  coupleEventTimeMessage,
+  clientEventDetailsError,
   coupleSuppliedSummary,
   missingCoupleDetailMessage,
+  optionalBlankDetailMessage,
+  sentContractBlankDetailMessage,
 } from './event-details';
 import { DUO_DJ_OVERTIME, guessPackageId, packageIncludesCocktailHour, SOLO_VIOLIN_OVERTIME, weddingMusicOvertimeClause } from './packages';
 import {
@@ -364,6 +364,14 @@ test('a backwards ceremony or cocktail time blocks sending', () => {
     performanceTimeOrderMessage({ ceremonyStart: '16:30', ceremonyEnd: '16:00', cocktailStart: '18:00', cocktailEnd: '17:00' }),
     'Ceremony end is before ceremony start. Cocktail hour end is before cocktail hour start. Fix the times before sending this agreement.',
   );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '17:00', cocktailEnd: '18:00', receptionStart: '19:00', receptionEnd: '18:00' }),
+    'Reception end is before reception start. Fix the times before sending this agreement.',
+  );
+  assert.equal(
+    performanceTimeOrderMessage({ ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '', cocktailEnd: '', preludeStart: '16:00', preludeEnd: '15:30' }),
+    'Prelude end is before prelude start. Fix the times before sending this agreement.',
+  );
 });
 
 test('the same agreement text always hashes the same way, and signing locks it', () => {
@@ -470,182 +478,179 @@ test('blank event lines stay blank, and a couple-supplied note does not change t
   assert.match(renderContract(dropped ?? sampleFields, signedOverlay), new RegExp(`Venue Name: ${BLANK}`));
 });
 
-test('the couple can fill only the event details that are still blank', () => {
+test('sending is blocked until the required event details are filled in', () => {
   assert.equal(packageIncludesCocktailHour('A'), false);
   assert.equal(packageIncludesCocktailHour('B'), true);
   assert.equal(packageIncludesCocktailHour('C'), false);
   assert.equal(packageIncludesCocktailHour('D'), true);
   assert.equal(packageIncludesCocktailHour('FULL'), false);
 
-  const blankSource = {
+  const ceremonyOnlyBlocked = 'These details are still blank: Venue name, Venue address, Ceremony start time, and Ceremony end time. Enter them before sending. The client cannot add them when signing.';
+  const cocktailBlocked = 'These details are still blank: Venue name, Venue address, Ceremony start time, Ceremony end time, Cocktail hour start time, and Cocktail hour end time. Enter them before sending. The client cannot add them when signing.';
+  const blankWedding = {
     packageId: 'A' as const,
-    venueName: '',
-    venueAddress: '100 Madonna Road',
-    ceremonyStart: '16:00',
-    cocktailStart: '',
-    cocktailEnd: '',
-  };
-  assert.equal(
-    missingCoupleDetailMessage(blankSource),
-    'This event detail is still blank: Venue name. The couple will be asked to fill it in before signing.',
-  );
-  assert.equal(
-    missingCoupleDetailMessage({ ...blankSource, venueName: 'Madonna Inn' }),
-    '',
-  );
-  assert.equal(
-    missingCoupleDetailMessage({
-      packageId: 'B',
-      venueName: '',
-      venueAddress: '',
-      ceremonyStart: '',
-      cocktailStart: '',
-      cocktailEnd: '',
-    }),
-    // Cocktail-hour lines are "(if applicable)", so they are optional and not listed.
-    'These event details are still blank: Venue name, Venue address, and Ceremony start time. The couple will be asked to fill them in before signing.',
-  );
-  assert.equal(
-    missingCoupleDetailMessage({
-      packageId: 'FULL',
-      venueName: '',
-      venueAddress: '',
-      ceremonyStart: '16:00',
-      cocktailStart: '',
-      cocktailEnd: '',
-    }),
-    'These event details are still blank: Venue name and Venue address. The couple will be asked to fill them in before signing.',
-  );
-
-  const open: StoredRenderFields = {
-    ...sampleFields,
-    renderEdition: 2,
-    packageId: 'B',
     venueName: '',
     venueAddress: '',
     ceremonyStart: '',
+    ceremonyEnd: '',
     cocktailStart: '',
     cocktailEnd: '',
+    preludeStart: '',
+    preludeEnd: '',
   };
-  const rejectedPrice = applyCoupleEventDetails(open, {
-    venueName: 'Hall',
-    venueAddress: '1 Main',
-    ceremonyStart: '16:00',
-    cocktailStart: '17:00',
-    cocktailEnd: '18:00',
-    packageId: 'A',
-    totalCents: 1,
-  });
-  assert.equal(rejectedPrice.ok, false);
-  if (rejectedPrice.ok) return;
-  assert.equal(rejectedPrice.error, 'Only blank event details can be filled in.');
-
-  const alreadySet = applyCoupleEventDetails(
-    { ...open, venueName: 'Kept Hall' },
-    { venueName: 'Other Hall', venueAddress: '1 Main', ceremonyStart: '16:00', cocktailStart: '17:00', cocktailEnd: '18:00' },
-  );
-  assert.equal(alreadySet.ok, false);
-
-  const missing = applyCoupleEventDetails(open, { venueName: 'Hall' });
-  assert.equal(missing.ok, false);
-  if (missing.ok) return;
+  assert.equal(missingCoupleDetailMessage(blankWedding), ceremonyOnlyBlocked);
+  assert.equal(missingCoupleDetailMessage({ ...blankWedding, packageId: 'C' }), ceremonyOnlyBlocked);
+  assert.equal(missingCoupleDetailMessage({ ...blankWedding, packageId: 'B' }), cocktailBlocked);
+  assert.equal(missingCoupleDetailMessage({ ...blankWedding, packageId: 'D' }), cocktailBlocked);
   assert.equal(
-    missing.error,
-    'Fill in these event details before signing: Venue address and Ceremony start time.',
+    missingCoupleDetailMessage({ ...blankWedding, packageId: 'B', venueName: 'Madonna Inn', venueAddress: '100 Madonna Road', ceremonyStart: '16:00', ceremonyEnd: '16:30', cocktailStart: '17:00' }),
+    'Cocktail hour end time is still blank. Enter it before sending. The client cannot add it when signing.',
   );
-
-  const backwards = applyCoupleEventDetails(open, {
-    venueName: 'Hall',
-    venueAddress: '1 Main',
+  const ceremonyReady = {
+    ...blankWedding,
+    venueName: 'Madonna Inn',
+    venueAddress: '100 Madonna Road',
     ceremonyStart: '16:00',
-    cocktailStart: '18:00',
-    cocktailEnd: '17:00',
-  });
-  assert.equal(backwards.ok, false);
-  if (backwards.ok) return;
-  assert.equal(backwards.error, 'Cocktail hour end is before cocktail hour start. Fix the times before signing this agreement.');
-
-  const ceremonyOrder = applyCoupleEventDetails(
-    { ...sampleFields, ceremonyStart: '', ceremonyEnd: '15:00' },
-    { ceremonyStart: '16:00' },
-  );
-  assert.equal(ceremonyOrder.ok, false);
-  if (ceremonyOrder.ok) return;
-  assert.equal(ceremonyOrder.error, 'Ceremony end is before ceremony start. Fix the times before signing this agreement.');
-
-  const legacyRange = applyCoupleEventDetails(
-    { ...open, cocktailStart: '18:00', cocktailEnd: '17:00', ceremonyStart: '16:00', ceremonyEnd: '15:00' },
-    { venueName: 'Hall', venueAddress: '1 Main' },
-  );
-  assert.equal(legacyRange.ok, true);
-
-  const packageA = applyCoupleEventDetails(
-    { ...sampleFields, renderEdition: 2, venueName: '' },
-    { venueName: 'Chapel', cocktailStart: '17:00', cocktailEnd: '18:00' },
-  );
-  assert.equal(packageA.ok, false);
-
-  const accepted = applyCoupleEventDetails(open, {
-    venueName: ' Mission Hall ',
-    venueAddress: '1 Main Street',
-    ceremonyStart: '16:00',
-    cocktailStart: '17:00',
-    cocktailEnd: '18:00',
-  });
-  assert.equal(accepted.ok, true);
-  if (!accepted.ok) return;
-  assert.deepEqual(accepted.supplied, ['venueName', 'venueAddress', 'ceremonyStart', 'cocktailStart', 'cocktailEnd']);
-  assert.equal(accepted.fields.venueName, 'Mission Hall');
-  assert.equal(accepted.fields.packageId, 'B');
-  assert.equal(accepted.fields.packageFeeCents, open.packageFeeCents);
-  assert.equal(accepted.fields.totalCents, open.totalCents);
-  const signed = renderContract(accepted.fields, signedOverlay);
-  assert.match(signed, /Venue Name: Mission Hall/);
-  assert.match(signed, /Venue Address: 1 Main Street/);
-  assert.equal(signed.split('Ceremony Start Time: 4:00 PM').length - 1, 2);
-  assert.equal(signed.split('Cocktail Hour Start Time (if applicable): 5:00 PM').length, 2);
-  assert.match(signed, /Cocktail Hour Begins \(if applicable\): 5:00 PM/);
-  assert.match(signed, /Cocktail Hour Ends \(if applicable\): 6:00 PM/);
-  assert.equal(signed.includes('{{'), false);
-  const executed = renderContract(accepted.fields, {
-    ...signedOverlay,
-    musicianSignedName: 'Daniel Cimo',
-    musicianSignedOn: 'June 2, 2026',
-  });
-  assert.match(executed, /Venue Name: Mission Hall/);
-  assert.match(executed, /Cocktail Hour Ends \(if applicable\): 6:00 PM/);
-  assert.match(executed, /Signature: Daniel Cimo/);
-  assert.equal(coupleSuppliedSummary(accepted.fields), 'The couple added Venue name: Mission Hall; Venue address: 1 Main Street; Ceremony start time: 4:00 PM; Cocktail hour start time: 5:00 PM; Cocktail hour end time: 6:00 PM.');
-  assert.equal(coupleCocktailRecordLine(accepted.fields, accepted.supplied), 'Cocktail hour on the signed agreement: 5:00 PM to 6:00 PM.');
+    ceremonyEnd: '16:30',
+  };
+  assert.equal(missingCoupleDetailMessage(ceremonyReady), '');
   assert.equal(
-    coupleEventTimeMessage(open, { cocktailStart: '18:00', cocktailEnd: '17:00', venueName: 'Hall' }),
-    'Cocktail hour end is before cocktail hour start. Fix the times before signing this agreement.',
+    missingCoupleDetailMessage({ ...ceremonyReady, packageId: 'B' }),
+    'These details are still blank: Cocktail hour start time and Cocktail hour end time. Enter them before sending. The client cannot add them when signing.',
   );
+  const weddingReady = { ...ceremonyReady, packageId: 'B' as const, cocktailStart: '17:00', cocktailEnd: '18:00' };
+  assert.equal(missingCoupleDetailMessage(weddingReady), '');
+  assert.equal(optionalBlankDetailMessage(weddingReady), '');
 
-  const full = applyCoupleEventDetails(
-    {
-      ...sampleFields,
-      templateId: 'full-wedding',
+  assert.equal(
+    missingCoupleDetailMessage({
       packageId: 'FULL',
-      packageFeeCents: 300000,
-      travelFeeCents: 0,
-      additionalFeesCents: 0,
-      discountCents: 0,
-      totalCents: 300000,
-      retainerCents: 150000,
-      balanceCents: 150000,
+      venueName: 'The Barn',
+      venueAddress: '1 Main St',
+      ceremonyStart: '16:00',
+      ceremonyEnd: '16:30',
+      cocktailStart: '17:00',
+      cocktailEnd: '18:00',
+      receptionStart: '18:00',
+      receptionEnd: '',
+    }),
+    'Reception end time is still blank. Enter it before sending. The client cannot add it when signing.',
+  );
+  assert.equal(
+    missingCoupleDetailMessage({
+      packageId: 'FULL',
+      venueName: '',
       venueAddress: '',
       ceremonyStart: '',
-      ceremonyEnd: '17:00',
+      ceremonyEnd: '',
       cocktailStart: '',
       cocktailEnd: '',
-    },
-    { venueAddress: '1 Plaza', ceremonyStart: '16:00' },
+      receptionStart: '',
+      receptionEnd: '',
+    }),
+    'These details are still blank: Venue name, Venue address, Ceremony start time, Ceremony end time, Cocktail hour start time, Cocktail hour end time, Reception start time, and Reception end time. Enter them before sending. The client cannot add them when signing.',
   );
-  assert.equal(full.ok, true);
-  if (!full.ok) return;
-  assert.match(renderContract(full.fields, signedOverlay), /Event Time: 4:00 PM to 5:00 PM/);
-  assert.equal(coupleCocktailRecordLine(full.fields, full.supplied), '');
+  assert.equal(
+    missingCoupleDetailMessage({
+      packageId: 'FULL',
+      venueName: 'The Barn',
+      venueAddress: '1 Main St',
+      ceremonyStart: '16:00',
+      ceremonyEnd: '16:30',
+      cocktailStart: '17:00',
+      cocktailEnd: '18:00',
+      receptionStart: '18:00',
+      receptionEnd: '22:00',
+      preludeStart: '',
+    }),
+    '',
+  );
+
+  assert.equal(
+    missingCoupleDetailMessage({
+      packageId: 'EVENT',
+      venueName: 'Hall',
+      venueAddress: '1 Main',
+      ceremonyStart: '18:00',
+      ceremonyEnd: '',
+    }),
+    '',
+  );
+  assert.equal(
+    missingCoupleDetailMessage({ packageId: 'EVENT', venueName: '', venueAddress: '1 Main', ceremonyStart: '18:00' }),
+    'Venue name is still blank. Enter it before sending. The client cannot add it when signing.',
+  );
+  assert.equal(
+    optionalBlankDetailMessage({ packageId: 'EVENT', venueName: 'Hall', venueAddress: '1 Main', ceremonyStart: '18:00', ceremonyEnd: '' }),
+    'Event end time is blank. That optional line will stay blank on the agreement.',
+  );
+  assert.equal(
+    sentContractBlankDetailMessage(blankWedding),
+    'These details were still blank when this agreement was sent: Venue name, Venue address, Ceremony start time, and Ceremony end time. The client can still sign.',
+  );
+  assert.equal(sentContractBlankDetailMessage(weddingReady), '');
+
+  assert.equal(clientEventDetailsError(undefined), null);
+  assert.equal(clientEventDetailsError(null), null);
+  assert.equal(clientEventDetailsError({}), null);
+  assert.equal(clientEventDetailsError({ venueName: 'Hall' }), 'Event details cannot be changed when signing.');
+  assert.equal(clientEventDetailsError({ ceremonyEnd: '' }), 'Event details cannot be changed when signing.');
+  assert.equal(clientEventDetailsError({ receptionEnd: '22:00' }), 'Event details cannot be changed when signing.');
+  assert.equal(clientEventDetailsError('Hall'), 'Event details cannot be changed when signing.');
+  assert.equal(clientEventDetailsError([]), 'Event details cannot be changed when signing.');
+
+  const ownerEntered: StoredRenderFields = {
+    ...sampleFields,
+    renderEdition: 3,
+    packageId: 'B',
+    venueName: 'Mission Hall',
+    venueAddress: '1 Main Street',
+    ceremonyStart: '16:00',
+    ceremonyEnd: '16:45',
+    cocktailStart: '17:00',
+    cocktailEnd: '18:00',
+  };
+  const signed = renderContract(ownerEntered, signedOverlay);
+  assert.match(signed, /Venue Name: Mission Hall/);
+  assert.match(signed, /Ceremony Start Time: 4:00 PM/);
+  assert.equal(signed.includes('Ceremony:'), false);
+  assert.match(signed, /Cocktail Hour Start Time \(if applicable\): 5:00 PM/);
+  assert.match(signed, /Cocktail Hour Ends \(if applicable\): 6:00 PM/);
+  assert.equal(
+    coupleSuppliedSummary({ ...ownerEntered, coupleSupplied: ['venueName', 'cocktailStart'] }),
+    'The couple added Venue name: Mission Hall; Cocktail hour start time: 5:00 PM.',
+  );
+
+  const fullFields = {
+    ...sampleFields,
+    templateId: 'full-wedding' as const,
+    packageId: 'FULL' as const,
+    packageFeeCents: 300000,
+    travelFeeCents: 0,
+    additionalFeesCents: 0,
+    discountCents: 0,
+    totalCents: 300000,
+    retainerCents: 150000,
+    balanceCents: 150000,
+    ceremonyStart: '16:00',
+    ceremonyEnd: '16:30',
+    preludeStart: '',
+    cocktailStart: '17:00',
+    cocktailEnd: '18:00',
+    receptionStart: '18:00',
+    receptionEnd: '22:00',
+  };
+  const fullText = renderContract(fullFields, signedOverlay);
+  assert.match(fullText, /Event Time: 4:00 PM to 4:30 PM/);
+  assert.equal(fullText.includes('Cocktail Hour:'), false);
+  assert.equal(fullText.includes('Reception:'), false);
+  const fullSchedule = renderContract({ ...fullFields, renderEdition: 4 }, signedOverlay);
+  assert.equal(fullSchedule.includes('Event Time:'), false);
+  assert.match(fullSchedule, /Ceremony Prelude: __________________________________/);
+  assert.match(fullSchedule, /Ceremony: 4:00 PM \u2013 4:30 PM/);
+  assert.match(fullSchedule, /Cocktail Hour: 5:00 PM \u2013 6:00 PM/);
+  assert.match(fullSchedule, /Reception: 6:00 PM \u2013 10:00 PM/);
+  assert.equal(fullSchedule.split('Ceremony: 4:00 PM \u2013 4:30 PM').length - 1, 1);
 });
 
 test('package choice follows the lead text', () => {
@@ -869,7 +874,8 @@ test('edition 3 states the selected package and keeps its includes verbatim', as
   assert.ok(!('error' in summary));
   if ('error' in summary) return;
   const fields = feeSnapshot(summary, { ...sampleFields, packageId: undefined, templateId: undefined } as never);
-  assert.equal(fields.renderEdition, 3);
+  assert.equal(fields.renderEdition, 4);
+  assert.match(renderContract({ ...fields, renderEdition: 3 }), /Ceremony Start Time: 4:00 PM/);
   const text = renderContract(fields);
   assert.match(text, /1\. Package Selection\nThe Client has selected the following package:\nPackage B: Solo Violin Ceremony & Cocktail Hour — \$1,000\nIncludes:\n/);
   assert.ok(!text.includes('The Client shall select one of the following packages'));
@@ -931,12 +937,56 @@ test('agreement layout finds the title, sections, lists, and signer blocks', asy
   assert.equal(drawn.length, text.split('\n').filter((line) => line.trim()).length);
 });
 
-test('optional "(if applicable)" blanks may stay empty at signing', () => {
-  const open: StoredRenderFields = { ...sampleFields, renderEdition: 3, packageId: 'B', venueAddress: '', cocktailStart: '', cocktailEnd: '' };
-  const result = applyCoupleEventDetails(open, { venueAddress: '1 Main St', cocktailStart: '', cocktailEnd: '' });
-  assert.equal(result.ok, true);
-  if (!result.ok) return;
-  assert.deepEqual(result.supplied, ['venueAddress']);
-  const required = applyCoupleEventDetails(open, { cocktailStart: '17:00' });
-  assert.equal(required.ok, false);
+test('edition 4 prints the schedule and earlier editions keep the old time lines', () => {
+  const base: StoredRenderFields = {
+    ...sampleFields,
+    renderEdition: 4,
+    preludeStart: '16:30',
+    preludeEnd: '17:00',
+    ceremonyStart: '17:00',
+    ceremonyEnd: '18:00',
+    cocktailStart: '',
+    cocktailEnd: '',
+  };
+  const ceremonyOnly = renderContract({ ...base, packageId: 'A' });
+  assert.equal(ceremonyOnly.includes('Ceremony Start Time:'), false);
+  assert.equal(ceremonyOnly.includes('Prelude Music Begins:'), false);
+  assert.equal(ceremonyOnly.includes('Cocktail Hour:'), false);
+  assert.equal(ceremonyOnly.includes('Reception:'), false);
+  assert.match(ceremonyOnly, /Ceremony Prelude: 4:30 PM \u2013 5:00 PM\nCeremony: 5:00 PM \u2013 6:00 PM\n/);
+  assert.equal(ceremonyOnly.split('Ceremony Prelude: 4:30 PM \u2013 5:00 PM').length - 1, 2);
+  assert.match(ceremonyOnly, /The Musician will provide the services included in the selected package according to the agreed event timeline.\nCeremony Prelude: 4:30 PM \u2013 5:00 PM\n/);
+  assert.match(ceremonyOnly, /Ceremony: 5:00 PM \u2013 6:00 PM\nOther Agreed Performance Details:/);
+
+  const withCocktail = renderContract({ ...base, cocktailStart: '18:00', cocktailEnd: '19:00' });
+  assert.match(withCocktail, /Cocktail Hour: 6:00 PM \u2013 7:00 PM/);
+  const packageB = renderContract({ ...base, packageId: 'B', preludeStart: '', preludeEnd: '' });
+  assert.equal(packageB.includes('Ceremony Prelude:'), false);
+  assert.match(packageB, /Ceremony: 5:00 PM \u2013 6:00 PM\nCocktail Hour: __________________________________/);
+
+  const edition3 = renderContract({ ...base, renderEdition: 3, packageId: 'B' });
+  assert.match(edition3, /Ceremony Start Time: 5:00 PM/);
+  assert.match(edition3, /Prelude Music Begins: 4:30 PM/);
+  assert.equal(edition3.includes('Ceremony Prelude:'), false);
+  assert.equal(edition3, renderContract({ ...base, renderEdition: 3, packageId: 'B', receptionStart: '19:00', receptionEnd: '22:00' }));
+
+  const unsignedLegacy = renderContract(sampleFields, UNSIGNED);
+  assert.equal(hashContractText(renderContract({ ...sampleFields, preludeEnd: '16:00', receptionStart: '18:00', receptionEnd: '22:00' }, UNSIGNED)), hashContractText(unsignedLegacy));
+});
+
+test('optional prelude and private-event end lines may stay blank', () => {
+  const text = renderContract({ ...sampleFields, renderEdition: 3, preludeStart: '' });
+  assert.match(text, new RegExp(`Prelude Music Begins: ${BLANK}`));
+  const privateSummary = computeFees({
+    packageId: 'EVENT',
+    travelFeeCents: 0,
+    additionalFeesCents: 0,
+    discountCents: 0,
+    weddingDateIso: '2027-03-20',
+    performanceFeeCents: 60000,
+  });
+  assert.ok(!('error' in privateSummary));
+  if ('error' in privateSummary) return;
+  const privateText = renderContract(feeSnapshot(privateSummary, { ...sampleFields, ceremonyEnd: '', eventType: 'Party', performanceDescription: 'Solo violin' } as never));
+  assert.match(privateText, new RegExp(`Event End Time: ${BLANK}`));
 });

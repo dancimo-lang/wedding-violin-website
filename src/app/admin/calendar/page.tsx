@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { AdminButton, adminButtonClass } from '@/components/admin/AdminButton';
+import { VenueNameField } from '@/components/admin/VenueNameField';
 import { createClient } from '@/lib/supabase/client';
 import { fieldClass } from '@/lib/leads';
 import { postBookingStatus } from '@/lib/booking-status-client';
@@ -122,11 +124,11 @@ export default function CalendarPage() {
             }}
           />
           {(['month', 'week', 'agenda'] as const).map((item) => (
-            <button key={item} type="button" onClick={() => setView(item)} className={`px-3 py-2 rounded-lg capitalize ${view === item ? 'bg-blue-600 text-white' : 'bg-white text-gray-800 border border-gray-300'}`}>
+            <AdminButton key={item} type="button" className="capitalize" variant={view === item ? 'primary' : 'secondary'} onClick={() => setView(item)}>
               {item}
-            </button>
+            </AdminButton>
           ))}
-          <Link href="/admin/settings" className="px-3 py-2 rounded-lg border border-gray-300 text-gray-800">Settings</Link>
+          <Link href="/admin/settings" className={adminButtonClass('secondary')}>Settings</Link>
         </div>
       </div>
       {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>}
@@ -201,9 +203,9 @@ function MonthView({
   return (
     <div className="bg-white rounded-xl shadow p-4">
       <div className="flex items-center justify-between mb-4">
-        <button type="button" onClick={() => onMonth(-1)} className="px-3 py-1 text-gray-800">Previous</button>
+        <AdminButton type="button" variant="secondary" size="sm" onClick={() => onMonth(-1)}>Previous</AdminButton>
         <h3 className="text-xl font-semibold text-gray-900">{monthLabel}</h3>
-        <button type="button" onClick={() => onMonth(1)} className="px-3 py-1 text-gray-800">Next</button>
+        <AdminButton type="button" variant="secondary" size="sm" onClick={() => onMonth(1)}>Next</AdminButton>
       </div>
       <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-1">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -219,7 +221,7 @@ function MonthView({
               key={date}
               type="button"
               onClick={() => onSelect(date)}
-              className={`min-h-24 text-left p-2 rounded-lg border ${date === selected ? 'border-blue-500' : 'border-gray-100'} ${inMonth ? 'bg-white' : 'bg-gray-50'} ${date === today ? 'ring-1 ring-blue-300' : ''}`}
+              className={`min-h-24 cursor-pointer text-left p-2 rounded-lg border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a961] ${date === selected ? 'border-[#14171f]' : 'border-gray-100'} ${inMonth ? 'bg-white' : 'bg-gray-50'} ${date === today ? 'ring-1 ring-[#c9a961]' : ''}`}
             >
               <span className="text-sm text-gray-900">{Number(date.slice(8))}</span>
               <div className="mt-1 space-y-1">
@@ -256,9 +258,9 @@ function WeekView({
   return (
     <div className="bg-white rounded-xl shadow p-4">
       <div className="flex items-center justify-between mb-4">
-        <button type="button" onClick={onPrev} className="px-3 py-1 text-gray-800">Previous week</button>
+        <AdminButton type="button" variant="secondary" size="sm" onClick={onPrev}>Previous week</AdminButton>
         <h3 className="font-semibold text-gray-900">{start} to {days[6]}</h3>
-        <button type="button" onClick={onNext} className="px-3 py-1 text-gray-800">Next week</button>
+        <AdminButton type="button" variant="secondary" size="sm" onClick={onNext}>Next week</AdminButton>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
         {days.map((date) => (
@@ -356,7 +358,7 @@ function BlockForm({ selected, onSaved }: { selected: string; onSaved: (block: C
         <option>Tentative Hold</option>
       </select>
       <input className={fieldClass} placeholder="Reason, only you can see this" value={reason} onChange={(event) => setReason(event.target.value)} />
-      <button type="submit" className="bg-gray-900 text-white px-4 py-2 rounded-lg">Save block</button>
+      <AdminButton type="submit">Save block</AdminButton>
       {message && <p className="text-sm text-gray-700">{message}</p>}
     </form>
   );
@@ -475,8 +477,15 @@ function HoldForm({
         <input type="time" className={fieldClass} value={start} onChange={(event) => setStart(event.target.value)} />
         <input type="time" className={fieldClass} value={end} onChange={(event) => setEnd(event.target.value)} />
       </div>
-      <input className={fieldClass} placeholder="Venue name" value={venue} onChange={(event) => setVenue(event.target.value)} />
-      <input className={fieldClass} placeholder="Venue address" value={address} onChange={(event) => setAddress(event.target.value)} />
+      <VenueNameField
+        name={venue}
+        address={address}
+        onName={setVenue}
+        onAddress={setAddress}
+        labelClassName="block text-sm text-gray-700"
+        inputClassName={fieldClass}
+        layoutClassName="grid grid-cols-1 gap-3 sm:grid-cols-2"
+      />
       <input className={fieldClass} placeholder="Service" value={service} onChange={(event) => setService(event.target.value)} />
       <div className="grid grid-cols-2 gap-2">
         <input type="number" min={1} max={12} className={fieldClass} value={performers} onChange={(event) => setPerformers(event.target.value)} />
@@ -486,7 +495,7 @@ function HoldForm({
         </select>
       </div>
       {reasons.length > 0 && <p className="text-sm text-amber-900">{reasons[0]}</p>}
-      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg">Save hold</button>
+      <AdminButton type="submit">Save hold</AdminButton>
       {message && <p className="text-sm text-gray-700">{message}</p>}
     </form>
   );
@@ -519,7 +528,7 @@ function DayList({
               {item.href ? (
                 <Link href={item.href} className="text-sm text-blue-700">Open</Link>
               ) : item.removable ? (
-                <button type="button" onClick={() => onDelete(item.id)} className="text-sm text-red-700">Remove block</button>
+                <AdminButton type="button" variant="danger" size="sm" onClick={() => onDelete(item.id)}>Remove block</AdminButton>
               ) : null}
             </li>
           ))}

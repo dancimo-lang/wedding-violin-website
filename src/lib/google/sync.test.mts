@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { BlockSyncRow, BookingSyncRow, GoogleEventPayload, Interval } from './events';
+import type { BlockSyncRow, BookingSyncRow, CallReminderRow, GoogleEventPayload, Interval } from './events';
 import { GoogleApiError, GoogleReconnectError, type GoogleCalendarGateway } from './gateway';
 import { refreshBusyTimes, syncGoogleCalendar, type EventLink, type OutboxItem, type StoredConnection, type SyncStore } from './sync';
 
@@ -220,6 +220,7 @@ function memoryStore(overrides: Partial<StoredConnection> = {}) {
     outbox: [] as OutboxItem[],
     bookings: new Map<string, BookingSyncRow>(),
     blocks: new Map<string, BlockSyncRow>(),
+    calls: new Map<string, CallReminderRow>(),
     links: new Map<string, EventLink>(),
     savedBusy: null as Interval[] | null,
     reconnects: [] as string[],
@@ -262,6 +263,9 @@ function memoryStore(overrides: Partial<StoredConnection> = {}) {
     async getBlock(id: string) {
       return store.blocks.get(id) || null;
     },
+    async getCallReminder(id: string) {
+      return store.calls.get(id) || null;
+    },
     async getLink(sourceTable: string, sourceId: string) {
       return store.links.get(`${sourceTable}:${sourceId}`) || null;
     },
@@ -277,6 +281,63 @@ function memoryStore(overrides: Partial<StoredConnection> = {}) {
   };
   return store satisfies SyncStore & typeof store;
 }
+
+const LEAD_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+
+function callLead(overrides: Partial<CallReminderRow> = {}): CallReminderRow {
+  return {
+    id: LEAD_ID,
+    status: 'New Inquiry',
+    callBy: '2026-11-05',
+    archived: false,
+    clientName: 'Ada Lovelace',
+    phone: '805-555-0100',
+    email: 'ada@example.com',
+    eventDate: '2027-06-14',
+    venueName: 'Madonna Inn',
+    venueAddress: '100 Madonna Road',
+    ...overrides,
+  };
+}
+
+test('a call reminder is an all-day event and is removed when the contract is sent', async () => {
+  const google = fakeGoogle();
+  const store = memoryStore();
+  store.calls.set(LEAD_ID, callLead());
+  store.outbox.push(item('1', 'leads', LEAD_ID, 'upsert', '2026-11-03T00:00:00.000Z'));
+  const created = await syncGoogleCalendar(store, google, new Date('2026-11-03T18:00:00.000Z'), { VERCEL_ENV: 'production' });
+  assert.equal(created.pushed, 1);
+  const event = [...google.events.values()][0];
+  assert.equal(event.summary, 'Call: Ada Lovelace (wedding inquiry)');
+  assert.deepEqual(event.start, { date: '2026-11-05' });
+  assert.deepEqual(event.end, { date: '2026-11-06' });
+  assert.match(event.description, /805-555-0100/);
+  assert.match(event.description, /ada@example.com/);
+  assert.match(event.description, /2027-06-14/);
+  assert.match(event.description, /Madonna Inn/);
+  assert.match(event.description, new RegExp(`/admin/leads/${LEAD_ID}`));
+
+  google.events.clear();
+  store.calls.set(LEAD_ID, callLead({ status: 'Contract Sent' }));
+  store.outbox.push(item('2', 'leads', LEAD_ID, 'upsert', '2026-11-04T00:00:00.000Z'));
+  const removed = await syncGoogleCalendar(store, google, new Date('2026-11-04T18:00:00.000Z'), { VERCEL_ENV: 'production' });
+  assert.equal(removed.removed, 1);
+  assert.equal(google.events.size, 0);
+  assert.equal(store.links.has(`leads:${LEAD_ID}`), false);
+});
+
+test('preview sync leaves a call reminder queued and does not touch Google', async () => {
+  const google = fakeGoogle();
+  const store = memoryStore();
+  store.calls.set(LEAD_ID, callLead());
+  store.outbox.push(item('1', 'leads', LEAD_ID, 'upsert', '2026-11-03T00:00:00.000Z'));
+  const result = await syncGoogleCalendar(store, google, new Date('2026-11-03T18:00:00.000Z'), { VERCEL_ENV: 'preview' });
+  assert.equal(result.ok, true);
+  assert.equal(result.pushed, 0);
+  assert.equal(google.events.size, 0);
+  assert.equal(google.deleted.length, 0);
+  assert.equal(store.outbox.length, 1);
+});
 
 test('never pushes an existing booking the owner kept off Google, on upsert or a full re-queue', async () => {
   const google = fakeGoogle();
