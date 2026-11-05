@@ -112,11 +112,6 @@ export function computeFees(input: FeeInput): FeeSummary | { error: string } {
   if (amounts.some((value) => !Number.isInteger(value) || value < 0)) {
     return { error: 'Enter fees as dollar amounts with at most two decimal places.' };
   }
-  if (input.packageId === 'FULL') {
-    if (input.discountCents !== 0) {
-      return { error: 'The full wedding agreement has no blank for a discount.' };
-    }
-  }
   let packageFeeCents = definition.feeCents;
   if (definition.customFee) {
     const fee = input.performanceFeeCents ?? 0;

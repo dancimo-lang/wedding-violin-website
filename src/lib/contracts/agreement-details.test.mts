@@ -146,6 +146,23 @@ test('calendar block runs through reception while the ceremony end stays on the 
     },
   });
   assert.deepEqual(calendarPerformanceTimes(value), { start: '15:30', end: '21:00' });
+  const overnight = formValueFromDraft({
+    eventDate: '2026-06-14',
+    venueName: 'Hall',
+    venueAddress: '1 Main',
+    performanceStart: '16:00',
+    performanceEnd: '16:30',
+    agreement: {
+      ...emptyAgreement(),
+      packageId: 'FULL',
+      ceremonyStart: '16:00',
+      ceremonyEnd: '16:30',
+      cocktailEnd: '18:00',
+      receptionStart: '18:00',
+      receptionEnd: '00:00',
+    },
+  });
+  assert.deepEqual(calendarPerformanceTimes(overnight), { start: '16:00', end: '00:00' });
   assert.equal(agreementForStorage(value).ceremonyEnd, '16:30');
   assert.equal(agreementForStorage(value).receptionStart, '17:30');
 });
