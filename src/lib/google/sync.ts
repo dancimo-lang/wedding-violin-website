@@ -2,12 +2,15 @@ import {
   blockEventPayload,
   bookingEventPayload,
   busyPullWindow,
+  callReminderPayload,
   googleEventId,
   subtractIntervals,
   type BlockSyncRow,
   type BookingSyncRow,
+  type CallReminderRow,
   type Interval,
 } from './events';
+import { isProductionCalendarEnvironment } from './production';
 import {
   GoogleReconnectError,
   logGoogleSyncFailure,
@@ -27,7 +30,7 @@ export type StoredConnection = {
 
 export type OutboxItem = {
   id: string;
-  sourceTable: 'bookings' | 'availability_blocks';
+  sourceTable: 'bookings' | 'availability_blocks' | 'leads';
   sourceId: string;
   operation: 'upsert' | 'delete';
   attempts: number;
@@ -50,6 +53,7 @@ export type SyncStore = {
   enqueueAll(): Promise<void>;
   getBooking(id: string): Promise<BookingSyncRow | null>;
   getBlock(id: string): Promise<BlockSyncRow | null>;
+  getCallReminder(id: string): Promise<CallReminderRow | null>;
   getLink(sourceTable: string, sourceId: string): Promise<EventLink | null>;
   saveLink(link: EventLink & { sourceTable: string; sourceId: string }): Promise<void>;
   deleteLink(sourceTable: string, sourceId: string): Promise<void>;
@@ -74,9 +78,10 @@ export async function syncGoogleCalendar(
   store: SyncStore,
   google: GoogleCalendarGateway,
   now = new Date(),
+  env?: { VERCEL_ENV?: string },
 ): Promise<SyncResult> {
   try {
-    return await syncConnected(store, google, now);
+    return await syncConnected(store, google, now, env);
   } catch (error) {
     return recordedFailure(store, error);
   }
@@ -86,6 +91,7 @@ async function syncConnected(
   store: SyncStore,
   google: GoogleCalendarGateway,
   now: Date,
+  env?: { VERCEL_ENV?: string },
 ): Promise<SyncResult> {
   const connection = await store.getConnection();
   if (!connection || connection.status === 'disconnected') return { ...EMPTY, skipped: true };
@@ -120,7 +126,7 @@ async function syncConnected(
   await store.saveCalendar(calendar);
   if (connection.calendarId !== calendar.id) await store.enqueueAll();
 
-  const result = await pushOutbox(store, google, accessToken, calendar.id);
+  const result = await pushOutbox(store, google, accessToken, calendar.id, env);
   if (result.needsReconnect) return result;
 
   try {
@@ -181,11 +187,16 @@ async function pushOutbox(
   google: GoogleCalendarGateway,
   accessToken: string,
   calendarId: string,
+  env?: { VERCEL_ENV?: string },
 ): Promise<SyncResult> {
   const rows = await store.listOutbox(100);
   const groups = collapseOutbox(rows);
   const result: SyncResult = { ...EMPTY, ok: true };
   for (const group of groups) {
+    if (group.item.sourceTable === 'leads' && !isProductionCalendarEnvironment(env)) {
+      console.info('Google call reminder skipped because this is not the production site.');
+      continue;
+    }
     try {
       const removed = await applyOutboxItem(store, google, accessToken, calendarId, group.item);
       if (removed) result.removed += 1;
@@ -214,6 +225,16 @@ async function applyOutboxItem(
   if (item.operation === 'delete') {
     await removeEvent(store, google, accessToken, calendarId, item.sourceTable, item.sourceId);
     return true;
+  }
+  if (item.sourceTable === 'leads') {
+    const lead = await store.getCallReminder(item.sourceId);
+    const payload = lead ? callReminderPayload(lead) : null;
+    if (!payload) {
+      await removeEvent(store, google, accessToken, calendarId, item.sourceTable, item.sourceId);
+      return true;
+    }
+    await putEvent(store, google, accessToken, calendarId, item.sourceTable, item.sourceId, payload);
+    return false;
   }
   if (item.sourceTable === 'bookings') {
     const booking = await store.getBooking(item.sourceId);

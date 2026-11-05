@@ -1,6 +1,6 @@
 import { emptyAgreement, readAgreement, type AgreementDetails } from '@/lib/contracts/agreement-details';
 import { guessPackageId, isPackageId } from '@/lib/contracts/packages';
-import { addCalendarDays, zonedClock } from '@/lib/schedule/time';
+import { addCalendarDays, todayInTimeZone, zonedClock } from '@/lib/schedule/time';
 
 export const LEAD_STATUSES = [
   'New Inquiry',
@@ -260,6 +260,11 @@ export function receivedOnFromRecord(value: unknown): string {
  * Call by. A saved date wins. A website inquiry with none yet shows two days after it arrived.
  * The suggestion is not written until the lead is saved.
  */
+/** Two Pacific calendar days after an inquiry arrives. Stored on the lead when the website form is saved. */
+export function websiteCallByDate(now = new Date()): string {
+  return addCalendarDays(todayInTimeZone(undefined, now), 2);
+}
+
 export function defaultCallBy(draft: { nextFollowUp: string; inquirySource: string; receivedOn: string }): string {
   const saved = isoDate(draft.nextFollowUp);
   if (saved) return saved;

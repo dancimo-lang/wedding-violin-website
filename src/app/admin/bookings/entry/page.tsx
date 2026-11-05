@@ -335,6 +335,9 @@ export default function BookingDetailPage() {
     }
     setNotice('Saved. Create contract below uses these saved details.');
     setSavedRevision((value) => value + 1);
+    if (booking.lead_id) {
+      void fetch(`/api/admin/leads/${booking.lead_id}/call-reminder`, { method: 'POST' }).catch(() => undefined);
+    }
     setSaving(false);
   };
 

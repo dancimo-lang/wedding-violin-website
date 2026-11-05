@@ -18,6 +18,7 @@ import { escapeHtml, publicOrigin, requestClientIp, sendContractMail, storeContr
 import { paymentInstructionsHtml } from '@/lib/payments/messages';
 import { paymentPageUrl } from '@/lib/payments/urls';
 import { zelleInstructionLine, zelleRecipientContact, zelleRecipientName } from '@/lib/payments/zelle-config';
+import { queueCallReminderAndSync } from '@/lib/google/call-reminder-queue';
 import { zelleQrSources } from '@/lib/payments/zelle-qr';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -158,19 +159,22 @@ async function noteSigned(row: ContractRecord) {
   await admin.from('leads').update({ contract_status: 'Signed', updated_at: new Date().toISOString() }).eq('id', row.lead_id);
   const { data: lead } = await admin.from('leads').select('status').eq('id', row.lead_id).maybeSingle();
   const status = typeof lead?.status === 'string' ? lead.status : '';
-  if (!['New Inquiry', 'Needs Information', 'Quote Sent', 'Awaiting Response', 'Contract Sent'].includes(status)) return;
-  const { data: owner } = await admin.from('admins').select('user_id').limit(1).maybeSingle();
-  const actor = typeof owner?.user_id === 'string' ? owner.user_id : null;
-  if (!actor) return;
-  await admin.rpc('sync_booking_and_lead', {
-    p_action: 'set_lead_status',
-    p_booking_id: null,
-    p_lead_id: row.lead_id,
-    p_status: 'Awaiting Retainer',
-    p_reason: null,
-    p_actor: actor,
-    p_fields: {},
-  });
+  if (['New Inquiry', 'Needs Information', 'Quote Sent', 'Awaiting Response', 'Contract Sent'].includes(status)) {
+    const { data: owner } = await admin.from('admins').select('user_id').limit(1).maybeSingle();
+    const actor = typeof owner?.user_id === 'string' ? owner.user_id : null;
+    if (actor) {
+      await admin.rpc('sync_booking_and_lead', {
+        p_action: 'set_lead_status',
+        p_booking_id: null,
+        p_lead_id: row.lead_id,
+        p_status: 'Awaiting Retainer',
+        p_reason: null,
+        p_actor: actor,
+        p_fields: {},
+      });
+    }
+  }
+  await queueCallReminderAndSync(admin, row.lead_id).catch(() => undefined);
 }
 
 function signedEmailHtml(name: string, facts: ReturnType<typeof paymentPayload>, instructions: string, noun: string) {

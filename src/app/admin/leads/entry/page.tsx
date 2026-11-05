@@ -232,6 +232,7 @@ export default function LeadDetailPage() {
     setOriginal(nextDraft);
     setNotice('Saved. Create contract below uses these saved details.');
     setSavedRevision((value) => value + 1);
+    void fetch(`/api/admin/leads/${leadId}/call-reminder`, { method: 'POST' }).catch(() => undefined);
     setSaving(false);
   };
 
@@ -293,6 +294,7 @@ export default function LeadDetailPage() {
     await refreshEvents();
     setNotice('Saved. Create contract below uses these saved details.');
     setSavedRevision((value) => value + 1);
+    void fetch(`/api/admin/leads/${leadId}/call-reminder`, { method: 'POST' }).catch(() => undefined);
     setSaving(false);
   };
 

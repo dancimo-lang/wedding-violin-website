@@ -4,6 +4,7 @@ import { POST as postTune } from './handlers/admin-tunes';
 import { GET as getAvailability } from './handlers/availability';
 import { GET as getAvailabilityDates } from './handlers/availability-dates';
 import { POST as postBookingStatus } from './handlers/booking-status';
+import { POST as postCallReminder } from './handlers/call-reminder';
 import { DELETE as deleteLead } from './handlers/delete-lead';
 import { POST as postExistingBooking } from './handlers/existing-booking';
 import { existingBookingPayment } from './handlers/existing-booking-payment';
@@ -53,6 +54,7 @@ const handlers: Record<string, ApiHandler> = {
   'existing-booking': mount(postExistingBooking),
   'existing-booking-payment': ({ request }) => existingBookingPayment(request),
   'delete-lead': ({ request, params }) => deleteLead(request, params.id ?? ''),
+  'lead-call-reminder': ({ request, params }) => postCallReminder(request, params.id ?? ''),
   'contract-send': mount(postContractSend),
   'admin-venues': mount(getVenues),
   'public-venues': mount(getPublicVenues),

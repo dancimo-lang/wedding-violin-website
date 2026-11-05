@@ -133,6 +133,7 @@ export default function NewLeadPage() {
       }
     }
 
+    void fetch(`/api/admin/leads/${lead.id}/call-reminder`, { method: 'POST' }).catch(() => undefined);
     router.push(`/admin/leads/${lead.id}`);
   };
 

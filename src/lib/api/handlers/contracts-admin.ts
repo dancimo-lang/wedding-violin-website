@@ -10,6 +10,8 @@ import { cleanAdditionalFeesDescription, feeSnapshot, normalizeStoredFields, per
 import { renderContractPdf } from '@/lib/contracts/pdf';
 import { validateTypedName } from '@/lib/contracts/signers';
 import { generateContractToken, isContractToken } from '@/lib/contracts/token';
+import { queueCallReminder } from '@/lib/google/call-reminder-queue';
+import { isProductionCalendarEnvironment } from '@/lib/google/production';
 import { runGoogleSync } from '@/lib/google/run';
 import { BUSINESS_TIME_ZONE, todayInTimeZone } from '@/lib/schedule/time';
 import {
@@ -420,7 +422,8 @@ export async function POST(request: Request) {
     }).then(undefined, () => undefined);
   }
 
-  if (createdBooking) {
+  if (leadIdForStatus) await queueCallReminder(admin, leadIdForStatus);
+  if (createdBooking || (leadIdForStatus && isProductionCalendarEnvironment())) {
     try {
       await runGoogleSync();
     } catch {

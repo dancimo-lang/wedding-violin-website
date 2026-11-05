@@ -25,6 +25,7 @@ export const apiRouteCatalog: readonly ApiRouteSpec[] = [
   { id: 'existing-booking', methods: ['POST'], segments: ['admin', 'bookings', 'existing'] },
   { id: 'existing-booking-payment', methods: ['GET', 'POST'], segments: ['admin', 'bookings', 'existing', 'payment'] },
   { id: 'delete-lead', methods: ['DELETE'], segments: ['admin', 'leads', param('id')] },
+  { id: 'lead-call-reminder', methods: ['POST'], segments: ['admin', 'leads', param('id'), 'call-reminder'] },
   { id: 'contract-send', methods: ['POST'], segments: ['admin', 'contracts'] },
   { id: 'admin-venues', methods: ['GET'], segments: ['admin', 'venues'] },
   { id: 'public-venues', methods: ['GET'], segments: ['venues'] },

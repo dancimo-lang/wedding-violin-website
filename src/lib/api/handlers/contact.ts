@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import site from '@/data/site.json';
 import { guardClientFacingEmail } from '@/lib/contracts/mail';
+import { queueCallReminderAndSync } from '@/lib/google/call-reminder-queue';
+import { websiteCallByDate } from '@/lib/leads';
 import { todayInTimeZone } from '@/lib/schedule/time';
 import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -217,6 +219,7 @@ export async function POST(request: NextRequest) {
         guest_count: guestCount,
         how_they_found_us: howFound,
         message,
+        next_follow_up_date: websiteCallByDate(),
         inquiry_details: inquiryDetails,
       })
       .select('id')
@@ -237,6 +240,8 @@ export async function POST(request: NextRequest) {
       body: message,
       metadata: { source: 'website' },
     });
+
+    await queueCallReminderAndSync(supabase, createdLead.id).catch(() => undefined);
 
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {

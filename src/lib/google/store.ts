@@ -2,7 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { decryptToken, encryptToken } from './crypto';
 import { GOOGLE_SCOPES } from './oauth';
-import type { BlockSyncRow, BookingSyncRow } from './events';
+import type { BlockSyncRow, BookingSyncRow, CallReminderRow } from './events';
 import { EXISTING_BOOKING_SOURCE, isGoogleSyncExcluded } from '@/lib/bookings/existing-booking';
 import type { EventLink, OutboxItem, StoredConnection, SyncStore } from './sync';
 
@@ -133,6 +133,21 @@ export function createSupabaseSyncStore(encryptionKey: string): SyncStore {
         const { error } = await admin.from('google_sync_outbox').insert(slice);
         if (error) throw new Error('Existing calendar rows could not be queued.');
       }
+      const openCalls = await admin
+        .from('leads')
+        .select('id')
+        .in('status', ['New Inquiry', 'Needs Information', 'Quote Sent', 'Awaiting Response'])
+        .not('next_follow_up_date', 'is', null)
+        .is('archived_at', null);
+      const callRows = (openCalls.data || []).map((row) => ({
+        source_table: 'leads',
+        source_id: row.id,
+        operation: 'upsert',
+      }));
+      if (!openCalls.error && callRows.length > 0) {
+        const { error } = await admin.from('google_sync_outbox').insert(callRows);
+        if (error) console.info('Call reminders could not be re-queued.');
+      }
     },
 
     async getBooking(id) {
@@ -186,6 +201,29 @@ export function createSupabaseSyncStore(encryptionKey: string): SyncStore {
         endTime: data.end_time,
         allDay: data.all_day !== false,
       } satisfies BlockSyncRow;
+    },
+
+    async getCallReminder(id) {
+      const { data, error } = await admin
+        .from('leads')
+        .select('id, status, next_follow_up_date, archived_at, event_date, venue_name, venue_address, clients(name, email, phone)')
+        .eq('id', id)
+        .maybeSingle();
+      if (error) throw new Error('A call reminder could not be read for Google sync.');
+      if (!data) return null;
+      const callBy = typeof data.next_follow_up_date === 'string' ? data.next_follow_up_date.slice(0, 10) : '';
+      return {
+        id: String(data.id),
+        status: String(data.status || ''),
+        callBy,
+        archived: Boolean(data.archived_at),
+        clientName: readName(data.clients),
+        phone: readField(data.clients, 'phone'),
+        email: readField(data.clients, 'email'),
+        eventDate: typeof data.event_date === 'string' ? data.event_date.slice(0, 10) : null,
+        venueName: typeof data.venue_name === 'string' ? data.venue_name : null,
+        venueAddress: typeof data.venue_address === 'string' ? data.venue_address : null,
+      } satisfies CallReminderRow;
     },
 
     async getLink(sourceTable, sourceId) {
