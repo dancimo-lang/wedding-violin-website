@@ -10,6 +10,33 @@
       "featured": true
     },
     {
+      "id": "proposals",
+      "title": "Proposals",
+      "shortDescription": "Surprise violin for your proposal, starting at $250 for solo violin and 3 songs of your choice.",
+      "description": "Surprise violin for your proposal in San Luis Obispo and the Central Coast. Starting at $250 for solo violin and 3 songs of your choice, and we plan the moment together.",
+      "icon": "Gem",
+      "href": "/services/proposals",
+      "featured": true
+    },
+    {
+      "id": "private-events",
+      "title": "Private Events",
+      "shortDescription": "Live violin for birthdays, anniversaries, corporate events, memorials and proposals, quoted case by case.",
+      "description": "Live violin for birthdays, anniversaries, corporate events, memorials and proposals. Solo violin or the violin–guitar duo, quoted case by case.",
+      "icon": "Calendar",
+      "href": "/services/private-events",
+      "featured": true
+    },
+    {
+      "id": "celebration-of-life",
+      "title": "Celebration of Life",
+      "shortDescription": "I offer live violin for celebrations of life, memorials, and funeral services.",
+      "description": "I offer live violin for celebrations of life, memorials, and funeral services.",
+      "icon": "Flower2",
+      "href": "/services/celebration-of-life",
+      "featured": true
+    },
+    {
       "id": "lessons",
       "title": "Private Lessons",
       "shortDescription": "Personalized violin instruction for all ages and skill levels, available in-person or online.",
