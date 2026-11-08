@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Check } from 'lucide-react';
 import { createPageMetadata } from '@/lib/page-metadata';
 import { serifHeadings } from '@/lib/fonts';
@@ -28,6 +29,13 @@ const included = [
   '3 songs of your choice: any song you want, learned just for you',
   'Help planning the moment: the cue and where to stay hidden',
   'Free travel within San Luis Obispo County',
+];
+
+const gallery = [
+  { src: '/images/proposal-kneel.webp', alt: 'Kneeling proposal among white roses while Daniel plays violin nearby', w: 2000, h: 1333 },
+  { src: '/images/proposal-kiss.webp', alt: 'The newly engaged couple kiss as Daniel plays violin behind them', w: 1333, h: 2000 },
+  { src: '/images/proposal-dance.webp', alt: 'The engaged couple dance and laugh while Daniel plays violin', w: 1333, h: 2000 },
+  { src: '/images/proposal-couple-with-daniel.webp', alt: 'The engaged couple smiling with Daniel after the proposal', w: 1333, h: 2000 },
 ];
 
 const steps = [
@@ -96,6 +104,37 @@ export default function ProposalsPage() {
       </section>
 
       <ProposalVideo />
+
+      {/* Proposal photos */}
+      <section aria-labelledby="photos-heading" className="pb-20 md:pb-24 bg-charcoal">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <h2 id="photos-heading" className="sr-only">Proposal photos</h2>
+          <div className="rounded-2xl overflow-hidden border border-gold/30 mb-6">
+            <Image
+              src="/images/proposal-moment.webp"
+              alt="A smiling proposal among white roses and olive trees while Daniel plays violin"
+              width={2000}
+              height={1333}
+              sizes="(min-width: 1024px) 64rem, 100vw"
+              className="w-full h-auto"
+            />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {gallery.map((photo) => (
+              <div key={photo.src} className="aspect-[3/4] rounded-xl overflow-hidden border border-gold/30">
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  width={photo.w}
+                  height={photo.h}
+                  sizes="(min-width: 768px) 16rem, 50vw"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* What's included */}
       <section aria-labelledby="included-heading" className="py-20 md:py-24 bg-cream">
