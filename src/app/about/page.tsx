@@ -88,7 +88,7 @@ export default function AboutPage() {
               src="/images/daniel-violin-pond.webp"
               alt="Daniel in a cream suit playing violin beside a pond under a blue sky"
               width={1200}
-              height={1340}
+              height={1150}
               sizes="(min-width: 640px) 36rem, 100vw"
               className="w-full h-auto"
             />
