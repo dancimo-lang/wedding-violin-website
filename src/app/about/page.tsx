@@ -80,6 +80,22 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Extra photo */}
+      <section aria-label="Daniel performing outdoors" className="pb-20 md:pb-24 bg-cream">
+        <div className="container mx-auto px-4">
+          <div className="max-w-xl mx-auto rounded-2xl overflow-hidden border border-cream-line">
+            <Image
+              src="/images/daniel-violin-pond.webp"
+              alt="Daniel in a cream suit playing violin beside a pond under a blue sky"
+              width={1200}
+              height={1340}
+              sizes="(min-width: 640px) 36rem, 100vw"
+              className="w-full h-auto"
+            />
+          </div>
+        </div>
+      </section>
+
       {training.length > 0 && (
         <section className="py-20 md:py-24 bg-cream-card">
           <div className="container mx-auto px-4">
