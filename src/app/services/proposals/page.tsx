@@ -88,18 +88,45 @@ export default function ProposalsPage() {
         }}
       />
 
-      {/* Header */}
-      <section className="pt-28 pb-16 md:pt-36 md:pb-20 border-b border-gold/40">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <p className="text-sm uppercase tracking-widest text-gold-bright mb-4">Proposals</p>
-          <h1 className="text-4xl md:text-5xl font-semibold text-cream-bright mb-6">{weddings.proposal.title}</h1>
-          <p className="text-lg text-cream-muted leading-relaxed mb-8">{weddings.proposal.description}</p>
-          <p className="text-2xl font-semibold text-gold mb-8 font-[family-name:var(--font-playfair)]">
-            Starting at $250
-          </p>
-          <Link href={BOOK_HREF} className={BUTTON}>
-            Plan Your Proposal
-          </Link>
+      {/* Photo hero. Below xl the whole frame shows, so a tall cover crop cannot
+          cut the couple or the violinist. On wide screens the same uncropped
+          photo sits beside the copy. */}
+      <section aria-labelledby="proposal-heading" className="border-b border-gold/40 bg-charcoal">
+        <div className="flex flex-col xl:grid xl:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] xl:items-center">
+          <div className="order-2 xl:order-1">
+            <div className="mx-auto max-w-3xl px-4 py-10 text-center md:py-14 xl:mx-0 xl:max-w-none xl:px-8 xl:py-12 xl:text-left">
+              <p className="text-sm uppercase tracking-widest text-gold-bright mb-4">Proposals</p>
+              <h1 id="proposal-heading" className="text-4xl md:text-5xl font-semibold text-cream-bright mb-6">
+                {weddings.proposal.title}
+              </h1>
+              <p className="text-lg text-cream-muted leading-relaxed mb-8">{weddings.proposal.description}</p>
+              <p className="text-2xl font-semibold text-gold mb-8 font-[family-name:var(--font-playfair)]">
+                Starting at $250
+              </p>
+              <Link href={BOOK_HREF} className={BUTTON}>
+                Plan Your Proposal
+              </Link>
+            </div>
+          </div>
+          <div className="relative order-1 xl:order-2">
+            <Image
+              src="/images/proposal-moment.webp"
+              alt="A woman kneels to propose to her smiling partner in a white dress among white roses, while Daniel plays violin"
+              width={2000}
+              height={1333}
+              priority
+              sizes="(min-width: 1280px) calc(100vw - 28rem), 100vw"
+              className="h-auto w-full"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-charcoal to-transparent xl:hidden"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 hidden w-16 bg-gradient-to-r from-charcoal to-transparent xl:block"
+            />
+          </div>
         </div>
       </section>
 
@@ -109,16 +136,6 @@ export default function ProposalsPage() {
       <section aria-labelledby="photos-heading" className="pb-20 md:pb-24 bg-charcoal">
         <div className="container mx-auto px-4 max-w-5xl">
           <h2 id="photos-heading" className="sr-only">Proposal photos</h2>
-          <div className="rounded-2xl overflow-hidden border border-gold/30 mb-6">
-            <Image
-              src="/images/proposal-moment.webp"
-              alt="A smiling proposal among white roses and olive trees while Daniel plays violin"
-              width={2000}
-              height={1333}
-              sizes="(min-width: 1024px) 64rem, 100vw"
-              className="w-full h-auto"
-            />
-          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {gallery.map((photo) => (
               <div key={photo.src} className="aspect-[3/4] rounded-xl overflow-hidden border border-gold/30">
