@@ -28,7 +28,7 @@ const previews: Record<string, { url: string; alt: string }> = {
   },
   '/services': {
     url: '/og/services.jpg',
-    alt: 'Daniel Cimo with violin, for wedding performances, lessons, and studio recording',
+    alt: 'Daniel Cimo with violin, for weddings, proposals, private events, celebrations of life, lessons, and studio recording',
   },
   '/services/weddings': {
     url: '/og/weddings.jpg',
@@ -41,6 +41,10 @@ const previews: Record<string, { url: string; alt: string }> = {
   '/services/lessons/resources': {
     url: '/og/tune-library.jpg',
     alt: 'Daniel Cimo with violin beside the student tune library of sheet music and videos',
+  },
+  '/services/celebration-of-life': {
+    url: '/og/services.jpg',
+    alt: 'Daniel Cimo with violin, on the funerals and celebrations of life page',
   },
   '/services/recording': {
     url: '/og/recording.jpg',

@@ -81,7 +81,7 @@ export default function Header() {
                       onMouseEnter={handleServicesMouseEnter}
                       onMouseLeave={handleServicesMouseLeave}
                     >
-                      <div className="bg-cream-card/95 backdrop-blur-md rounded-2xl shadow-lg border border-cream-line py-2 min-w-[180px]">
+                      <div className="bg-cream-card/95 backdrop-blur-md rounded-2xl shadow-lg border border-cream-line py-2 min-w-[220px]">
                         {item.children.map((child) => (
                           <Link
                             key={child.href}

@@ -62,6 +62,21 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/services/proposals" className={footerLink}>
+                  Proposals
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/private-events" className={footerLink}>
+                  Private Events
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/celebration-of-life" className={footerLink}>
+                  Celebration of Life
+                </Link>
+              </li>
+              <li>
                 <Link href="/services/lessons" className={footerLink}>
                   Private Lessons
                 </Link>

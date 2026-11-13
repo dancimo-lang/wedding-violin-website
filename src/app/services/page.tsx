@@ -5,11 +5,20 @@ import { createPageMetadata } from '@/lib/page-metadata';
 import services from '@/data/services.json';
 
 export const metadata = createPageMetadata({
-  title: 'Weddings, Lessons & Recording',
+  title: 'Weddings, Proposals, Private Events, Celebrations of Life, Lessons & Recording',
   description:
-    'Elegant wedding performances, personalized violin lessons, and professional studio recording in San Luis Obispo, with passion and expertise for every project.',
+    'Elegant wedding performances, proposal violin, private events, live violin for celebrations of life, memorials, and funeral services, personalized violin lessons, and professional studio recording in San Luis Obispo, with passion and expertise for every project.',
   path: '/services',
-  keywords: ['San Luis Obispo wedding violinist', 'Central Coast wedding violinist', 'wedding violin music SLO', 'Paso Robles wedding violinist', 'ceremony violinist California'],
+  keywords: [
+    'San Luis Obispo wedding violinist',
+    'Central Coast wedding violinist',
+    'wedding violin music SLO',
+    'Paso Robles wedding violinist',
+    'ceremony violinist California',
+    'proposal violinist',
+    'private event violinist',
+    'celebration of life violinist',
+  ],
 });
 
 export default function ServicesPage() {
@@ -32,7 +41,7 @@ export default function ServicesPage() {
               Services
             </h1>
             <p className="text-xl text-cream-muted max-w-3xl mx-auto">
-              From elegant wedding performances to personalized instruction and professional recording, I bring passion and expertise to every project.
+              From elegant wedding performances, proposals, and private events to celebrations of life, personalized instruction, and professional recording, I bring passion and expertise to every project.
             </p>
           </div>
         </div>
@@ -47,7 +56,7 @@ export default function ServicesPage() {
       {/* Services Grid */}
       <section className="py-20 md:py-24 bg-cream">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {services.services.map((service) => (
               <ServiceCard
                 key={service.id}
