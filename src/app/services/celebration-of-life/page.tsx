@@ -30,6 +30,7 @@ const moments = [
 
 const pieces = [
   'Air on the G String (Bach)',
+  'Prelude from Cello Suite No. 1 (Bach)',
   'Meditation from Thaïs (Massenet)',
   'Ashokan Farewell',
   "Gabriel's Oboe",
