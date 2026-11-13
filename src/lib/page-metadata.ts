@@ -44,7 +44,7 @@ const previews: Record<string, { url: string; alt: string }> = {
   },
   '/services/celebration-of-life': {
     url: '/og/services.jpg',
-    alt: 'Daniel Cimo with violin, on the celebration of life page',
+    alt: 'Daniel Cimo with violin, on the funerals and celebrations of life page',
   },
   '/services/recording': {
     url: '/og/recording.jpg',

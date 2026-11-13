@@ -39,10 +39,10 @@ const pieces = [
 ];
 
 export const metadata = createPageMetadata({
-  title: 'Celebration of Life & Funeral Services',
+  title: 'Funerals & Celebrations of Life',
   description: DESCRIPTION,
   path: '/services/celebration-of-life',
-  keywords: ['celebration of life violinist'],
+  keywords: ['funeral violinist', 'celebration of life violinist', 'memorial violinist San Luis Obispo'],
 });
 
 export default function CelebrationOfLifePage() {
@@ -50,7 +50,7 @@ export default function CelebrationOfLifePage() {
     <div className={`bg-charcoal ${serifHeadings}`}>
       <JsonLd
         data={generateServiceSchema({
-          name: 'Celebration of Life Violin',
+          name: 'Funeral & Celebration of Life Violin',
           description: DESCRIPTION,
           url: 'https://danielcimo.com/services/celebration-of-life',
         })}
@@ -61,9 +61,9 @@ export default function CelebrationOfLifePage() {
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-gold">
             <Flower2 className="h-8 w-8 text-gold" aria-hidden="true" />
           </div>
-          <p className="text-sm uppercase tracking-widest text-gold-bright mb-4">Celebration of Life</p>
+          <p className="text-sm uppercase tracking-widest text-gold-bright mb-4">Funerals &amp; Celebrations of Life</p>
           <h1 className="text-4xl md:text-5xl font-semibold text-cream-bright mb-6">
-            Live Violin for a Celebration of Life
+            Live Violin for Funerals &amp; Celebrations of Life
           </h1>
           <p className="text-lg text-cream-muted leading-relaxed mb-8">
             I offer live violin for celebrations of life, memorials, and funeral services.
