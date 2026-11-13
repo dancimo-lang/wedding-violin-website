@@ -68,10 +68,10 @@ export default function Home() {
               Services
             </h2>
             <p className="text-lg text-ink-body max-w-2xl mx-auto">
-              From wedding ceremonies to private instruction, I bring passion and professionalism to every performance.
+              From wedding ceremonies, proposals, and private events to celebrations of life, private instruction, and studio recording, I bring passion and professionalism to every performance.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {services.services.map((service) => (
               <ServiceCard
                 key={service.id}
