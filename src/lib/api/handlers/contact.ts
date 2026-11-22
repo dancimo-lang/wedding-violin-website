@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import site from '@/data/site.json';
@@ -7,7 +8,10 @@ import { websiteCallByDate } from '@/lib/leads';
 import { todayInTimeZone } from '@/lib/schedule/time';
 import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { clientIp } from '@/lib/venues/rate-limit';
 
+const MAX_INQUIRIES_PER_HOUR = 5;
+const MAX_INQUIRIES_PER_DAY = 10;
 const SERVICE_OPTIONS = new Set(['weddings', 'proposal', 'celebration of life', 'lessons', 'recording', 'other']);
 const HOW_FOUND = new Set(['Google', 'Instagram', 'Referral', 'Wedding vendor', 'Other']);
 const MAX_BODY_BYTES = 100_000;
@@ -40,6 +44,32 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** Each window gets its own key so an hour and a day starting together never share a count. */
+function inquiryKey(ip: string, window: 'hour' | 'day') {
+  return createHash('sha256').update(`contact:${window}:${ip}`).digest('hex');
+}
+
+/** A rate-limit outage must not cost a real inquiry, so only a clear "over the limit" blocks. */
+async function inquiryAllowed(supabase: ReturnType<typeof createAdminClient>, ip: string) {
+  const [hour, day] = await Promise.all([
+    supabase.rpc('consume_availability_check', {
+      p_ip_hash: inquiryKey(ip, 'hour'),
+      p_window_seconds: 3600,
+      p_limit: MAX_INQUIRIES_PER_HOUR,
+    }),
+    supabase.rpc('consume_availability_check', {
+      p_ip_hash: inquiryKey(ip, 'day'),
+      p_window_seconds: 86400,
+      p_limit: MAX_INQUIRIES_PER_DAY,
+    }),
+  ]);
+  if (hour.error || day.error) {
+    console.error('Contact rate limit unavailable');
+    return true;
+  }
+  return hour.data !== false && day.data !== false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const contentLength = Number(request.headers.get('content-length') || 0);
@@ -50,6 +80,11 @@ export async function POST(request: NextRequest) {
     const body: unknown = await request.json();
     if (!isRecord(body)) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // People never see this field, so a value means a bot filled in the form.
+    if (typeof body.leaveThisBlank === 'string' && body.leaveThisBlank.trim()) {
+      return NextResponse.json({ success: true, message: 'Form submitted successfully' }, { status: 200 });
     }
 
     const name = requiredText(body.name, 200);
@@ -81,8 +116,12 @@ export async function POST(request: NextRequest) {
     const guestLooksValid = guestCountRaw === null || guestCountRaw === 'invalid' || (guestCount !== null && guestCount > 0 && guestCount <= 10000);
     const howFoundLooksValid = howFound === null || (howFound !== 'invalid' && HOW_FOUND.has(howFound));
 
+    // The name is repeated in the automatic reply, so it must not be able to carry a link.
+    const nameHasLink = Boolean(name && /https?:|:\/\/|www\.|\.(com|net|org|ru|xyz|info|io)\b/i.test(name));
+
     if (
       !name ||
+      nameHasLink ||
       !emailLooksValid ||
       !service ||
       !SERVICE_OPTIONS.has(service) ||
@@ -123,6 +162,13 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+    if (!(await inquiryAllowed(supabase, clientIp(request)))) {
+      return NextResponse.json(
+        { error: `Too many messages were sent from this connection. Please call or text ${site.phone}, or try again later.` },
+        { status: 429 }
+      );
+    }
+
     const normalizedEmail = email as string;
 
     const { data: existingClient, error: lookupError } = await supabase
@@ -176,15 +222,9 @@ export async function POST(request: NextRequest) {
       } else {
         clientId = createdClient.id;
       }
-    } else if (partnerName || phone) {
-      await supabase
-        .from('clients')
-        .update({
-          ...(partnerName ? { partner_name: partnerName } : {}),
-          ...(phone ? { phone } : {}),
-        })
-        .eq('id', clientId);
     }
+    // A public form cannot prove who sent it, so it never edits an existing client.
+    // New phone and partner details stay on this lead's inquiry for Daniel to review.
 
     const inquiryDetails = {
       name,
