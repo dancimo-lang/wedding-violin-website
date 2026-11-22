@@ -25,13 +25,37 @@ type Props = {
 type ScoreLayout = {
   Zoom: number;
   EngravingRules: { RenderXMeasuresPerLineAkaSystem: number };
+  GraphicSheet?: { MusicPages: { MusicSystems: { GraphicalMeasures: unknown[] }[] }[] };
+  render: () => void;
 };
 
-/** Four bars per line when the column can hold them. Phones keep automatic line breaks. */
-function fitScoreToWidth(osmd: ScoreLayout, width: number) {
-  const roomForFour = width >= 480;
-  osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = roomForFour ? 4 : 0;
-  osmd.Zoom = roomForFour ? Math.max(0.6, Math.min(1, width / 800)) : 1;
+const BARS_PER_LINE = 4;
+const SMALLEST_ZOOM = 0.5;
+
+function everyLineIsFull(osmd: ScoreLayout) {
+  const lines = osmd.GraphicSheet?.MusicPages.flatMap((page) => page.MusicSystems) ?? [];
+  return lines.slice(0, -1).every((line) => line.GraphicalMeasures.length === BARS_PER_LINE);
+}
+
+/**
+ * Four bars per line when the column can hold them, shrinking the notes until
+ * the fullest line fits. Phones keep automatic line breaks.
+ */
+function renderScoreToWidth(osmd: ScoreLayout, width: number) {
+  if (width < 480) {
+    osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = 0;
+    osmd.Zoom = 1;
+    osmd.render();
+    return;
+  }
+  osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = BARS_PER_LINE;
+  let zoom = Math.max(SMALLEST_ZOOM, Math.min(1, width / 800));
+  for (;;) {
+    osmd.Zoom = zoom;
+    osmd.render();
+    if (zoom <= SMALLEST_ZOOM || everyLineIsFull(osmd)) return;
+    zoom = Math.max(SMALLEST_ZOOM, zoom - 0.05);
+  }
 }
 
 export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable }: Props) {
@@ -126,8 +150,7 @@ export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable 
           osmd.clear();
           return;
         }
-        fitScoreToWidth(osmd, host.clientWidth);
-        osmd.render();
+        renderScoreToWidth(osmd, host.clientWidth);
         osmd.cursor.show();
         const steps: ScoreStep[] = [];
         const cursor = osmd.cursor;
@@ -198,9 +221,8 @@ export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable 
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
         if (playingRef.current) return;
-        const osmd = osmdRef.current as (ScoreLayout & { render?: () => void; cursor?: { reset: () => void; show: () => void } }) | null;
-        if (osmd) fitScoreToWidth(osmd, width);
-        osmd?.render?.();
+        const osmd = osmdRef.current as unknown as (ScoreLayout & { cursor?: { reset: () => void; show: () => void } }) | null;
+        if (osmd) renderScoreToWidth(osmd, width);
         osmd?.cursor?.reset();
         osmd?.cursor?.show();
         cursorIndexRef.current = 0;
