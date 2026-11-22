@@ -22,6 +22,18 @@ type Props = {
   onUnavailable: () => void;
 };
 
+type ScoreLayout = {
+  Zoom: number;
+  EngravingRules: { RenderXMeasuresPerLineAkaSystem: number };
+};
+
+/** Four bars per line when the column can hold them. Phones keep automatic line breaks. */
+function fitScoreToWidth(osmd: ScoreLayout, width: number) {
+  const roomForFour = width >= 480;
+  osmd.EngravingRules.RenderXMeasuresPerLineAkaSystem = roomForFour ? 4 : 0;
+  osmd.Zoom = roomForFour ? Math.max(0.6, Math.min(1, width / 800)) : 1;
+}
+
 export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const onUnavailableRef = useRef(onUnavailable);
@@ -98,7 +110,8 @@ export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable 
         const osmd = new OpenSheetMusicDisplay(host, {
           backend: 'svg',
           autoResize: false,
-          drawTitle: true,
+          // The tune page already shows the title, and many exports say "Untitled score".
+          drawTitle: false,
           drawSubtitle: false,
           drawComposer: false,
           drawLyricist: false,
@@ -113,6 +126,7 @@ export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable 
           osmd.clear();
           return;
         }
+        fitScoreToWidth(osmd, host.clientWidth);
         osmd.render();
         osmd.cursor.show();
         const steps: ScoreStep[] = [];
@@ -184,7 +198,8 @@ export default function InteractiveSheetPlayer({ scoreUrl, title, onUnavailable 
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
         if (playingRef.current) return;
-        const osmd = osmdRef.current as { render?: () => void; cursor?: { reset: () => void; show: () => void } } | null;
+        const osmd = osmdRef.current as (ScoreLayout & { render?: () => void; cursor?: { reset: () => void; show: () => void } }) | null;
+        if (osmd) fitScoreToWidth(osmd, width);
         osmd?.render?.();
         osmd?.cursor?.reset();
         osmd?.cursor?.show();

@@ -10,6 +10,7 @@ import {
   validateSheetMusicFile,
 } from '@/lib/tune-files';
 import type { Tune } from '@/lib/tune-types';
+import { youtubeEmbed } from '@/lib/youtube';
 
 const emptyForm = {
   title: '',
@@ -33,6 +34,7 @@ export default function AddTunePage() {
   const [tunes, setTunes] = useState<Tune[]>([]);
   const [editId, setEditId] = useState('');
   const [editTips, setEditTips] = useState('');
+  const [editYoutube, setEditYoutube] = useState('');
   const [editScore, setEditScore] = useState<File | null>(null);
   const [editFileKey, setEditFileKey] = useState(0);
   const [editSaving, setEditSaving] = useState(false);
@@ -132,6 +134,11 @@ export default function AddTunePage() {
       setEditMessage({ type: 'error', text: tipsError });
       return;
     }
+    const nextYoutube = editYoutube.trim();
+    if (nextYoutube && !youtubeEmbed(nextYoutube)) {
+      setEditMessage({ type: 'error', text: 'Enter a valid YouTube link or video ID.' });
+      return;
+    }
     if (editScore) {
       const scoreError = validateScoreFile(editScore);
       if (scoreError) {
@@ -144,6 +151,7 @@ export default function AddTunePage() {
     try {
       const body = new FormData();
       body.append('practiceTips', editTips);
+      body.append('youtubeId', nextYoutube);
       if (editScore) body.append('score', editScore);
       const response = await fetch(`/api/admin/tunes/${editId}`, { method: 'PATCH', body });
       const responseData = await response.json();
@@ -153,7 +161,7 @@ export default function AddTunePage() {
       }
       setTunes((current) =>
         current.map((tune) =>
-          tune.id === editId ? { ...tune, practiceTips: editTips.trim(), museScorePath: responseData.tune?.museScorePath || tune.museScorePath } : tune,
+          tune.id === editId ? { ...tune, practiceTips: editTips.trim(), youtubeId: nextYoutube, museScorePath: responseData.tune?.museScorePath || tune.museScorePath } : tune,
         ),
       );
       setEditScore(null);
@@ -384,7 +392,7 @@ export default function AddTunePage() {
           <div className="rounded-xl bg-white p-8 shadow-lg">
             <h2 className="mb-2 text-2xl font-bold text-gray-900">Edit a tune</h2>
             <p className="mb-6 text-sm text-gray-600">
-              Update practice tips or replace the MuseScore file. Saving updates the live tune library.
+              Update the YouTube link or practice tips, or replace the MuseScore file. Saving updates the live tune library.
             </p>
             <form onSubmit={handleEdit} className="space-y-6">
               <div>
@@ -399,6 +407,7 @@ export default function AddTunePage() {
                     const selected = tunes.find((tune) => tune.id === nextId);
                     setEditId(nextId);
                     setEditTips(selected?.practiceTips ?? '');
+                    setEditYoutube(selected?.youtubeId ?? '');
                     setEditMessage({ type: '', text: '' });
                   }}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-amber-500"
@@ -410,6 +419,22 @@ export default function AddTunePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label htmlFor="edit-youtube" className="mb-2 block text-sm font-medium text-gray-700">
+                  YouTube link or video ID
+                </label>
+                <input
+                  id="edit-youtube"
+                  type="text"
+                  value={editYoutube}
+                  onChange={(event) => setEditYoutube(event.target.value)}
+                  placeholder="https://youtu.be/..."
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-amber-500"
+                />
+                <p className="mt-2 text-sm text-gray-600">
+                  To start from the beginning, remove any start time such as &amp;t=100s. Leave blank for no video.
+                </p>
               </div>
               <div>
                 <label htmlFor="edit-tips" className="mb-2 block text-sm font-medium text-gray-700">

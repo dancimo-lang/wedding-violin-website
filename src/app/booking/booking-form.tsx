@@ -20,6 +20,7 @@ function formatDate(date: string) {
 const serviceOptions = [
   { value: 'weddings', label: 'Wedding Performance' },
   { value: 'proposal', label: 'Proposal Performance' },
+  { value: 'celebration of life', label: 'Funeral / Celebration of Life' },
   { value: 'lessons', label: 'Private Lessons' },
   { value: 'recording', label: 'Studio Recording' },
   { value: 'other', label: 'Other Event' },

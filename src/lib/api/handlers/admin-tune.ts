@@ -9,6 +9,7 @@ import {
   validateScoreFile,
 } from '@/lib/tune-files';
 import { loadTunesDocument, saveTunesDocument } from '@/lib/tunes-store';
+import { youtubeEmbed } from '@/lib/youtube';
 
 function readUpload(value: FormDataEntryValue | null): File | null {
   if (!(value instanceof File) || value.size <= 0) return null;
@@ -55,6 +56,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const tipsError = practiceTipsError(practiceTips);
     if (tipsError) return NextResponse.json({ message: tipsError }, { status: 400 });
 
+    const hasYoutube = formData.has('youtubeId');
+    const youtubeId = String(formData.get('youtubeId') ?? '').trim();
+    if (youtubeId && (youtubeId.length > 300 || !youtubeEmbed(youtubeId))) {
+      return NextResponse.json({ message: 'Enter a valid YouTube link or video ID.' }, { status: 400 });
+    }
+
     const score = readUpload(formData.get('score'));
     if (score) {
       const scoreError = validateScoreFile(score);
@@ -70,6 +77,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const next: Record<string, unknown> = { ...tunesData.tunes[index], id };
     if (practiceTips) next.practiceTips = practiceTips;
     else delete next.practiceTips;
+    if (hasYoutube) next.youtubeId = youtubeId;
 
     if (score) {
       const extension = fileExtension(score.name);
