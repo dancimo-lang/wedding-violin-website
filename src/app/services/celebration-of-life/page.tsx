@@ -9,7 +9,7 @@ import { JsonLd, generateServiceSchema } from '@/components/SEO';
 const DESCRIPTION =
   'Live violin for celebrations of life, memorials, and funeral services.';
 
-const BOOK_HREF = '/booking#booking-form';
+const BOOK_HREF = '/booking?service=celebration%20of%20life#booking-form';
 const BUTTON =
   'inline-block bg-gold hover:bg-gold-hover text-charcoal px-8 py-4 rounded-full font-semibold text-lg transition-colors';
 

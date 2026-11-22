@@ -20,7 +20,7 @@ export default function Home() {
       <Hero
         title={`${site.tagline} for Your Special Day`}
         subtitle="San Luis Obispo • Paso Robles • Central Coast"
-        description="Elegant live violin music for weddings, private lessons for all ages, and professional studio recording services."
+        description="Elegant live violin music for weddings, proposals, private events, and celebrations of life, plus private lessons for all ages and professional studio recording."
         ctaText="Listen"
         ctaHref="/services/weddings#wedding-sampler"
         secondaryCtaText="Book Now"

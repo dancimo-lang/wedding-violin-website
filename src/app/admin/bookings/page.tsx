@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { adminButtonClass } from '@/components/admin/AdminButton';
 import { Plus } from 'lucide-react';
 import { clientLabel, firstClient, type ClientInfo } from '@/lib/bookings/client-label';
+import { inTab, isPastEvent, todayInPacific, type BookingTab } from '@/lib/bookings/archive';
+import { postBookingStatus } from '@/lib/booking-status-client';
 
 function supabase() {
   return createClient();
@@ -32,6 +34,11 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [showCancelled, setShowCancelled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<BookingTab>('upcoming');
+  const [openDue, setOpenDue] = useState<Record<string, number>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+  const today = todayInPacific();
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +56,21 @@ export default function BookingsPage() {
       } else {
         setBookings((data || []) as Booking[]);
       }
+      // Open retainer/balance amounts still owed, from the existing payment records.
+      const { data: obligations, error: obligationError } = await supabase()
+        .from('payment_obligations')
+        .select('booking_id, amount_cents')
+        .eq('status', 'open');
+      if (cancelled) return;
+      if (obligationError) {
+        console.error('Error fetching open payments:', obligationError);
+      } else {
+        const due: Record<string, number> = {};
+        for (const row of (obligations || []) as { booking_id: string; amount_cents: number }[]) {
+          due[row.booking_id] = (due[row.booking_id] || 0) + Number(row.amount_cents || 0);
+        }
+        setOpenDue(due);
+      }
       setLoading(false);
     }
 
@@ -58,9 +80,41 @@ export default function BookingsPage() {
     };
   }, []);
 
-  const visibleBookings = showCancelled
+  const activeBookings = showCancelled
     ? bookings
     : bookings.filter((booking) => booking.status !== 'Cancelled');
+  const tabBookings = activeBookings.filter((booking) => inTab(booking.event_date, tab, today));
+  // Past events read newest first; upcoming stay soonest first.
+  const visibleBookings = tab === 'past' ? [...tabBookings].reverse() : tabBookings;
+  const hasBalanceDue = (booking: Booking) =>
+    booking.status !== 'Cancelled' && (openDue[booking.id] || 0) > 0;
+  const pastWithBalance = activeBookings.filter(
+    (booking) => isPastEvent(booking.event_date, today) && hasBalanceDue(booking),
+  ).length;
+
+  async function setCompleted(booking: Booking, completed: boolean) {
+    setBusyId(booking.id);
+    setActionError('');
+    const result = await postBookingStatus({
+      action: 'apply_booking',
+      bookingId: booking.id,
+      leadId: booking.lead_id,
+      status: completed ? 'Completed' : 'Confirmed',
+    });
+    if (result.ok) {
+      const nextStatus = result.bookingStatus || (completed ? 'Completed' : 'Confirmed');
+      setBookings((rows) => rows.map((row) => (row.id === booking.id ? { ...row, status: nextStatus } : row)));
+    } else {
+      setActionError(result.error);
+    }
+    setBusyId(null);
+  }
+
+  const tabs: { id: BookingTab; label: string }[] = [
+    { id: 'upcoming', label: 'Upcoming' },
+    { id: 'past', label: 'Past' },
+    { id: 'all', label: 'All' },
+  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -105,6 +159,30 @@ export default function BookingsPage() {
         </Link>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-4" role="tablist" aria-label="Booking dates">
+        {tabs.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === item.id}
+            onClick={() => setTab(item.id)}
+            className={adminButtonClass(tab === item.id ? 'primary' : 'secondary', 'sm', 'gap-2')}
+          >
+            {item.label}
+            {item.id === 'past' && pastWithBalance > 0 && (
+              <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                {pastWithBalance} balance due
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {actionError && (
+        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</p>
+      )}
+
       <div className="bg-white rounded-xl shadow overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading bookings...</div>
@@ -112,7 +190,11 @@ export default function BookingsPage() {
           <div className="p-8 text-center text-gray-500">
             {bookings.length === 0
               ? 'No bookings yet. Convert a lead to a booking to get started.'
-              : 'No open bookings. Show cancelled to see bookings that were taken off the calendar.'}
+              : tab === 'upcoming'
+                ? 'No upcoming bookings. Past events are under the Past tab.'
+                : tab === 'past'
+                  ? 'No past bookings.'
+                  : 'No open bookings. Show cancelled to see bookings that were taken off the calendar.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -146,15 +228,45 @@ export default function BookingsPage() {
                       <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(booking.status)}`}>
                         {booking.status}
                       </span>
+                      {isPastEvent(booking.event_date, today) && hasBalanceDue(booking) && (
+                        <span
+                          className="ml-2 inline-flex px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800"
+                          title="Open retainer or balance in payment records"
+                        >
+                          Balance due ${(openDue[booking.id] / 100).toFixed(2)}
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900">${booking.total_price}</td>
                     <td className="py-4 px-6">
-                      <Link
-                        href={`/admin/bookings/${booking.id}`}
-                        className={adminButtonClass('secondary', 'sm')}
-                      >
-                        View
-                      </Link>
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          href={`/admin/bookings/${booking.id}`}
+                          className={adminButtonClass('secondary', 'sm')}
+                        >
+                          View
+                        </Link>
+                        {booking.status === 'Completed' ? (
+                          <button
+                            type="button"
+                            disabled={busyId === booking.id}
+                            onClick={() => setCompleted(booking, false)}
+                            className={adminButtonClass('secondary', 'sm')}
+                            title="Undo: set this booking back to Confirmed"
+                          >
+                            {busyId === booking.id ? 'Saving...' : 'Undo completed'}
+                          </button>
+                        ) : booking.status !== 'Cancelled' && isPastEvent(booking.event_date, today) ? (
+                          <button
+                            type="button"
+                            disabled={busyId === booking.id}
+                            onClick={() => setCompleted(booking, true)}
+                            className={adminButtonClass('secondary', 'sm')}
+                          >
+                            {busyId === booking.id ? 'Saving...' : 'Mark completed'}
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

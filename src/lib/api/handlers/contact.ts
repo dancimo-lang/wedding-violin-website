@@ -8,7 +8,7 @@ import { todayInTimeZone } from '@/lib/schedule/time';
 import { loadUnavailableDates } from '@/lib/schedule/unavailable-dates-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const SERVICE_OPTIONS = new Set(['weddings', 'proposal', 'lessons', 'recording', 'other']);
+const SERVICE_OPTIONS = new Set(['weddings', 'proposal', 'celebration of life', 'lessons', 'recording', 'other']);
 const HOW_FOUND = new Set(['Google', 'Instagram', 'Referral', 'Wedding vendor', 'Other']);
 const MAX_BODY_BYTES = 100_000;
 
