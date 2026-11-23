@@ -42,6 +42,7 @@ export default function BookingForm() {
     howFound: '',
     message: '',
     privacy: false,
+    leaveThisBlank: '',
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -90,7 +91,7 @@ export default function BookingForm() {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         setStatus('error');
         setErrorMessage(
-          response.status === 409 || response.status === 400
+          response.status === 409 || response.status === 400 || response.status === 429
             ? body.error || 'Please check the form and try again.'
             : 'Something went wrong. Please try again or email directly.'
         );
@@ -123,6 +124,20 @@ export default function BookingForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Spam trap: hidden from people and screen readers. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label htmlFor="leaveThisBlank">Leave this field blank</label>
+        <input
+          type="text"
+          id="leaveThisBlank"
+          name="leaveThisBlank"
+          tabIndex={-1}
+          autoComplete="off"
+          value={formData.leaveThisBlank}
+          onChange={handleChange}
+        />
+      </div>
+
       {/* Name */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
